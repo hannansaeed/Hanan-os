@@ -30,7 +30,7 @@ export const ServerRackModal: React.FC<ServerRackModalProps> = ({ onClose }) => 
             <span className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse" />
             <div>
               <div className="text-xs font-mono text-indigo-400 uppercase tracking-wider">
-                42U ENTERPRISE INFRASTRUCTURE · BACKEND CLOUD
+                PRIMARY CLUSTER NODE 01 · BARE-METAL SERVER ARRAY
               </div>
               <h2 className="text-lg font-bold text-white font-display">Active Server Daemons & Sandboxes</h2>
             </div>

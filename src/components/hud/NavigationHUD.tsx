@@ -24,7 +24,7 @@ const NAV_STATIONS: { id: StationId; label: string; shortcut: string }[] = [
   { id: 'desk', label: 'Desk & CLI', shortcut: '3' },
   { id: 'ctf_wall', label: 'CTF Lab', shortcut: '4' },
   { id: 'timeline_wall', label: 'Timeline', shortcut: '5' },
-  { id: 'server_rack', label: 'Infra Rack', shortcut: '6' },
+  { id: 'server_rack', label: 'Dual Servers', shortcut: '6' },
   { id: 'exit_door', label: 'Comms / Exit', shortcut: '7' },
 ];
 
@@ -52,13 +52,14 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
               soundEngine.playKeyClick();
               onSelectStation('overview');
             }}
-            className="text-lg font-bold tracking-tight text-white hover:text-cyan-400 transition-colors font-display"
+            className="text-lg font-bold tracking-tight text-white hover:text-cyan-400 transition-colors font-display flex items-center gap-2"
           >
-            HANAN//OS
+            <span className="text-rose-500 font-extrabold">//</span>
+            <span>HANAN//OS</span>
           </button>
           <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-slate-400">
             <span>·</span>
-            <span>CYBERSECURITY & SYSTEMS</span>
+            <span className="text-cyan-400">CYBERSPACE RIG</span>
           </div>
         </div>
 
@@ -117,7 +118,7 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
               activeStation === 'server_rack' ? 'text-cyan-400 font-semibold' : ''
             }`}
           >
-            Infrastructure
+            Dual Servers
           </button>
           <button
             onClick={() => {
@@ -192,20 +193,31 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
       </header>
 
       {/* ========================================================
-          CENTER SCREEN: Crosshair in Walk Mode & Hover Prompts
+          CENTER SCREEN: Hover Prompts (NO Crosshair / Pointer)
       ======================================================== */}
       <div className="flex-1 flex flex-col items-center justify-center pointer-events-none">
-        {isWalkMode && (
-          <div className="w-4 h-4 rounded-full border border-cyan-400/40 flex items-center justify-center">
-            <div className="w-1 h-1 rounded-full bg-cyan-400" />
+        {/* Walking controls helper badge */}
+        {isWalkMode && !hoverInfo && (
+          <div className="absolute top-20 left-6 pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-950/80 backdrop-blur-md border border-slate-800 text-[11px] font-mono text-slate-300">
+            <span className="text-cyan-400 font-bold">[W][A][S][D]</span>
+            <span>Walk</span>
+            <span>·</span>
+            <span className="text-cyan-400 font-bold">Drag Mouse</span>
+            <span>Look</span>
+            <span>·</span>
+            <span className="text-cyan-400 font-bold">[E]</span>
+            <span>Interact</span>
           </div>
         )}
 
         {/* Hover Interactivity Badge */}
         {hoverInfo && (
-          <div className="pointer-events-auto mt-6 px-4 py-2 rounded-lg bg-slate-950/85 backdrop-blur-md border border-cyan-500/40 shadow-xl shadow-cyan-950/40 text-center animate-fade-in">
-            <div className="text-xs font-mono text-cyan-400 font-semibold">{hoverInfo.label}</div>
-            <div className="text-[11px] font-mono text-slate-400 mt-0.5">{hoverInfo.hint}</div>
+          <div className="pointer-events-auto mt-6 px-5 py-2.5 rounded-xl bg-[#090e1a]/95 backdrop-blur-md border border-cyan-500/60 shadow-2xl shadow-cyan-950/80 text-center animate-fade-in ring-2 ring-cyan-500/20">
+            <div className="text-xs font-mono text-cyan-400 font-bold uppercase tracking-wider">{hoverInfo.label}</div>
+            <div className="text-xs font-mono text-white font-semibold mt-1 flex items-center justify-center gap-1.5">
+              <span className="px-1.5 py-0.5 rounded bg-cyan-500 text-slate-950 font-bold text-[10px]">[E]</span>
+              <span>{hoverInfo.hint}</span>
+            </div>
           </div>
         )}
       </div>

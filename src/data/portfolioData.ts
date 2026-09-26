@@ -3,76 +3,122 @@ import { StationConfig, ProjectItem, CTFChallenge, TimelineMilestone, ServerMetr
 export const STATIONS: Record<string, StationConfig> = {
   overview: {
     id: 'overview',
-    label: 'Room Entrance',
+    label: 'Cyber Room Entry',
     shortCode: '00',
-    description: 'Entrance viewpoint overlooking the cyber workstation',
-    cameraPos: [0, 2.2, 5.2],
-    cameraTarget: [0, 1.4, 0],
-    fov: 55,
+    description: 'Walking view overlooking the retro cyber workstation and dual server nodes',
+    cameraPos: [0, 1.7, 3.2],
+    cameraTarget: [0, 1.35, -3.2],
+    fov: 60,
   },
   horizontal_monitor: {
     id: 'horizontal_monitor',
-    label: 'Main Workstation',
+    label: 'Desktop Workstation (GUI)',
     shortCode: '01',
-    description: 'Primary dual-curved display hosting production software & projects',
-    cameraPos: [-0.15, 1.48, 1.25],
-    cameraTarget: [-0.15, 1.48, 0],
-    fov: 48,
+    description: 'Horizontal display running HANAN//OS Desktop (Projects, CV & About)',
+    cameraPos: [0.38, 1.42, -2.15],
+    cameraTarget: [0.38, 1.42, -3.3],
+    fov: 46,
   },
   vertical_monitor: {
     id: 'vertical_monitor',
-    label: 'Security Terminal',
+    label: 'Vertical Terminal (CLI)',
     shortCode: '02',
-    description: 'Vertical monitor streaming CTF intelligence, telemetry & packet capture',
-    cameraPos: [1.2, 1.5, 1.3],
-    cameraTarget: [1.1, 1.5, 0],
-    fov: 45,
+    description: 'Vertical monitor running interactive live cybersecurity terminal shell',
+    cameraPos: [-0.55, 1.45, -2.15],
+    cameraTarget: [-0.55, 1.45, -3.3],
+    fov: 44,
   },
   desk: {
     id: 'desk',
-    label: 'Desk & Peripheral Suite',
+    label: 'Workstation Desk',
     shortCode: '03',
-    description: 'Mechanical keyboard CLI, Android device simulator, research journal',
-    cameraPos: [0.1, 1.85, 1.4],
-    cameraTarget: [0.1, 0.95, 0.4],
-    fov: 52,
+    description: 'Back-wall desk with dual displays, mechanical keyboard, and cables',
+    cameraPos: [0, 1.6, -1.8],
+    cameraTarget: [0, 1.25, -3.2],
+    fov: 54,
   },
   ctf_wall: {
     id: 'ctf_wall',
-    label: 'CTF Lab Wall',
+    label: 'CTF Lab Board',
     shortCode: '04',
-    description: 'Pinned vulnerability research, exploit writeups & competition awards',
-    cameraPos: [-3.2, 1.8, 0.5],
-    cameraTarget: [-4.95, 1.8, 0.5],
+    description: 'Pegboard with pinned vulnerability research, exploits & flags',
+    cameraPos: [-2.8, 1.7, 0],
+    cameraTarget: [-4.4, 1.7, 0],
     fov: 52,
   },
   timeline_wall: {
     id: 'timeline_wall',
-    label: 'Timeline Wall',
+    label: 'CV & Roadmap Wall',
     shortCode: '05',
-    description: 'Evolution from low-level systems to offensive cybersecurity & 3D WebGL',
-    cameraPos: [3.2, 1.8, 0.5],
-    cameraTarget: [4.95, 1.8, 0.5],
+    description: 'Corkboard with milestone progression, resume highlights & certs',
+    cameraPos: [2.8, 1.7, 0],
+    cameraTarget: [4.4, 1.7, 0],
     fov: 52,
   },
   server_rack: {
     id: 'server_rack',
-    label: 'Server Rack & Infra',
+    label: 'Dual Servers (Core Node)',
     shortCode: '06',
-    description: '42U enterprise server rack running isolated CTF sandboxes & build daemons',
-    cameraPos: [-3.3, 1.6, -2.8],
-    cameraTarget: [-4.1, 1.6, -4.1],
+    description: 'Dual server stack: Primary interactive core node running sandboxes & daemons, plus secondary backup blade unit',
+    cameraPos: [-2.6, 1.5, -2.2],
+    cameraTarget: [-3.8, 1.3, -3.2],
     fov: 50,
   },
   exit_door: {
     id: 'exit_door',
-    label: 'Comms & Exit Door',
+    label: 'Comms & Exit Portal',
     shortCode: '07',
-    description: 'Direct comms terminal to transmit secure dispatches and credentials',
-    cameraPos: [0, 1.8, 3.8],
-    cameraTarget: [0, 1.8, 5.0],
-    fov: 50,
+    description: 'Reinforced industrial portal with secure comms dispatch terminal',
+    cameraPos: [0, 1.7, 2.6],
+    cameraTarget: [0, 1.7, 4.4],
+    fov: 52,
   },
+};
+
+export const RESUME_DATA = {
+  name: 'Hanan',
+  title: 'Cybersecurity Researcher & Systems Software Developer',
+  location: 'San Francisco, CA / Remote',
+  email: 'hanan.cybersec.dev@gmail.com',
+  github: 'https://github.com/hanan',
+  summary:
+    'Hands-on systems programmer and offensive security specialist with proven experience in glibc heap exploitation, low-overhead eBPF kernel monitors, Android AOSP/Binder internals, and post-quantum cryptographic primitives. Top 2% global CTF contestant with OSCP and PNPT certifications.',
+  education: [
+    {
+      degree: 'B.S. in Computer Science (Information Security & Systems Focus)',
+      school: 'University Institute of Technology',
+      period: '2021 – 2025',
+      honors: 'Summa Cum Laude, President of Cyber Competition Club'
+    }
+  ],
+  experience: [
+    {
+      role: 'Cybersecurity Systems Engineer & Researcher',
+      company: 'Vanguard Cyber Lab / Independent',
+      period: '2025 – Present',
+      points: [
+        'Authored eBPF-based kernel telemetry agent tracking unexported AIDL transactions across Android IPC boundaries with <1.4% syscall overhead.',
+        'Engineered Sentinel CTF automated tournament platform provisioning isolated ephemeral Docker jails in 320ms for 1,200+ concurrent hackers.',
+        'Constructed custom WebGL 3D spatial workstations utilizing custom GLSL fragment post-processing shaders.'
+      ]
+    },
+    {
+      role: 'Offensive Security Researcher & CTF Lead',
+      company: 'NullByte Security Collective',
+      period: '2024 – 2025',
+      points: [
+        'Discovered and responsibly reported 3 vendor-specific Android privilege escalation flaws via untrusted intent injection.',
+        'Led team to top-10 finishes in DEFCON Quals, HackTheBox University, and National Cyber League tournaments.',
+        'Specialized in glibc heap exploitation, ROP gadgets, and timing side-channel statistical extraction.'
+      ]
+    }
+  ],
+  awards: [
+    'DEFCON CTF Quals — Top 2% Worldwide',
+    'HackTheBox University CTF — 8th Place Global',
+    'National Cyber League — Power Ranking 1st Tier',
+    'Open Source Contribution Award — eBPF Foundation'
+  ]
 };
 
 export const PROJECTS: ProjectItem[] = [

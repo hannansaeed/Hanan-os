@@ -20,10 +20,10 @@ import { StationId } from './types';
 import { soundEngine } from './audio/soundEngine';
 
 export default function App() {
-  const [hasBooted, setHasBooted] = useState(false);
+  const [showEntranceBanner, setShowEntranceBanner] = useState(false);
   const [activeStation, setActiveStation] = useState<StationId>('overview');
   const [hoverInfo, setHoverInfo] = useState<RaycastHitInfo | null>(null);
-  const [isWalkMode, setIsWalkMode] = useState(false);
+  const [isWalkMode, setIsWalkMode] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
 
   // Modals
@@ -41,6 +41,7 @@ export default function App() {
 
   // Handle station selection
   const handleSelectStation = useCallback((stationId: StationId) => {
+    setShowEntranceBanner(false);
     setActiveStation(stationId);
     sceneRef.current?.goToStation(stationId);
 
@@ -54,7 +55,8 @@ export default function App() {
     if (stationId === 'horizontal_monitor') {
       setIsProjectModalOpen(true);
     } else if (stationId === 'vertical_monitor') {
-      setIsSecurityModalOpen(true);
+      // User specifically requested the vertical monitor to run the terminal where commands can be executed!
+      setIsTerminalOpen(true);
     } else if (stationId === 'desk') {
       setIsTerminalOpen(true);
     } else if (stationId === 'ctf_wall') {
@@ -68,7 +70,20 @@ export default function App() {
     }
   }, [isWalkMode]);
 
+  const handleStepBackToWalk = useCallback(() => {
+    setIsProjectModalOpen(false);
+    setIsTerminalOpen(false);
+    setIsSecurityModalOpen(false);
+    setIsCTFModalOpen(false);
+    setIsTimelineModalOpen(false);
+    setIsServerModalOpen(false);
+    setIsExitModalOpen(false);
+    setIsWalkMode(true);
+    sceneRef.current?.stepBackToWalk();
+  }, []);
+
   const handleToggleWalkMode = useCallback(() => {
+    setShowEntranceBanner(false);
     setIsWalkMode((prev) => {
       const next = !prev;
       sceneRef.current?.setWalkMode(next);
@@ -88,6 +103,9 @@ export default function App() {
         return;
       }
 
+      // Any navigation key dismisses entrance banner
+      setShowEntranceBanner(false);
+
       if (e.key === 'm' || e.key === 'M') {
         soundEngine.playKeyClick();
         setIsMapOpen((prev) => !prev);
@@ -98,6 +116,7 @@ export default function App() {
         soundEngine.playKeyClick();
         handleToggleWalkMode();
       } else if (e.key === 'Escape') {
+        setShowEntranceBanner(false);
         setIsMapOpen(false);
         setIsTerminalOpen(false);
         setIsProjectModalOpen(false);
@@ -122,28 +141,27 @@ export default function App() {
         onHoverChange={setHoverInfo}
       />
 
-      {/* Boot sequence for initial entry */}
-      {!hasBooted && (
+      {/* Primary Navigation & HUD Overlay (ALWAYS active and clickable) */}
+      <NavigationHUD
+        activeStation={activeStation}
+        isWalkMode={isWalkMode}
+        isMuted={isMuted}
+        hoverInfo={hoverInfo}
+        onSelectStation={handleSelectStation}
+        onToggleWalkMode={handleToggleWalkMode}
+        onToggleAudio={handleToggleAudio}
+        onOpenMap={() => setIsMapOpen(true)}
+        onOpenTerminal={() => setIsTerminalOpen(true)}
+      />
+
+      {/* Dismissible entrance intro banner */}
+      {showEntranceBanner && (
         <BootScreen
           onEnter={() => {
-            setHasBooted(true);
+            setShowEntranceBanner(false);
             sceneRef.current?.goToStation('overview');
           }}
-        />
-      )}
-
-      {/* Primary Navigation & HUD Overlay */}
-      {hasBooted && (
-        <NavigationHUD
-          activeStation={activeStation}
-          isWalkMode={isWalkMode}
-          isMuted={isMuted}
-          hoverInfo={hoverInfo}
-          onSelectStation={handleSelectStation}
-          onToggleWalkMode={handleToggleWalkMode}
-          onToggleAudio={handleToggleAudio}
-          onOpenMap={() => setIsMapOpen(true)}
-          onOpenTerminal={() => setIsTerminalOpen(true)}
+          onQuickJump={handleSelectStation}
         />
       )}
 

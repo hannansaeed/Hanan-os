@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { StationId } from '../types';
 import { STATIONS } from '../data/portfolioData';
 import { CRTShader } from './shaders/crtShader';
-import { ServerLedShader, DustParticleShader } from './shaders/serverLedShader';
+import { DustParticleShader } from './shaders/serverLedShader';
 import { soundEngine } from '../audio/soundEngine';
 
 export interface RaycastHitInfo {
@@ -19,31 +19,36 @@ export class RoomScene {
   private animFrameId: number | null = null;
   private clock: THREE.Clock;
 
-  // Camera animation
+  // Camera & Walk state
   private currentCameraPos: THREE.Vector3;
   private targetCameraPos: THREE.Vector3;
   private currentCameraLook: THREE.Vector3;
   private targetCameraLook: THREE.Vector3;
-  private targetFov: number = 55;
-  private isTransitioning: boolean = false;
+  private targetFov: number = 60;
   private activeStation: StationId = 'overview';
+  private isInspecting: boolean = false;
 
-  // Walk mode
-  private isWalkMode: boolean = false;
+  // First-person walk controls
+  private isWalkMode: boolean = true;
   private moveForward = false;
   private moveBackward = false;
   private moveLeft = false;
   private moveRight = false;
-  private walkSpeed = 2.8;
-  private playerRotationY = 0;
-  private isPointerLocked = false;
+  private walkSpeed = 3.6;
+  private yaw = 0;
+  private pitch = 0;
+  private isMouseDown = false;
+  private prevMouseX = 0;
+  private prevMouseY = 0;
 
-  // Interactive Meshes map
+  // Interactive raycasting
   private interactiveObjects: THREE.Object3D[] = [];
   private objectStationMap = new Map<THREE.Object3D, StationId>();
-  private hoveredObject: THREE.Object3D | null = null;
+  private hoveredStationId: StationId | null = null;
+  private raycaster = new THREE.Raycaster();
+  private centerCrosshair = new THREE.Vector2(0, 0);
 
-  // Dynamic canvas textures
+  // Dynamic canvas textures for monitors
   private horizCanvas!: HTMLCanvasElement;
   private horizCtx!: CanvasRenderingContext2D;
   private horizTexture!: THREE.CanvasTexture;
@@ -54,9 +59,18 @@ export class RoomScene {
   private vertTexture!: THREE.CanvasTexture;
   private vertMaterial!: THREE.ShaderMaterial;
 
-  // Dust particles & server LEDs
+  // Dynamic canvas for Primary Server 1 Status LCD
+  private serverLcdCanvas!: HTMLCanvasElement;
+  private serverLcdCtx!: CanvasRenderingContext2D;
+  private serverLcdTexture!: THREE.CanvasTexture;
+
+  // Animated 3D objects
   private dustPoints!: THREE.Points;
-  private serverLedMat!: THREE.ShaderMaterial;
+  private fanRotors: THREE.Mesh[] = [];
+  private server1Leds: { mesh: THREE.Mesh; baseColor: number; blinkRate: number }[] = [];
+  private server2Leds: { mesh: THREE.Mesh; baseColor: number; blinkRate: number }[] = [];
+  private routerLeds: THREE.Mesh[] = [];
+  private deskLampLight!: THREE.PointLight;
 
   // Callbacks
   public onStationSelect?: (stationId: StationId) => void;
@@ -66,26 +80,25 @@ export class RoomScene {
     this.container = container;
     this.clock = new THREE.Clock();
 
-    // Setup Three.js scene
+    // Scene & Fog
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x06080d);
-    this.scene.fog = new THREE.FogExp2(0x06080d, 0.045);
+    this.scene.background = new THREE.Color(0x0e111a);
+    this.scene.fog = new THREE.FogExp2(0x0e111a, 0.018);
 
-    // Setup Camera
     const width = container.clientWidth || window.innerWidth;
     const height = container.clientHeight || window.innerHeight;
-    this.camera = new THREE.PerspectiveCamera(55, width / height, 0.1, 100);
+    this.camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 100);
 
-    const initConfig = STATIONS.overview;
-    this.camera.position.set(...initConfig.cameraPos);
+    // Initial position: entrance facing the desk
+    this.camera.position.set(0, 1.7, 3.2);
     this.currentCameraPos = this.camera.position.clone();
     this.targetCameraPos = this.camera.position.clone();
 
-    this.currentCameraLook = new THREE.Vector3(...initConfig.cameraTarget);
+    this.currentCameraLook = new THREE.Vector3(0, 1.35, -3.2);
     this.targetCameraLook = this.currentCameraLook.clone();
     this.camera.lookAt(this.currentCameraLook);
 
-    // Setup Renderer
+    // High quality WebGL Renderer
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       powerPreference: 'high-performance',
@@ -97,832 +110,1538 @@ export class RoomScene {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.15;
+    this.renderer.toneMappingExposure = 1.35;
+    // Standard default cursor (no grab/grabbing or custom crosshairs)
+    this.renderer.domElement.style.cursor = 'default';
     container.appendChild(this.renderer.domElement);
 
-    // Build the room components
+    // Build the detailed 3D room
     this.initCanvasScreens();
     this.setupLighting();
     this.buildRoomArchitecture();
-    this.buildDeskWorkstation();
-    this.buildServerRack();
-    this.buildCTFWall();
+    this.buildWorkbenchDesk();
+    this.buildDesktopRigPC();
+    this.buildMonitors();
+    this.buildKeyboardAndMouse();
+    this.buildHeadphones();
+    this.buildDeskProps();
+    this.buildDroopingCables();
+    this.buildWallShelf();
+    this.buildDualServers(); // 2 physical servers: Server 1 interactable, Server 2 companion
+    this.buildCTFBoard();
     this.buildTimelineWall();
-    this.buildExitDoor();
+    this.buildExitPortal();
     this.buildDustParticles();
 
-    // Event listeners
+    // Bind event listeners
     this.bindEvents();
 
-    // Start loop
+    // Start render loop
     this.animate = this.animate.bind(this);
     this.animate();
   }
 
   /* ----------------------------------------------------
-     Dynamic Canvas Screens for Monitors
+     Canvas Screens: Horizontal Desktop, Vertical Terminal, Server LCD
   ---------------------------------------------------- */
   private initCanvasScreens() {
-    // Horizontal monitor canvas (1024x512)
+    // 1. Horizontal Desktop Screen (1024x576)
     this.horizCanvas = document.createElement('canvas');
     this.horizCanvas.width = 1024;
-    this.horizCanvas.height = 512;
+    this.horizCanvas.height = 576;
     this.horizCtx = this.horizCanvas.getContext('2d')!;
     this.horizTexture = new THREE.CanvasTexture(this.horizCanvas);
-    this.horizTexture.minFilter = THREE.LinearFilter;
-    this.horizTexture.magFilter = THREE.LinearFilter;
 
     this.horizMaterial = new THREE.ShaderMaterial({
       uniforms: {
         tDiffuse: { value: this.horizTexture },
         uTime: { value: 0.0 },
-        uCurvature: { value: 0.05 },
-        uScanlineIntensity: { value: 0.18 },
-        uFlicker: { value: 0.015 },
-        uBrightness: { value: 1.12 },
-        uTint: { value: new THREE.Color(0.85, 0.95, 1.0) },
+        uCurvature: { value: 0.04 },
+        uScanlineIntensity: { value: 0.14 },
+        uFlicker: { value: 0.01 },
+        uBrightness: { value: 1.15 },
+        uTint: { value: new THREE.Color(0.95, 0.98, 1.0) },
       },
       vertexShader: CRTShader.vertexShader,
       fragmentShader: CRTShader.fragmentShader,
     });
 
-    // Vertical monitor canvas (512x1024)
+    // 2. Vertical Terminal Screen (512x1024)
     this.vertCanvas = document.createElement('canvas');
     this.vertCanvas.width = 512;
     this.vertCanvas.height = 1024;
     this.vertCtx = this.vertCanvas.getContext('2d')!;
     this.vertTexture = new THREE.CanvasTexture(this.vertCanvas);
-    this.vertTexture.minFilter = THREE.LinearFilter;
-    this.vertTexture.magFilter = THREE.LinearFilter;
 
     this.vertMaterial = new THREE.ShaderMaterial({
       uniforms: {
         tDiffuse: { value: this.vertTexture },
         uTime: { value: 0.0 },
         uCurvature: { value: 0.04 },
-        uScanlineIntensity: { value: 0.22 },
-        uFlicker: { value: 0.02 },
-        uBrightness: { value: 1.15 },
-        uTint: { value: new THREE.Color(0.88, 1.0, 0.92) },
+        uScanlineIntensity: { value: 0.18 },
+        uFlicker: { value: 0.015 },
+        uBrightness: { value: 1.2 },
+        uTint: { value: new THREE.Color(0.88, 1.0, 0.9) },
       },
       vertexShader: CRTShader.vertexShader,
       fragmentShader: CRTShader.fragmentShader,
     });
+
+    // 3. Primary Server 1 Status LCD Screen (256x64)
+    this.serverLcdCanvas = document.createElement('canvas');
+    this.serverLcdCanvas.width = 256;
+    this.serverLcdCanvas.height = 64;
+    this.serverLcdCtx = this.serverLcdCanvas.getContext('2d')!;
+    this.serverLcdTexture = new THREE.CanvasTexture(this.serverLcdCanvas);
   }
 
   private updateScreensContent(elapsed: number) {
-    // 1. Render Horizontal Monitor screen
+    // 1. HORIZONTAL DESKTOP GUI
     const hc = this.horizCtx;
-    hc.fillStyle = '#080d1a';
-    hc.fillRect(0, 0, 1024, 512);
+    hc.fillStyle = '#090f1d';
+    hc.fillRect(0, 0, 1024, 576);
 
-    // Top status bar
-    hc.fillStyle = '#0f172a';
-    hc.fillRect(0, 0, 1024, 48);
-    hc.strokeStyle = '#1e293b';
+    // Subtle background cyber grid
+    hc.strokeStyle = 'rgba(56, 189, 248, 0.07)';
     hc.lineWidth = 1;
-    hc.beginPath();
-    hc.moveTo(0, 48);
-    hc.lineTo(1024, 48);
-    hc.stroke();
+    for (let x = 0; x < 1024; x += 48) {
+      hc.beginPath();
+      hc.moveTo(x, 0);
+      hc.lineTo(x, 576);
+      hc.stroke();
+    }
+    for (let y = 0; y < 576; y += 48) {
+      hc.beginPath();
+      hc.moveTo(0, y);
+      hc.lineTo(1024, y);
+      hc.stroke();
+    }
 
-    hc.font = 'bold 20px "JetBrains Mono", monospace';
-    hc.fillStyle = '#38bdf8';
-    hc.fillText('HANAN//OS v3.8.4', 24, 32);
+    // Workstation watermark
+    hc.font = 'bold 36px "Syne", sans-serif';
+    hc.fillStyle = 'rgba(244, 63, 94, 0.22)';
+    hc.textAlign = 'center';
+    hc.fillText('HANAN // WORKSTATION', 512, 260);
+    hc.font = 'bold 15px "JetBrains Mono", monospace';
+    hc.fillStyle = 'rgba(56, 189, 248, 0.35)';
+    hc.fillText('CYBERSPACE RIG · OS v3.8.4', 512, 292);
+    hc.textAlign = 'left';
 
-    hc.font = '15px "JetBrains Mono", monospace';
-    hc.fillStyle = '#94a3b8';
-    hc.fillText('KERNEL: LINUX 6.9.1-SECURITY-EBPF', 260, 32);
-
-    // Pulsing online dot
-    const pulse = Math.sin(elapsed * 4) * 0.5 + 0.5;
-    hc.fillStyle = `rgba(52, 211, 153, ${0.4 + pulse * 0.6})`;
-    hc.beginPath();
-    hc.arc(920, 24, 6, 0, Math.PI * 2);
-    hc.fill();
-    hc.fillStyle = '#34d399';
-    hc.fillText('ONLINE', 936, 30);
-
-    // Projects Grid Preview
-    hc.font = 'bold 22px "Syne", sans-serif';
-    hc.fillStyle = '#f8fafc';
-    hc.fillText('FEATURED WORKSTATIONS & RESEARCH', 24, 90);
-
-    const cards = [
-      { title: 'Android Kernel IPC Monitor', tag: 'NDK / eBPF / Mobile', stat: '450k/min IPC' },
-      { title: 'Sentinel Autonomous CTF', tag: 'Docker / Go / Jailbreak', stat: '1,200 Solvers' },
-      { title: 'HANAN//OS WebGL Spatial', tag: 'Three.js / GLSL / Audio', stat: '60 FPS Clean' },
+    // Left App Icons
+    const icons = [
+      { name: 'Projects.exe', tag: 'Core Systems', color: '#38bdf8' },
+      { name: 'About_Me.txt', tag: 'Bio & Engineering', color: '#fb7185' },
+      { name: 'Resume_CV.pdf', tag: 'Curriculum Vitae', color: '#34d399' },
+      { name: 'CTF_Vault.sh', tag: 'Exploit Writeups', color: '#fbbf24' },
+      { name: 'Comms.app', tag: 'Encrypted Mail', color: '#c084fc' },
     ];
 
-    cards.forEach((card, idx) => {
-      const x = 24 + idx * 328;
-      const y = 114;
-      hc.fillStyle = '#0b1329';
-      hc.strokeStyle = '#1e3a8a';
+    icons.forEach((ic, i) => {
+      const iy = 50 + i * 86;
+      hc.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      hc.strokeStyle = 'rgba(71, 85, 105, 0.5)';
       hc.lineWidth = 1.5;
-      hc.roundRect(x, y, 312, 170, 8);
+      hc.beginPath();
+      hc.roundRect(40, iy, 190, 68, 6);
       hc.fill();
       hc.stroke();
 
-      hc.font = 'bold 17px "Plus Jakarta Sans", sans-serif';
-      hc.fillStyle = '#f1f5f9';
-      hc.fillText(card.title, x + 16, y + 36);
-
-      hc.font = '13px "JetBrains Mono", monospace';
-      hc.fillStyle = '#38bdf8';
-      hc.fillText(card.tag, x + 16, y + 68);
-
-      hc.fillStyle = '#0f172a';
-      hc.roundRect(x + 16, y + 90, 280, 48, 4);
+      hc.fillStyle = ic.color;
+      hc.beginPath();
+      hc.arc(62, iy + 24, 7, 0, Math.PI * 2);
       hc.fill();
 
-      hc.font = '13px "JetBrains Mono", monospace';
-      hc.fillStyle = '#34d399';
-      hc.fillText(`METRIC: ${card.stat}`, x + 28, y + 120);
+      hc.font = 'bold 14px "JetBrains Mono", monospace';
+      hc.fillStyle = '#f8fafc';
+      hc.fillText(ic.name, 80, iy + 29);
+
+      hc.font = '11px "Plus Jakarta Sans", sans-serif';
+      hc.fillStyle = '#94a3b8';
+      hc.fillText(ic.tag, 60, iy + 52);
     });
 
-    // Bottom live terminal feed on screen
-    hc.fillStyle = '#050914';
-    hc.roundRect(24, 308, 976, 178, 6);
+    // Active Window: Projects & Systems Explorer
+    hc.fillStyle = '#0f172a';
+    hc.strokeStyle = '#2563eb';
+    hc.lineWidth = 2;
+    hc.beginPath();
+    hc.roundRect(260, 50, 720, 460, 8);
     hc.fill();
-    hc.strokeStyle = '#1e293b';
     hc.stroke();
 
-    hc.font = '14px "JetBrains Mono", monospace';
-    hc.fillStyle = '#64748b';
-    hc.fillText('[SYS-DAEMON] Stream audit hooks initialized. Dynamic sandbox active.', 40, 338);
+    // Window Titlebar
+    hc.fillStyle = '#1e293b';
+    hc.beginPath();
+    hc.roundRect(260, 50, 720, 36, [8, 8, 0, 0]);
+    hc.fill();
+    hc.font = 'bold 13px "JetBrains Mono", monospace';
+    hc.fillStyle = '#93c5fd';
+    hc.fillText('HANAN//OS — Projects & Systems Explorer (v3.8)', 280, 73);
 
-    const lineOff = (Math.floor(elapsed * 2) % 4);
-    const mockLogs = [
-      `[eBPF-HOOK] probe_binder_transaction [OK] pid=${1042 + lineOff} latency=18µs`,
-      `[SECURITY] TLS handshake verified: AES-256-GCM cipher suite active`,
-      `[CTF-ENGINE] ephemeral jail spinning up: contestant_id=HTB-9982`,
-      `[PQC-KEM] Kyber768 encapsulation benchmark: zero side-channel leakage`,
+    // Window controls
+    ['#ef4444', '#eab308', '#22c55e'].forEach((col, idx) => {
+      hc.fillStyle = col;
+      hc.beginPath();
+      hc.arc(935 + idx * 16, 68, 5, 0, Math.PI * 2);
+      hc.fill();
+    });
+
+    // Project Cards
+    const cards = [
+      {
+        title: 'Android Kernel IPC Monitor',
+        tag: 'eBPF · Binder Security · Rust',
+        desc: 'Kernel hook monitor tracing Android Binder IPC calls with zero-drop ringbuffers.',
+        color: '#38bdf8',
+      },
+      {
+        title: 'Sentinel Autonomous CTF Engine',
+        tag: 'Pwn · Symbolics · Python/C',
+        desc: 'Autonomous exploit generator analyzing binary vulnerabilities and stack clobbering.',
+        color: '#fb7185',
+      },
+      {
+        title: 'Post-Quantum PQC Key Exchange',
+        tag: 'Kyber-768 · Dilithium · Go',
+        desc: 'Production hybrid post-quantum TLS cipher proxy with constant-time verification.',
+        color: '#34d399',
+      },
     ];
-    mockLogs.forEach((l, i) => {
-      hc.fillStyle = i === 3 ? '#38bdf8' : '#94a3b8';
-      hc.fillText(`> ${l}`, 40, 370 + i * 26);
+
+    cards.forEach((c, idx) => {
+      const cy = 105 + idx * 105;
+      hc.fillStyle = '#131d33';
+      hc.strokeStyle = c.color;
+      hc.lineWidth = 1.5;
+      hc.beginPath();
+      hc.roundRect(280, cy, 680, 92, 6);
+      hc.fill();
+      hc.stroke();
+
+      hc.font = 'bold 16px "Syne", sans-serif';
+      hc.fillStyle = '#ffffff';
+      hc.fillText(c.title, 300, cy + 28);
+
+      hc.font = 'bold 12px "JetBrains Mono", monospace';
+      hc.fillStyle = c.color;
+      hc.fillText(c.tag, 300, cy + 50);
+
+      hc.font = '12px "Plus Jakarta Sans", sans-serif';
+      hc.fillStyle = '#94a3b8';
+      hc.fillText(c.desc, 300, cy + 74);
+    });
+
+    // Action banner inside desktop window
+    hc.fillStyle = '#0a101d';
+    hc.beginPath();
+    hc.roundRect(280, 428, 680, 68, 6);
+    hc.fill();
+    hc.font = 'bold 13px "JetBrains Mono", monospace';
+    hc.fillStyle = '#38bdf8';
+    hc.fillText('CLICK MONITOR OR PRESS [E] TO INSPECT FULL PROJECTS & CV', 300, 456);
+    hc.font = '11px "JetBrains Mono", monospace';
+    hc.fillStyle = '#94a3b8';
+    hc.fillText('> Access live APK interactive sandbox & verified security certifications', 300, 478);
+
+    // Desktop Taskbar
+    hc.fillStyle = '#060a12';
+    hc.fillRect(0, 536, 1024, 40);
+    hc.strokeStyle = '#1e293b';
+    hc.beginPath();
+    hc.moveTo(0, 536);
+    hc.lineTo(1024, 536);
+    hc.stroke();
+
+    hc.fillStyle = '#2563eb';
+    hc.beginPath();
+    hc.roundRect(12, 542, 90, 28, 4);
+    hc.fill();
+    hc.font = 'bold 12px "JetBrains Mono", monospace';
+    hc.fillStyle = '#ffffff';
+    hc.fillText('START', 36, 561);
+
+    hc.font = '12px "JetBrains Mono", monospace';
+    hc.fillStyle = '#94a3b8';
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} PST`;
+    hc.fillText(`ONLINE · ${timeStr}`, 840, 561);
+
+    this.horizTexture.needsUpdate = true;
+
+    // 2. VERTICAL TERMINAL SCREEN (Live Streaming CLI)
+    const vc = this.vertCtx;
+    vc.fillStyle = '#060f0a';
+    vc.fillRect(0, 0, 512, 1024);
+
+    // Titlebar
+    vc.fillStyle = '#0e2417';
+    vc.fillRect(0, 0, 512, 50);
+    vc.font = 'bold 16px "JetBrains Mono", monospace';
+    vc.fillStyle = '#34d399';
+    vc.fillText('hanan@workstation-os:~ (pty/1)', 24, 32);
+
+    const lines = [
+      'Linux workstation-os 6.9.1-security-ebpf #1 SMP x86_64',
+      'Debian GNU/Linux 12 (bookworm) — Offensive Security Lab',
+      'System Uptime: 48 days, 14 hours, 22 minutes',
+      '',
+      '$ whoami',
+      'hanan :: cybersecurity researcher & systems software engineer',
+      '',
+      '$ nmap -sS -p 22,80,443,8443,9090 127.0.0.1',
+      'PORT     STATE SERVICE',
+      '22/tcp   open  ssh (OpenSSH 9.2)',
+      '80/tcp   open  http (Caddy / HTTP3)',
+      '443/tcp  open  https (TLS 1.3)',
+      '8443/tcp open  hanan-core-daemon',
+      '9090/tcp open  sentinel-jail (CTF)',
+      '',
+      '$ cat /proc/ctf_ranking',
+      'DEFCON Quals: Top 2% Worldwide',
+      'HTB University: 8th Place Global',
+      'Active Exploits: Heap Tcache / Curve25519 Fault',
+      '',
+      '$ ./monitor_ingress.sh',
+      `[eBPF-XDP] ${((elapsed * 50) % 999).toFixed(0)} packets/s | Drops: 0`,
+      `[SELinux] Enforcing mode: verified zero escapes`,
+      `[Kyber-PQC] 768-bit key exchange: 12.4µs latency`,
+      '',
+      'hanan@workstation-os:~$ _',
+    ];
+
+    let lineY = 80;
+    lines.forEach((l) => {
+      if (l.startsWith('$')) {
+        vc.fillStyle = '#6ee7b7';
+        vc.font = 'bold 13px "JetBrains Mono", monospace';
+      } else if (l.includes('open') || l.includes('Top') || l.includes('verified')) {
+        vc.fillStyle = '#34d399';
+        vc.font = '12px "JetBrains Mono", monospace';
+      } else {
+        vc.fillStyle = '#94a3b8';
+        vc.font = '12px "JetBrains Mono", monospace';
+      }
+      vc.fillText(l, 24, lineY);
+      lineY += 24;
     });
 
     // Blinking cursor
     if (Math.floor(elapsed * 2) % 2 === 0) {
-      hc.fillStyle = '#38bdf8';
-      hc.fillRect(40 + hc.measureText(`> ${mockLogs[3]}`).width + 8, 442, 9, 16);
+      vc.fillStyle = '#34d399';
+      vc.fillRect(24 + vc.measureText('hanan@workstation-os:~$ ').width, lineY - 24, 8, 15);
     }
 
-    this.horizTexture.needsUpdate = true;
-
-    // 2. Render Vertical Monitor screen (CTF & Security Terminal)
-    const vc = this.vertCtx;
-    vc.fillStyle = '#050c09';
-    vc.fillRect(0, 0, 512, 1024);
-
-    // Top banner
-    vc.fillStyle = '#092117';
-    vc.fillRect(0, 0, 512, 54);
-    vc.font = 'bold 20px "JetBrains Mono", monospace';
-    vc.fillStyle = '#34d399';
-    vc.fillText('SECURITY MONITOR', 24, 36);
-
-    // Threat level indicator
-    vc.font = '13px "JetBrains Mono", monospace';
-    vc.fillStyle = '#10b981';
-    vc.fillText('THREAT DEFENSE: LEVEL 1', 24, 86);
-
-    // Simulated Radar / Packet Flow
-    vc.fillStyle = '#061a12';
-    vc.beginPath();
-    vc.arc(256, 190, 80, 0, Math.PI * 2);
-    vc.fill();
-    vc.strokeStyle = '#059669';
+    // Bottom prompt helper
+    vc.fillStyle = '#05190e';
+    vc.fillRect(0, 930, 512, 94);
+    vc.strokeStyle = '#10b981';
     vc.lineWidth = 1;
-    vc.stroke();
-
-    // Radar sweep
-    const sweepAngle = elapsed * 2.5;
-    vc.beginPath();
-    vc.moveTo(256, 190);
-    vc.arc(256, 190, 80, sweepAngle, sweepAngle + 0.35);
-    vc.fillStyle = 'rgba(52, 211, 153, 0.25)';
-    vc.fill();
-
-    // CTF category stats
-    vc.font = 'bold 16px "JetBrains Mono", monospace';
-    vc.fillStyle = '#a7f3d0';
-    vc.fillText('CTF DOMAIN COMPETENCY', 24, 310);
-
-    const ctfSkills = [
-      { name: 'Binary Exploitation (Pwn)', score: 96 },
-      { name: 'Reverse Engineering', score: 92 },
-      { name: 'Cryptography & PQC', score: 90 },
-      { name: 'Web Exploitation', score: 94 },
-      { name: 'Kernel & eBPF', score: 88 },
-    ];
-
-    ctfSkills.forEach((item, i) => {
-      const barY = 340 + i * 50;
-      vc.font = '13px "JetBrains Mono", monospace';
-      vc.fillStyle = '#e2e8f0';
-      vc.fillText(item.name, 24, barY);
-      vc.fillStyle = '#34d399';
-      vc.fillText(`${item.score}%`, 430, barY);
-
-      // Track
-      vc.fillStyle = '#06281a';
-      vc.fillRect(24, barY + 8, 464, 8);
-      // Fill
-      vc.fillStyle = '#10b981';
-      vc.fillRect(24, barY + 8, (464 * item.score) / 100, 8);
-    });
-
-    // Real-time network sniff feed
-    vc.font = 'bold 16px "JetBrains Mono", monospace';
-    vc.fillStyle = '#a7f3d0';
-    vc.fillText('LIVE PACKET INGRESS', 24, 620);
-
-    const packets = [
-      `192.168.1.104:443 -> SYN [TLS 1.3] 1420b`,
-      `10.0.8.22:9090 -> CTF_FLAG_SUBMIT [VERIFIED]`,
-      `172.18.0.4:80 -> GET /auth/token [HTTP 200]`,
-      `192.168.1.5:22 -> SSH-2.0-OpenSSH_9.2p1`,
-      `10.244.1.88 -> eBPF Ringbuf Dump [CRC OK]`,
-      `127.0.0.1:5432 -> SELECT pg_sleep(0) [CACHED]`,
-    ];
-
-    packets.forEach((p, i) => {
-      const py = 660 + i * 36;
-      vc.fillStyle = '#041d14';
-      vc.fillRect(24, py - 20, 464, 28);
-      vc.font = '12px "JetBrains Mono", monospace';
-      vc.fillStyle = i === 1 ? '#34d399' : '#6ee7b7';
-      vc.fillText(`[${(elapsed * 100 + i * 14).toFixed(0).slice(-4)}ms] ${p}`, 32, py);
-    });
-
-    // Certifications preview
-    vc.font = 'bold 15px "JetBrains Mono", monospace';
+    vc.strokeRect(12, 942, 488, 70);
+    vc.font = 'bold 13px "JetBrains Mono", monospace';
     vc.fillStyle = '#34d399';
-    vc.fillText('ACCREDITATION: OSCP · PNPT · SEC+ · BSCP', 24, 980);
+    vc.fillText('PRESS [E] OR CLICK TO RUN COMMANDS', 28, 970);
+    vc.font = '11px "JetBrains Mono", monospace';
+    vc.fillStyle = '#a7f3d0';
+    vc.fillText('Run help, whoami, cv, projects, ctf, certs...', 28, 995);
 
     this.vertTexture.needsUpdate = true;
+
+    // 3. SERVER 1 STATUS LCD SCREEN
+    const sc = this.serverLcdCtx;
+    sc.fillStyle = '#05121f';
+    sc.fillRect(0, 0, 256, 64);
+    sc.font = 'bold 11px "JetBrains Mono", monospace';
+    sc.fillStyle = '#38bdf8';
+    sc.fillText('NODE-01 // CORE MAINFRAME', 10, 18);
+    sc.font = '9px "JetBrains Mono", monospace';
+    sc.fillStyle = '#34d399';
+    sc.fillText(`IP: 10.13.37.1  CPU: ${(36 + Math.sin(elapsed) * 3).toFixed(1)}°C`, 10, 36);
+    sc.fillStyle = '#94a3b8';
+    sc.fillText(`LOAD: 0.14  SANDBOXES: 4 ACTIVE`, 10, 52);
+    this.serverLcdTexture.needsUpdate = true;
   }
 
   /* ----------------------------------------------------
      Lighting
   ---------------------------------------------------- */
   private setupLighting() {
-    // Subtle cool room ambient fill
-    const ambientLight = new THREE.AmbientLight(0x0c1424, 0.9);
+    // Ambient fill light for room visibility
+    const ambientLight = new THREE.AmbientLight(0xffebd6, 1.4);
     this.scene.add(ambientLight);
 
-    // Hemisphere light for ground vs ceiling reflection
-    const hemiLight = new THREE.HemisphereLight(0x1e293b, 0x090d16, 0.6);
+    // Hemisphere light: warm sky, dark purple floor bounce
+    const hemiLight = new THREE.HemisphereLight(0xfff5eb, 0x1a1520, 1.1);
     this.scene.add(hemiLight);
 
-    // Desk overhead spotlight (warm cone lighting)
-    const deskSpot = new THREE.SpotLight(0xfef08a, 2.8);
-    deskSpot.position.set(0, 3.2, 0.4);
-    deskSpot.target.position.set(0, 0.8, 0);
-    deskSpot.angle = Math.PI / 4.2;
-    deskSpot.penumbra = 0.6;
-    deskSpot.decay = 1.8;
-    deskSpot.distance = 7;
-    deskSpot.castShadow = true;
-    deskSpot.shadow.mapSize.width = 1024;
-    deskSpot.shadow.mapSize.height = 1024;
-    deskSpot.shadow.bias = -0.001;
-    this.scene.add(deskSpot);
-    this.scene.add(deskSpot.target);
+    // Warm desk pendant lights above desk
+    const pendant1 = new THREE.PointLight(0xff9933, 4.2, 6.5);
+    pendant1.position.set(-0.6, 2.3, -2.8);
+    pendant1.castShadow = true;
+    pendant1.shadow.bias = -0.002;
+    this.scene.add(pendant1);
 
-    // Horizontal screen cyan fill light
-    const horizGlow = new THREE.PointLight(0x38bdf8, 2.2, 3.2);
-    horizGlow.position.set(-0.15, 1.45, 0.35);
-    this.scene.add(horizGlow);
+    const pendant2 = new THREE.PointLight(0xff9933, 4.2, 6.5);
+    pendant2.position.set(0.6, 2.3, -2.8);
+    pendant2.castShadow = true;
+    this.scene.add(pendant2);
 
-    // Vertical screen emerald fill light
-    const vertGlow = new THREE.PointLight(0x34d399, 1.8, 2.8);
-    vertGlow.position.set(1.15, 1.5, 0.35);
-    this.scene.add(vertGlow);
+    // Room center ceiling light
+    const ceilingLight = new THREE.PointLight(0xffe2c4, 2.0, 9.0);
+    ceilingLight.position.set(0, 3.1, 0.5);
+    this.scene.add(ceilingLight);
 
-    // Server rack blue/purple fill
-    const serverLight = new THREE.PointLight(0x6366f1, 2.0, 4.0);
-    serverLight.position.set(-3.6, 1.8, -3.6);
-    this.scene.add(serverLight);
+    // Architect desk lamp spotlight (focused on desk pad)
+    this.deskLampLight = new THREE.PointLight(0xffeedd, 3.5, 3.2);
+    this.deskLampLight.position.set(-0.9, 1.25, -2.8);
+    this.deskLampLight.castShadow = true;
+    this.scene.add(this.deskLampLight);
 
-    // CTF Wall directional accent light
-    const ctfLight = new THREE.SpotLight(0x38bdf8, 1.6);
-    ctfLight.position.set(-2.5, 2.8, 0.5);
-    ctfLight.target.position.set(-4.95, 1.8, 0.5);
-    ctfLight.angle = Math.PI / 3.5;
-    ctfLight.penumbra = 0.5;
-    this.scene.add(ctfLight);
-    this.scene.add(ctfLight.target);
+    // Cold monitor glows
+    const blueMonitorGlow = new THREE.PointLight(0x38bdf8, 2.2, 3.2);
+    blueMonitorGlow.position.set(0.38, 1.45, -2.8);
+    this.scene.add(blueMonitorGlow);
 
-    // Timeline Wall directional accent light
-    const timelineLight = new THREE.SpotLight(0xa855f7, 1.6);
-    timelineLight.position.set(2.5, 2.8, 0.5);
-    timelineLight.target.position.set(4.95, 1.8, 0.5);
-    timelineLight.angle = Math.PI / 3.5;
-    timelineLight.penumbra = 0.5;
-    this.scene.add(timelineLight);
-    this.scene.add(timelineLight.target);
+    const greenMonitorGlow = new THREE.PointLight(0x34d399, 2.2, 3.2);
+    greenMonitorGlow.position.set(-0.55, 1.45, -2.8);
+    this.scene.add(greenMonitorGlow);
 
-    // Entrance door soft cyan beacon
-    const doorLight = new THREE.PointLight(0x0ea5e9, 1.2, 3.5);
-    doorLight.position.set(0, 2.2, 4.9);
-    this.scene.add(doorLight);
+    // Server corner LED glow (blue/violet ambient bleed)
+    const serverGlow = new THREE.PointLight(0x0284c7, 2.8, 4.5);
+    serverGlow.position.set(-3.6, 1.4, -2.6);
+    this.scene.add(serverGlow);
   }
 
   /* ----------------------------------------------------
-     Room Architecture (Walls, Floor, Ceiling, Trusses)
+     Room Architecture: Floor, Walls, Baseboard, Acoustic Tiles
   ---------------------------------------------------- */
   private buildRoomArchitecture() {
-    const roomWidth = 10;
-    const roomDepth = 11;
-    const roomHeight = 3.6;
+    const roomW = 9.0;
+    const roomD = 8.5;
+    const roomH = 3.6;
 
-    // Floor: Dark polished concrete with subtle grid lines
-    const floorGeo = new THREE.PlaneGeometry(roomWidth, roomDepth);
+    // Detailed floor: rich dark wood parquet with subtle specular
     const floorMat = new THREE.MeshStandardMaterial({
-      color: 0x0a0e17,
-      roughness: 0.35,
-      metalness: 0.45,
+      color: 0x241812,
+      roughness: 0.4,
+      metalness: 0.15,
     });
-    const floor = new THREE.Mesh(floorGeo, floorMat);
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(roomW, roomD), floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     this.scene.add(floor);
 
-    // Floor tile grid trim lines
-    const gridHelper = new THREE.GridHelper(10, 20, 0x1e293b, 0x0f172a);
-    gridHelper.position.y = 0.002;
-    this.scene.add(gridHelper);
+    // Procedural floor plank seam grid
+    const floorGrid = new THREE.GridHelper(9, 18, 0x422d20, 0x2a1c14);
+    floorGrid.position.y = 0.002;
+    this.scene.add(floorGrid);
 
-    // Ceiling: Dark industrial ceiling
-    const ceilingGeo = new THREE.PlaneGeometry(roomWidth, roomDepth);
-    const ceilingMat = new THREE.MeshStandardMaterial({
-      color: 0x080a0f,
-      roughness: 0.9,
-      metalness: 0.1,
-    });
-    const ceiling = new THREE.Mesh(ceilingGeo, ceilingMat);
-    ceiling.position.y = roomHeight;
-    ceiling.rotation.x = Math.PI / 2;
-    this.scene.add(ceiling);
+    // Perimeter Baseboards (Skirting Boards) along walls
+    const baseboardMat = new THREE.MeshStandardMaterial({ color: 0x16100c, roughness: 0.5 });
+    // Back baseboard
+    const bbBack = new THREE.Mesh(new THREE.BoxGeometry(roomW, 0.12, 0.03), baseboardMat);
+    bbBack.position.set(0, 0.06, -3.73);
+    this.scene.add(bbBack);
+    // Left baseboard
+    const bbLeft = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, roomD), baseboardMat);
+    bbLeft.position.set(-4.18, 0.06, 0);
+    this.scene.add(bbLeft);
+    // Right baseboard
+    const bbRight = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, roomD), baseboardMat);
+    bbRight.position.set(4.18, 0.06, 0);
+    this.scene.add(bbRight);
 
-    // Wall Material
+    // Thick Woven Area Rug under workstation & chair
+    const rugMat = new THREE.MeshStandardMaterial({ color: 0x1e1927, roughness: 0.95 });
+    const rug = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 2.6), rugMat);
+    rug.rotation.x = -Math.PI / 2;
+    rug.position.set(0, 0.005, -2.4);
+    rug.receiveShadow = true;
+    this.scene.add(rug);
+
+    // Rug border trim
+    const rugTrimMat = new THREE.MeshStandardMaterial({ color: 0x382e4a, roughness: 0.9 });
+    const rugTrim = new THREE.Mesh(new THREE.BoxGeometry(3.64, 0.01, 2.64), rugTrimMat);
+    rugTrim.position.set(0, 0.004, -2.4);
+    this.scene.add(rugTrim);
+
+    // Floor Cable Raceway Trench between Desk & Dual Servers
+    const racewayMat = new THREE.MeshStandardMaterial({ color: 0x1e2430, metalness: 0.8, roughness: 0.3 });
+    const raceway = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.012, 0.14), racewayMat);
+    raceway.position.set(-2.4, 0.006, -3.1);
+    this.scene.add(raceway);
+
+    // Back Wall: Charcoal architectural surface
     const wallMat = new THREE.MeshStandardMaterial({
-      color: 0x0f1422,
-      roughness: 0.75,
-      metalness: 0.25,
+      color: 0x161720,
+      roughness: 0.7,
+      metalness: 0.15,
     });
-
-    // Back Wall (Z = -roomDepth / 2)
-    const backWallGeo = new THREE.PlaneGeometry(roomWidth, roomHeight);
-    const backWall = new THREE.Mesh(backWallGeo, wallMat);
-    backWall.position.set(0, roomHeight / 2, -roomDepth / 2);
+    const backWall = new THREE.Mesh(new THREE.PlaneGeometry(roomW, roomH), wallMat);
+    backWall.position.set(0, roomH / 2, -3.75);
     backWall.receiveShadow = true;
     this.scene.add(backWall);
 
-    // Acoustic panels on back wall
-    for (let i = -3; i <= 3; i += 1.5) {
-      const panelGeo = new THREE.BoxGeometry(1.1, 2.2, 0.04);
-      const panelMat = new THREE.MeshStandardMaterial({
-        color: 0x090d16,
-        roughness: 0.85,
-        metalness: 0.1,
-      });
-      const panel = new THREE.Mesh(panelGeo, panelMat);
-      panel.position.set(i, 2.1, -roomDepth / 2 + 0.02);
-      this.scene.add(panel);
+    // 3D Acoustic Sound-Dampening Foam Tiles on Back Wall (Pyramidal/Hexagonal feel)
+    const foamMat = new THREE.MeshStandardMaterial({
+      color: 0x222432,
+      roughness: 0.85,
+      metalness: 0.05,
+    });
+    const tileGeo = new THREE.BoxGeometry(0.24, 0.24, 0.035);
+    for (let row = 0; row < 5; row++) {
+      for (let col = -7; col <= 7; col++) {
+        const tile = new THREE.Mesh(tileGeo, foamMat);
+        tile.position.set(col * 0.28, 1.3 + row * 0.28, -3.73);
+        tile.castShadow = true;
+        this.scene.add(tile);
+      }
     }
 
-    // Left Wall (X = -roomWidth / 2)
-    const leftWallGeo = new THREE.PlaneGeometry(roomDepth, roomHeight);
-    const leftWall = new THREE.Mesh(leftWallGeo, wallMat);
-    leftWall.position.set(-roomWidth / 2, roomHeight / 2, 0);
+    // Side Walls
+    const sideWallGeo = new THREE.PlaneGeometry(roomD, roomH);
+    const leftWall = new THREE.Mesh(sideWallGeo, wallMat);
+    leftWall.position.set(-4.2, roomH / 2, 0);
     leftWall.rotation.y = Math.PI / 2;
-    leftWall.receiveShadow = true;
     this.scene.add(leftWall);
 
-    // Right Wall (X = roomWidth / 2)
-    const rightWallGeo = new THREE.PlaneGeometry(roomDepth, roomHeight);
-    const rightWall = new THREE.Mesh(rightWallGeo, wallMat);
-    rightWall.position.set(roomWidth / 2, roomHeight / 2, 0);
+    const rightWall = new THREE.Mesh(sideWallGeo, wallMat);
+    rightWall.position.set(4.2, roomH / 2, 0);
     rightWall.rotation.y = -Math.PI / 2;
-    rightWall.receiveShadow = true;
     this.scene.add(rightWall);
 
-    // Front Wall with door opening (Z = roomDepth / 2)
-    const frontWallLeft = new THREE.Mesh(
-      new THREE.BoxGeometry(4.2, roomHeight, 0.1),
-      wallMat
-    );
-    frontWallLeft.position.set(-2.9, roomHeight / 2, roomDepth / 2);
-    this.scene.add(frontWallLeft);
+    // Ceiling
+    const ceilingMat = new THREE.MeshStandardMaterial({ color: 0x101118, roughness: 0.9 });
+    const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(roomW, roomD), ceilingMat);
+    ceiling.position.y = roomH;
+    ceiling.rotation.x = Math.PI / 2;
+    this.scene.add(ceiling);
 
-    const frontWallRight = new THREE.Mesh(
-      new THREE.BoxGeometry(4.2, roomHeight, 0.1),
-      wallMat
-    );
-    frontWallRight.position.set(2.9, roomHeight / 2, roomDepth / 2);
-    this.scene.add(frontWallRight);
+    // Overhead Structural Metal Cable Trays (Suspended from ceiling)
+    const trayMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.85, roughness: 0.3 });
+    for (let z = -2.8; z <= 2.8; z += 2.0) {
+      const tray = new THREE.Mesh(new THREE.BoxGeometry(roomW * 0.9, 0.05, 0.25), trayMat);
+      tray.position.set(0, 3.3, z);
+      this.scene.add(tray);
 
-    const frontWallTop = new THREE.Mesh(
-      new THREE.BoxGeometry(1.6, roomHeight - 2.5, 0.1),
-      wallMat
-    );
-    frontWallTop.position.set(0, 2.5 + (roomHeight - 2.5) / 2, roomDepth / 2);
-    this.scene.add(frontWallTop);
+      // Bundled colored cables lying in the tray
+      const bundleColors = [0x0284c7, 0x10b981, 0xf59e0b];
+      bundleColors.forEach((bCol, bIdx) => {
+        const cable = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.015, 0.015, roomW * 0.9, 8),
+          new THREE.MeshStandardMaterial({ color: bCol, roughness: 0.5 })
+        );
+        cable.rotation.z = Math.PI / 2;
+        cable.position.set(0, 3.34, z - 0.06 + bIdx * 0.06);
+        this.scene.add(cable);
+      });
+    }
 
-    // Baseboards / Trims along walls
-    const baseboardMat = new THREE.MeshStandardMaterial({
-      color: 0x020617,
-      metalness: 0.8,
-      roughness: 0.3,
-    });
-    const bbBack = new THREE.Mesh(new THREE.BoxGeometry(roomWidth, 0.12, 0.05), baseboardMat);
-    bbBack.position.set(0, 0.06, -roomDepth / 2 + 0.025);
-    this.scene.add(bbBack);
+    // Industrial Wall Conduit Pipes & Emergency Shutoff Switch
+    const conduitMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8, roughness: 0.3 });
+    const conduit = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, roomH, 8), conduitMat);
+    conduit.position.set(-4.16, roomH / 2, -2.5);
+    this.scene.add(conduit);
+
+    // Emergency power switch box (Yellow handle, steel enclosure)
+    const switchBox = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.24, 0.1), conduitMat);
+    switchBox.position.set(-4.16, 1.8, -2.5);
+    this.scene.add(switchBox);
+
+    const switchHandle = new THREE.Mesh(
+      new THREE.BoxGeometry(0.02, 0.1, 0.03),
+      new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.3 })
+    );
+    switchHandle.position.set(-4.1, 1.8, -2.5);
+    this.scene.add(switchHandle);
   }
 
   /* ----------------------------------------------------
-     Desk Workstation (Desk, Dual Curved/Vertical Monitors,
-     Keyboard, Phone, Props, Chair)
+     Workbench Desk & Ergonomic Chair (Against Back Wall)
   ---------------------------------------------------- */
-  private buildDeskWorkstation() {
+  private buildWorkbenchDesk() {
     const deskGroup = new THREE.Group();
-    deskGroup.position.set(0, 0, 0);
+    deskGroup.position.set(0, 0, -3.2);
 
-    // Desk top: Walnut / matte carbon composite
-    const topGeo = new THREE.BoxGeometry(2.6, 0.06, 1.1);
+    // Desk top: Solid walnut butcher block with chamfered edge bevels (2.8m x 1.0m x 0.08m)
     const topMat = new THREE.MeshStandardMaterial({
-      color: 0x111622,
-      roughness: 0.45,
-      metalness: 0.3,
+      color: 0x3d281a,
+      roughness: 0.35,
+      metalness: 0.15,
     });
-    const deskTop = new THREE.Mesh(topGeo, topMat);
+    const deskTop = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.08, 1.0), topMat);
     deskTop.position.set(0, 0.76, 0);
-    deskTop.receiveShadow = true;
     deskTop.castShadow = true;
+    deskTop.receiveShadow = true;
     deskGroup.add(deskTop);
 
-    // Desk legs (Matte black dual T-frame)
-    const legMat = new THREE.MeshStandardMaterial({
-      color: 0x030712,
-      roughness: 0.3,
-      metalness: 0.85,
+    // Steel K-frame legs
+    const legMat = new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.85, roughness: 0.35 });
+    const legGeo = new THREE.BoxGeometry(0.09, 0.76, 0.09);
+    const legPositions = [
+      [-1.3, 0.38, -0.4],
+      [1.3, 0.38, -0.4],
+      [-1.3, 0.38, 0.4],
+      [1.3, 0.38, 0.4],
+    ];
+    legPositions.forEach(([x, y, z]) => {
+      const leg = new THREE.Mesh(legGeo, legMat);
+      leg.position.set(x, y, z);
+      leg.castShadow = true;
+      deskGroup.add(leg);
     });
-    const legGeo = new THREE.BoxGeometry(0.08, 0.76, 0.7);
 
-    const leftLeg = new THREE.Mesh(legGeo, legMat);
-    leftLeg.position.set(-1.15, 0.38, 0);
-    leftLeg.castShadow = true;
-    deskGroup.add(leftLeg);
-
-    const rightLeg = new THREE.Mesh(legGeo, legMat);
-    rightLeg.position.set(1.15, 0.38, 0);
-    rightLeg.castShadow = true;
-    deskGroup.add(rightLeg);
-
-    // Feet crossbars
-    const footGeo = new THREE.BoxGeometry(0.12, 0.04, 0.85);
-    const footLeft = new THREE.Mesh(footGeo, legMat);
-    footLeft.position.set(-1.15, 0.02, 0);
-    deskGroup.add(footLeft);
-
-    const footRight = new THREE.Mesh(footGeo, legMat);
-    footRight.position.set(1.15, 0.02, 0);
-    deskGroup.add(footRight);
-
-    // Large desk mat / pad
-    const padGeo = new THREE.BoxGeometry(1.6, 0.005, 0.65);
-    const padMat = new THREE.MeshStandardMaterial({
-      color: 0x080c14,
-      roughness: 0.9,
+    // Dual Circular Cable Pass-Through Grommets in desk
+    const grommetMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.85 });
+    [-0.55, 0.38].forEach((gx) => {
+      const grommet = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.09, 16), grommetMat);
+      grommet.position.set(gx, 0.76, -0.35);
+      deskGroup.add(grommet);
     });
-    const pad = new THREE.Mesh(padGeo, padMat);
-    pad.position.set(0, 0.793, 0.05);
-    deskGroup.add(pad);
 
-    // Heavy duty dual monitor arm mount
-    const armGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.55, 16);
-    const armPole = new THREE.Mesh(armGeo, legMat);
-    armPole.position.set(0.2, 1.05, -0.42);
-    deskGroup.add(armPole);
+    // Stitched Leatherette Desk Pad with Raised Border
+    const matMat = new THREE.MeshStandardMaterial({ color: 0x141822, roughness: 0.85 });
+    const deskMat = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.008, 0.7), matMat);
+    deskMat.position.set(0, 0.804, 0.08);
+    deskGroup.add(deskMat);
 
-    /* 1. Horizontal Ultrawide Curved Monitor */
-    const horizScreenGroup = new THREE.Group();
-    horizScreenGroup.position.set(-0.15, 1.48, -0.25);
-
-    // Monitor frame/chassis
-    const frameGeo = new THREE.BoxGeometry(1.28, 0.62, 0.04);
-    const frameMat = new THREE.MeshStandardMaterial({
-      color: 0x090d16,
-      roughness: 0.35,
-      metalness: 0.8,
-    });
-    const horizFrame = new THREE.Mesh(frameGeo, frameMat);
-    horizFrame.castShadow = true;
-    horizScreenGroup.add(horizFrame);
-
-    // Screen display quad (with CRT shader!)
-    const horizScreenGeo = new THREE.PlaneGeometry(1.24, 0.58);
-    const horizScreen = new THREE.Mesh(horizScreenGeo, this.horizMaterial);
-    horizScreen.position.z = 0.022;
-    horizScreenGroup.add(horizScreen);
-
-    deskGroup.add(horizScreenGroup);
-    this.registerInteractive(horizScreenGroup, 'horizontal_monitor');
-
-    /* 2. Vertical Security Terminal Monitor */
-    const vertScreenGroup = new THREE.Group();
-    vertScreenGroup.position.set(1.05, 1.5, -0.15);
-    vertScreenGroup.rotation.y = -Math.PI / 10; // Angled slightly inward
-
-    const vertFrameGeo = new THREE.BoxGeometry(0.48, 0.88, 0.04);
-    const vertFrame = new THREE.Mesh(vertFrameGeo, frameMat);
-    vertFrame.castShadow = true;
-    vertScreenGroup.add(vertFrame);
-
-    const vertScreenGeo = new THREE.PlaneGeometry(0.44, 0.84);
-    const vertScreen = new THREE.Mesh(vertScreenGeo, this.vertMaterial);
-    vertScreen.position.z = 0.022;
-    vertScreenGroup.add(vertScreen);
-
-    deskGroup.add(vertScreenGroup);
-    this.registerInteractive(vertScreenGroup, 'vertical_monitor');
-
-    /* 3. Mechanical Keyboard (CLI Terminal interactive target) */
-    const kbGroup = new THREE.Group();
-    kbGroup.position.set(-0.1, 0.805, 0.16);
-
-    const kbBaseGeo = new THREE.BoxGeometry(0.42, 0.022, 0.15);
-    const kbBaseMat = new THREE.MeshStandardMaterial({
-      color: 0x171923,
-      metalness: 0.6,
-      roughness: 0.4,
-    });
-    const kbBase = new THREE.Mesh(kbBaseGeo, kbBaseMat);
-    kbBase.castShadow = true;
-    kbGroup.add(kbBase);
-
-    // RGB Underglow strip on keyboard
-    const rgbStripGeo = new THREE.BoxGeometry(0.41, 0.005, 0.01);
-    const rgbStripMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
-    const rgbStrip = new THREE.Mesh(rgbStripGeo, rgbStripMat);
-    rgbStrip.position.set(0, 0.005, 0.07);
-    kbGroup.add(rgbStrip);
-
-    deskGroup.add(kbGroup);
-    this.registerInteractive(kbGroup, 'desk');
-
-    /* 4. Android Cyber Phone */
-    const phoneGroup = new THREE.Group();
-    phoneGroup.position.set(0.45, 0.81, 0.18);
-    phoneGroup.rotation.y = -Math.PI / 12;
-    phoneGroup.rotation.x = -Math.PI / 14;
-
-    const phoneGeo = new THREE.BoxGeometry(0.08, 0.012, 0.16);
-    const phoneMat = new THREE.MeshStandardMaterial({
-      color: 0x050505,
-      metalness: 0.9,
-      roughness: 0.2,
-    });
-    const phoneMesh = new THREE.Mesh(phoneGeo, phoneMat);
-    phoneGroup.add(phoneMesh);
-
-    // Glowing phone screen
-    const phoneScreenGeo = new THREE.PlaneGeometry(0.072, 0.145);
-    const phoneScreenMat = new THREE.MeshBasicMaterial({ color: 0x0ea5e9 });
-    const phoneScreen = new THREE.Mesh(phoneScreenGeo, phoneScreenMat);
-    phoneScreen.rotation.x = -Math.PI / 2;
-    phoneScreen.position.y = 0.007;
-    phoneGroup.add(phoneScreen);
-
-    deskGroup.add(phoneGroup);
-    this.registerInteractive(phoneGroup, 'desk');
-
-    /* 5. Modern Ergonomic Mesh Chair */
+    // Ergonomic Chair (5-star caster base, pneumatic cylinder, contoured mesh backrest)
     const chairGroup = new THREE.Group();
-    chairGroup.position.set(0, 0, 0.95);
+    chairGroup.position.set(0, 0, 0.85);
 
-    // Seat
-    const seatGeo = new THREE.BoxGeometry(0.55, 0.08, 0.52);
-    const chairMat = new THREE.MeshStandardMaterial({
-      color: 0x181e2b,
-      roughness: 0.8,
-      metalness: 0.2,
-    });
-    const seat = new THREE.Mesh(seatGeo, chairMat);
+    // Seat cushion
+    const seat = new THREE.Mesh(
+      new THREE.BoxGeometry(0.56, 0.08, 0.52),
+      new THREE.MeshStandardMaterial({ color: 0x1f2430, roughness: 0.7 })
+    );
     seat.position.y = 0.52;
     seat.castShadow = true;
     chairGroup.add(seat);
 
-    // Backrest
-    const backGeo = new THREE.BoxGeometry(0.5, 0.65, 0.06);
-    const back = new THREE.Mesh(backGeo, chairMat);
-    back.position.set(0, 0.88, 0.23);
-    back.rotation.x = 0.1;
-    back.castShadow = true;
-    chairGroup.add(back);
+    // Contoured backrest
+    const backrest = new THREE.Mesh(
+      new THREE.BoxGeometry(0.5, 0.65, 0.06),
+      new THREE.MeshStandardMaterial({ color: 0x141822, roughness: 0.8 })
+    );
+    backrest.position.set(0, 0.88, 0.24);
+    backrest.rotation.x = 0.08;
+    chairGroup.add(backrest);
 
-    // Stem & Casters
-    const stemGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.45, 12);
-    const stemMat = new THREE.MeshStandardMaterial({
-      color: 0x020617,
-      metalness: 0.9,
-      roughness: 0.2,
-    });
-    const stem = new THREE.Mesh(stemGeo, stemMat);
+    // Chair stem & star base
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.45, 12), legMat);
     stem.position.y = 0.26;
     chairGroup.add(stem);
 
-    // 5-Star base
-    const baseGeo = new THREE.CylinderGeometry(0.32, 0.32, 0.04, 5);
-    const base = new THREE.Mesh(baseGeo, stemMat);
-    base.position.y = 0.06;
-    chairGroup.add(base);
+    for (let c = 0; c < 5; c++) {
+      const angle = (c * Math.PI * 2) / 5;
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.02, 0.04), legMat);
+      leg.position.set(Math.sin(angle) * 0.2, 0.04, Math.cos(angle) * 0.2);
+      leg.rotation.y = angle;
+      chairGroup.add(leg);
+
+      const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.02, 8), legMat);
+      wheel.position.set(Math.sin(angle) * 0.32, 0.025, Math.cos(angle) * 0.32);
+      wheel.rotation.z = Math.PI / 2;
+      chairGroup.add(wheel);
+    }
 
     deskGroup.add(chairGroup);
-
     this.scene.add(deskGroup);
   }
 
   /* ----------------------------------------------------
-     Server Rack (Back-Left Corner)
+     Custom Water-Cooled Desktop PC Rig
   ---------------------------------------------------- */
-  private buildServerRack() {
-    const rackGroup = new THREE.Group();
-    rackGroup.position.set(-4.1, 0, -4.1);
-    rackGroup.rotation.y = Math.PI / 4; // Angled toward center of room
+  private buildDesktopRigPC() {
+    const pcGroup = new THREE.Group();
+    pcGroup.position.set(1.15, 0.8, -3.2);
 
-    // 42U Rack cabinet frame (Height: 2.2m, Width: 0.85m, Depth: 0.95m)
-    const frameGeo = new THREE.BoxGeometry(0.85, 2.2, 0.95);
-    const frameMat = new THREE.MeshStandardMaterial({
-      color: 0x07090e,
-      roughness: 0.4,
-      metalness: 0.75,
-    });
-    const cabinet = new THREE.Mesh(frameGeo, frameMat);
-    cabinet.position.y = 1.1;
-    cabinet.castShadow = true;
-    cabinet.receiveShadow = true;
-    rackGroup.add(cabinet);
-
-    // Front Faceplate LED array (using custom ServerLedShader)
-    this.serverLedMat = new THREE.ShaderMaterial({
-      uniforms: {
-        uTime: { value: 0.0 },
-        uColorA: ServerLedShader.uniforms.uColorA,
-        uColorB: ServerLedShader.uniforms.uColorB,
-        uColorC: ServerLedShader.uniforms.uColorC,
-      },
-      vertexShader: ServerLedShader.vertexShader,
-      fragmentShader: ServerLedShader.fragmentShader,
-    });
-
-    const ledPanelGeo = new THREE.PlaneGeometry(0.72, 1.95);
-    const ledPanel = new THREE.Mesh(ledPanelGeo, this.serverLedMat);
-    ledPanel.position.set(0, 1.1, 0.48);
-    rackGroup.add(ledPanel);
-
-    // Glass door cover
-    const glassGeo = new THREE.PlaneGeometry(0.78, 2.05);
-    const glassMat = new THREE.MeshPhysicalMaterial({
-      color: 0x0f172a,
-      transparent: true,
-      opacity: 0.25,
-      roughness: 0.1,
-      metalness: 0.9,
-      transmission: 0.7,
-    });
-    const glassDoor = new THREE.Mesh(glassGeo, glassMat);
-    glassDoor.position.set(0, 1.1, 0.49);
-    rackGroup.add(glassDoor);
-
-    this.scene.add(rackGroup);
-    this.registerInteractive(rackGroup, 'server_rack');
-  }
-
-  /* ----------------------------------------------------
-     CTF Lab Wall (Left Wall: X = -4.95)
-  ---------------------------------------------------- */
-  private buildCTFWall() {
-    const ctfGroup = new THREE.Group();
-    ctfGroup.position.set(-4.92, 1.8, 0.5);
-    ctfGroup.rotation.y = Math.PI / 2;
-
-    // Header sign: "CTF // VULNERABILITY LAB"
-    const signGeo = new THREE.BoxGeometry(3.6, 0.4, 0.03);
-    const signMat = new THREE.MeshStandardMaterial({
-      color: 0x090f1d,
+    const chassisMat = new THREE.MeshStandardMaterial({
+      color: 0x141620,
       metalness: 0.8,
       roughness: 0.3,
     });
-    const sign = new THREE.Mesh(signGeo, signMat);
-    sign.position.y = 1.0;
-    ctfGroup.add(sign);
+    // Main Chassis
+    const chassis = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.5, 0.46), chassisMat);
+    chassis.position.y = 0.25;
+    chassis.castShadow = true;
+    pcGroup.add(chassis);
 
-    // Pinned challenge cards (Web, Reverse, Crypto, Forensics, Pwn)
-    const cardGeo = new THREE.BoxGeometry(0.68, 0.88, 0.02);
-    const cardColors = [0x0f2438, 0x102e26, 0x2b1c3d, 0x2e1e12, 0x1f2937];
-
-    cardColors.forEach((color, i) => {
-      const cardMat = new THREE.MeshStandardMaterial({
-        color,
-        metalness: 0.3,
-        roughness: 0.6,
-      });
-      const card = new THREE.Mesh(cardGeo, cardMat);
-      card.position.set(-1.4 + i * 0.7, 0.15, 0.015);
-      ctfGroup.add(card);
-
-      // Pinned pins/clips
-      const pinGeo = new THREE.SphereGeometry(0.015, 8, 8);
-      const pinMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
-      const pin = new THREE.Mesh(pinGeo, pinMat);
-      pin.position.set(-1.4 + i * 0.7, 0.55, 0.035);
-      ctfGroup.add(pin);
+    // Tempered Glass Side Panel
+    const glassMat = new THREE.MeshPhysicalMaterial({
+      color: 0x0f172a,
+      transparent: true,
+      opacity: 0.4,
+      roughness: 0.1,
+      metalness: 0.1,
     });
+    const glass = new THREE.Mesh(new THREE.BoxGeometry(0.005, 0.46, 0.42), glassMat);
+    glass.position.set(-0.122, 0.25, 0);
+    pcGroup.add(glass);
 
-    this.scene.add(ctfGroup);
-    this.registerInteractive(ctfGroup, 'ctf_wall');
+    // Inside: Motherboard & RAM Sticks with RGB diffusers
+    const moboMat = new THREE.MeshStandardMaterial({ color: 0x090b10 });
+    const mobo = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.35, 0.35), moboMat);
+    mobo.position.set(0.08, 0.25, 0);
+    pcGroup.add(mobo);
+
+    for (let r = 0; r < 2; r++) {
+      const ram = new THREE.Mesh(
+        new THREE.BoxGeometry(0.02, 0.06, 0.008),
+        new THREE.MeshBasicMaterial({ color: r === 0 ? 0x06b6d4 : 0xec4899 })
+      );
+      ram.position.set(0.06, 0.32, -0.04 + r * 0.02);
+      pcGroup.add(ram);
+    }
+
+    // Inside: Triple-Fan GPU with illuminated logo
+    const gpu = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.04, 0.28),
+      new THREE.MeshStandardMaterial({ color: 0x1f2937, metalness: 0.9 })
+    );
+    gpu.position.set(0.02, 0.2, 0.02);
+    pcGroup.add(gpu);
+
+    // Front Mesh Panel with Dual Rotating RGB Fans
+    const frontMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(0.22, 0.46, 0.02),
+      new THREE.MeshStandardMaterial({ color: 0x090b10, metalness: 0.9, roughness: 0.4 })
+    );
+    frontMesh.position.set(0, 0.25, 0.235);
+    pcGroup.add(frontMesh);
+
+    for (let i = 0; i < 2; i++) {
+      const fanRing = new THREE.Mesh(
+        new THREE.TorusGeometry(0.065, 0.008, 8, 24),
+        new THREE.MeshBasicMaterial({ color: i === 0 ? 0x06b6d4 : 0xec4899 })
+      );
+      fanRing.position.set(0, 0.16 + i * 0.18, 0.22);
+      pcGroup.add(fanRing);
+
+      const blades = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.05, 0.05, 0.01, 6),
+        new THREE.MeshStandardMaterial({ color: 0x1f2937 })
+      );
+      blades.rotation.x = Math.PI / 2;
+      blades.position.set(0, 0.16 + i * 0.18, 0.22);
+      pcGroup.add(blades);
+      this.fanRotors.push(blades);
+    }
+
+    // Front USB thumb drive with blinking green LED
+    const usbThumb = new THREE.Mesh(
+      new THREE.BoxGeometry(0.02, 0.01, 0.05),
+      new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.8, roughness: 0.2 })
+    );
+    usbThumb.position.set(-0.04, 0.51, 0.16);
+    pcGroup.add(usbThumb);
+
+    const usbLed = new THREE.Mesh(new THREE.SphereGeometry(0.003, 8, 8), new THREE.MeshBasicMaterial({ color: 0x22c55e }));
+    usbLed.position.set(-0.04, 0.518, 0.145);
+    pcGroup.add(usbLed);
+
+    this.scene.add(pcGroup);
   }
 
   /* ----------------------------------------------------
-     Timeline Wall (Right Wall: X = 4.95)
+     Dual Monitors (Horizontal Desktop + Vertical Terminal)
+  ---------------------------------------------------- */
+  private buildMonitors() {
+    const frameMat = new THREE.MeshStandardMaterial({
+      color: 0x141822,
+      metalness: 0.8,
+      roughness: 0.25,
+    });
+
+    /* 1. HORIZONTAL WORKSTATION MONITOR (X: 0.38, Z: -3.35) */
+    const horizGroup = new THREE.Group();
+    horizGroup.position.set(0.38, 1.42, -3.35);
+
+    const horizFrame = new THREE.Mesh(new THREE.BoxGeometry(1.32, 0.68, 0.05), frameMat);
+    horizFrame.castShadow = true;
+    horizGroup.add(horizFrame);
+
+    const horizBackHousing = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.48, 0.08), frameMat);
+    horizBackHousing.position.z = -0.06;
+    horizGroup.add(horizBackHousing);
+
+    const horizScreen = new THREE.Mesh(new THREE.PlaneGeometry(1.28, 0.64), this.horizMaterial);
+    horizScreen.position.z = 0.028;
+    horizGroup.add(horizScreen);
+
+    // Heavy-duty articulated monitor mount arm
+    const standPole = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.55, 12), frameMat);
+    standPole.position.set(0, -0.35, -0.08);
+    horizGroup.add(standPole);
+    const standBase = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.02, 0.24), frameMat);
+    standBase.position.set(0, -0.62, 0.02);
+    horizGroup.add(standBase);
+
+    this.scene.add(horizGroup);
+    this.registerInteractive(horizGroup, 'horizontal_monitor');
+
+    /* 2. VERTICAL TERMINAL MONITOR (X: -0.55, Z: -3.3) */
+    const vertGroup = new THREE.Group();
+    vertGroup.position.set(-0.55, 1.45, -3.3);
+    vertGroup.rotation.y = Math.PI / 12; // angled inward
+
+    const vertFrame = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.94, 0.05), frameMat);
+    vertFrame.castShadow = true;
+    vertGroup.add(vertFrame);
+
+    const vertBackHousing = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.65, 0.08), frameMat);
+    vertBackHousing.position.z = -0.06;
+    vertGroup.add(vertBackHousing);
+
+    const vertScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.48, 0.9), this.vertMaterial);
+    vertScreen.position.z = 0.028;
+    vertGroup.add(vertScreen);
+
+    const vertStandPole = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.55, 12), frameMat);
+    vertStandPole.position.set(0, -0.38, -0.08);
+    vertGroup.add(vertStandPole);
+    const vertStandBase = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.02, 0.24), frameMat);
+    vertStandBase.position.set(0, -0.64, 0.02);
+    vertGroup.add(vertStandBase);
+
+    this.scene.add(vertGroup);
+    this.registerInteractive(vertGroup, 'vertical_monitor');
+  }
+
+  /* ----------------------------------------------------
+     Sculpted Mechanical Keyboard & Mouse
+  ---------------------------------------------------- */
+  private buildKeyboardAndMouse() {
+    const kbGroup = new THREE.Group();
+    kbGroup.position.set(0.12, 0.815, -3.02);
+
+    // Aluminum Keyboard Case
+    const caseMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(0.44, 0.022, 0.16),
+      new THREE.MeshStandardMaterial({ color: 0x1e2430, metalness: 0.6, roughness: 0.35 })
+    );
+    kbGroup.add(caseMesh);
+
+    // Individual Sculpted 3D Keycaps
+    const keyGeo = new THREE.BoxGeometry(0.022, 0.012, 0.022);
+    const alphaMat = new THREE.MeshStandardMaterial({ color: 0x2d3748, roughness: 0.6 });
+    const modMat = new THREE.MeshStandardMaterial({ color: 0x0ea5e9, roughness: 0.5 });
+    const escMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.5 });
+
+    for (let r = 0; r < 5; r++) {
+      const zOffset = -0.055 + r * 0.028;
+      for (let c = 0; c < 14; c++) {
+        const xOffset = -0.18 + c * 0.028;
+        let mat = alphaMat;
+        if (r === 0 && c === 0) mat = escMat;
+        else if (c === 0 || c === 13 || r === 4) mat = modMat;
+        if (r === 4 && c >= 4 && c <= 9) continue; // spacebar slot
+
+        const key = new THREE.Mesh(keyGeo, mat);
+        key.position.set(xOffset, 0.014, zOffset);
+        kbGroup.add(key);
+      }
+    }
+
+    // Spacebar
+    const spacebar = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.012, 0.022), alphaMat);
+    spacebar.position.set(0, 0.014, 0.057);
+    kbGroup.add(spacebar);
+
+    // Coiled Aviator Cable (Helical spiral tube)
+    const coilCurvePoints: THREE.Vector3[] = [];
+    for (let t = 0; t < 20; t += 0.5) {
+      const rad = 0.018;
+      coilCurvePoints.push(
+        new THREE.Vector3(
+          -0.15 - t * 0.012,
+          0.005 + Math.sin(t * 1.5) * rad,
+          -0.08 + Math.cos(t * 1.5) * rad
+        )
+      );
+    }
+    const coilCurve = new THREE.CatmullRomCurve3(coilCurvePoints);
+    const coilMesh = new THREE.Mesh(
+      new THREE.TubeGeometry(coilCurve, 64, 0.004, 8, false),
+      new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.4 })
+    );
+    kbGroup.add(coilMesh);
+
+    this.scene.add(kbGroup);
+    this.registerInteractive(kbGroup, 'desk');
+
+    // Ergonomic Mouse
+    const mouseGroup = new THREE.Group();
+    mouseGroup.position.set(0.48, 0.815, -3.02);
+
+    const mouseBody = new THREE.Mesh(
+      new THREE.BoxGeometry(0.075, 0.03, 0.12),
+      new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.8, roughness: 0.3 })
+    );
+    mouseGroup.add(mouseBody);
+
+    const scrollWheel = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.008, 0.008, 0.012, 12),
+      new THREE.MeshStandardMaterial({ color: 0x38bdf8 })
+    );
+    scrollWheel.rotation.z = Math.PI / 2;
+    scrollWheel.position.set(0, 0.016, -0.025);
+    mouseGroup.add(scrollWheel);
+
+    this.scene.add(mouseGroup);
+  }
+
+  /* ----------------------------------------------------
+     Over-Ear Studio Headphones (Hanging on Desk Side Hook)
+  ---------------------------------------------------- */
+  private buildHeadphones() {
+    const hpGroup = new THREE.Group();
+    hpGroup.position.set(-1.42, 0.72, -3.0);
+
+    const hook = new THREE.Mesh(
+      new THREE.BoxGeometry(0.05, 0.015, 0.12),
+      new THREE.MeshStandardMaterial({ color: 0x1f2937, metalness: 0.9 })
+    );
+    hpGroup.add(hook);
+
+    const arcCurve = new THREE.EllipseCurve(0, 0, 0.1, 0.12, 0, Math.PI, false, 0);
+    const pts = arcCurve.getPoints(24).map((p) => new THREE.Vector3(p.x, p.y - 0.08, 0));
+    const bandCurve = new THREE.CatmullRomCurve3(pts);
+    const headband = new THREE.Mesh(
+      new THREE.TubeGeometry(bandCurve, 24, 0.012, 8, false),
+      new THREE.MeshStandardMaterial({ color: 0x090b10, roughness: 0.8 })
+    );
+    hpGroup.add(headband);
+
+    for (const side of [-0.1, 0.1]) {
+      const earcup = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.045, 0.045, 0.03, 16),
+        new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.6, roughness: 0.3 })
+      );
+      earcup.rotation.z = Math.PI / 2;
+      earcup.position.set(side, -0.16, 0);
+      hpGroup.add(earcup);
+
+      const cushion = new THREE.Mesh(
+        new THREE.TorusGeometry(0.038, 0.012, 10, 20),
+        new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.9 })
+      );
+      cushion.rotation.y = Math.PI / 2;
+      cushion.position.set(side + (side < 0 ? 0.015 : -0.015), -0.16, 0);
+      hpGroup.add(cushion);
+    }
+
+    this.scene.add(hpGroup);
+  }
+
+  /* ----------------------------------------------------
+     Tactile 3D Props (Bruno Simon / Joan Ramos Refusta Style)
+  ---------------------------------------------------- */
+  private buildDeskProps() {
+    // 1. Ceramic Coffee Mug with coffee liquid
+    const mugGroup = new THREE.Group();
+    mugGroup.position.set(-0.95, 0.81, -3.1);
+
+    const mug = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.045, 0.042, 0.1, 20, 1, true),
+      new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.25 })
+    );
+    mug.position.y = 0.05;
+    mugGroup.add(mug);
+
+    const mugBottom = new THREE.Mesh(
+      new THREE.CircleGeometry(0.042, 20),
+      new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.25 })
+    );
+    mugBottom.rotation.x = Math.PI / 2;
+    mugBottom.position.y = 0.002;
+    mugGroup.add(mugBottom);
+
+    const coffeeLiquid = new THREE.Mesh(
+      new THREE.CircleGeometry(0.043, 20),
+      new THREE.MeshStandardMaterial({ color: 0x24140e, roughness: 0.1 })
+    );
+    coffeeLiquid.rotation.x = -Math.PI / 2;
+    coffeeLiquid.position.y = 0.088;
+    mugGroup.add(coffeeLiquid);
+
+    const handleCurve = new THREE.QuadraticBezierCurve3(
+      new THREE.Vector3(0.044, 0.075, 0),
+      new THREE.Vector3(0.085, 0.05, 0),
+      new THREE.Vector3(0.044, 0.025, 0)
+    );
+    const handleMesh = new THREE.Mesh(
+      new THREE.TubeGeometry(handleCurve, 16, 0.008, 8, false),
+      new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.25 })
+    );
+    mugGroup.add(handleMesh);
+    this.scene.add(mugGroup);
+
+    // 2. Aluminum Soda Can
+    const canGroup = new THREE.Group();
+    canGroup.position.set(-0.85, 0.81, -2.95);
+
+    const canBody = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.035, 0.035, 0.12, 20),
+      new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9, roughness: 0.2 })
+    );
+    canBody.position.y = 0.06;
+    canGroup.add(canBody);
+
+    const canRim = new THREE.Mesh(
+      new THREE.TorusGeometry(0.034, 0.003, 8, 20),
+      new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.95, roughness: 0.1 })
+    );
+    canRim.rotation.x = Math.PI / 2;
+    canRim.position.y = 0.12;
+    canGroup.add(canRim);
+
+    const pullTab = new THREE.Mesh(
+      new THREE.BoxGeometry(0.015, 0.002, 0.025),
+      new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.95 })
+    );
+    pullTab.position.set(0, 0.121, 0.008);
+    canGroup.add(pullTab);
+    this.scene.add(canGroup);
+
+    // 3. Potted Snake Plant / Succulent on desk corner
+    const plantGroup = new THREE.Group();
+    plantGroup.position.set(-1.25, 0.81, -3.3);
+
+    const pot = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.07, 0.05, 0.12, 8),
+      new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.3 })
+    );
+    pot.position.y = 0.06;
+    plantGroup.add(pot);
+
+    const soil = new THREE.Mesh(
+      new THREE.CircleGeometry(0.068, 8),
+      new THREE.MeshStandardMaterial({ color: 0x1f1610, roughness: 0.9 })
+    );
+    soil.rotation.x = -Math.PI / 2;
+    soil.position.y = 0.118;
+    plantGroup.add(soil);
+
+    // 5 geometric leaves
+    for (let l = 0; l < 5; l++) {
+      const leafAngle = (l * Math.PI * 2) / 5;
+      const leaf = new THREE.Mesh(
+        new THREE.ConeGeometry(0.025, 0.22, 4),
+        new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.5 })
+      );
+      leaf.position.set(Math.sin(leafAngle) * 0.03, 0.22, Math.cos(leafAngle) * 0.03);
+      leaf.rotation.z = Math.sin(leafAngle) * 0.25;
+      leaf.rotation.x = Math.cos(leafAngle) * 0.25;
+      plantGroup.add(leaf);
+    }
+    this.scene.add(plantGroup);
+
+    // 4. Stack of Hardcover Tech Books
+    const bookGroup = new THREE.Group();
+    bookGroup.position.set(-1.15, 0.81, -3.05);
+
+    const bookColors = [0x1e3a8a, 0x065f46, 0x831843];
+    for (let i = 0; i < 3; i++) {
+      const book = new THREE.Mesh(
+        new THREE.BoxGeometry(0.24, 0.035, 0.18),
+        new THREE.MeshStandardMaterial({ color: bookColors[i], roughness: 0.6 })
+      );
+      book.position.y = 0.018 + i * 0.036;
+      book.rotation.y = i * 0.08 - 0.04;
+      bookGroup.add(book);
+
+      const pages = new THREE.Mesh(
+        new THREE.BoxGeometry(0.23, 0.03, 0.17),
+        new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.9 })
+      );
+      pages.position.set(0.008, 0.018 + i * 0.036, 0);
+      pages.rotation.y = book.rotation.y;
+      bookGroup.add(pages);
+    }
+    this.scene.add(bookGroup);
+
+    // 5. Retro 3.5" Floppy Disks
+    const floppyGroup = new THREE.Group();
+    floppyGroup.position.set(0.78, 0.81, -3.28);
+    for (let f = 0; f < 2; f++) {
+      const disk = new THREE.Mesh(
+        new THREE.BoxGeometry(0.09, 0.004, 0.094),
+        new THREE.MeshStandardMaterial({ color: f === 0 ? 0x1e293b : 0x0284c7, roughness: 0.5 })
+      );
+      disk.position.y = 0.002 + f * 0.005;
+      disk.rotation.y = f * 0.12;
+      floppyGroup.add(disk);
+
+      const shutter = new THREE.Mesh(
+        new THREE.BoxGeometry(0.032, 0.005, 0.032),
+        new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.95, roughness: 0.2 })
+      );
+      shutter.position.set(0, 0.0025 + f * 0.005, -0.03);
+      shutter.rotation.y = disk.rotation.y;
+      floppyGroup.add(shutter);
+    }
+    this.scene.add(floppyGroup);
+
+    // 6. Articulated Architect Desk Lamp
+    const lampGroup = new THREE.Group();
+    lampGroup.position.set(-1.18, 0.81, -2.85);
+
+    const base = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.09, 0.09, 0.02, 20),
+      new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.9, roughness: 0.3 })
+    );
+    base.position.y = 0.01;
+    lampGroup.add(base);
+
+    const armMat = new THREE.MeshStandardMaterial({ color: 0x374151, metalness: 0.8, roughness: 0.3 });
+    const lowerArm = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.38, 8), armMat);
+    lowerArm.position.set(0.06, 0.18, -0.05);
+    lowerArm.rotation.z = -0.35;
+    lampGroup.add(lowerArm);
+
+    const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.38, 8), armMat);
+    upperArm.position.set(0.18, 0.42, 0.02);
+    upperArm.rotation.z = 0.55;
+    lampGroup.add(upperArm);
+
+    const shade = new THREE.Mesh(
+      new THREE.ConeGeometry(0.08, 0.14, 16, 1, true),
+      new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.7, roughness: 0.3 })
+    );
+    shade.position.set(0.32, 0.48, 0.05);
+    shade.rotation.z = -Math.PI / 1.5;
+    lampGroup.add(shade);
+
+    const bulb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.03, 12, 12),
+      new THREE.MeshBasicMaterial({ color: 0xffedd5 })
+    );
+    bulb.position.set(0.3, 0.46, 0.05);
+    lampGroup.add(bulb);
+
+    this.scene.add(lampGroup);
+  }
+
+  /* ----------------------------------------------------
+     Realistic 3D Cables (Catenary Curves)
+  ---------------------------------------------------- */
+  private buildDroopingCables() {
+    const cableMat = new THREE.MeshStandardMaterial({ color: 0x090b10, roughness: 0.8 });
+
+    // Horizontal Monitor cable to grommet
+    const c1 = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0.38, 1.25, -3.4),
+      new THREE.Vector3(0.32, 0.95, -3.45),
+      new THREE.Vector3(0.36, 0.82, -3.4),
+      new THREE.Vector3(0.38, 0.76, -3.35),
+    ]);
+    const cable1 = new THREE.Mesh(new THREE.TubeGeometry(c1, 24, 0.008, 8, false), cableMat);
+    this.scene.add(cable1);
+
+    // Vertical Monitor cable to grommet
+    const c2 = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-0.55, 1.25, -3.35),
+      new THREE.Vector3(-0.52, 0.98, -3.42),
+      new THREE.Vector3(-0.54, 0.82, -3.4),
+      new THREE.Vector3(-0.55, 0.76, -3.35),
+    ]);
+    const cable2 = new THREE.Mesh(new THREE.TubeGeometry(c2, 24, 0.008, 8, false), cableMat);
+    this.scene.add(cable2);
+
+    // Floor cable bundle to servers
+    const c3 = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-1.3, 0.76, -3.2),
+      new THREE.Vector3(-1.8, 0.25, -3.15),
+      new THREE.Vector3(-2.8, 0.05, -3.1),
+      new THREE.Vector3(-3.5, 0.2, -3.0),
+    ]);
+    const cable3 = new THREE.Mesh(new THREE.TubeGeometry(c3, 32, 0.014, 8, false), cableMat);
+    this.scene.add(cable3);
+  }
+
+  /* ----------------------------------------------------
+     Wall Shelf with Vintage Tech Items & Router
+  ---------------------------------------------------- */
+  private buildWallShelf() {
+    const shelfGroup = new THREE.Group();
+    shelfGroup.position.set(0, 2.3, -3.6);
+
+    const shelf = new THREE.Mesh(
+      new THREE.BoxGeometry(2.6, 0.05, 0.32),
+      new THREE.MeshStandardMaterial({ color: 0x3d281a, roughness: 0.5 })
+    );
+    shelfGroup.add(shelf);
+
+    const bracketMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, metalness: 0.9 });
+    for (const bX of [-0.9, 0.9]) {
+      const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.25, 0.28), bracketMat);
+      bracket.position.set(bX, -0.12, 0);
+      shelfGroup.add(bracket);
+    }
+
+    // 3D Wi-Fi 6 Router with 4 Antennas & Status LEDs
+    const router = new THREE.Mesh(
+      new THREE.BoxGeometry(0.28, 0.045, 0.18),
+      new THREE.MeshStandardMaterial({ color: 0x090b10, roughness: 0.4 })
+    );
+    router.position.set(-0.6, 0.045, 0);
+    shelfGroup.add(router);
+
+    for (let a = -1.5; a <= 1.5; a += 1) {
+      const ant = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.004, 0.004, 0.18, 8),
+        new THREE.MeshStandardMaterial({ color: 0x1f2937 })
+      );
+      ant.position.set(-0.6 + a * 0.06, 0.12, -0.06);
+      ant.rotation.z = a * 0.18;
+      shelfGroup.add(ant);
+    }
+
+    // Router green status LEDs
+    for (let l = 0; l < 4; l++) {
+      const led = new THREE.Mesh(new THREE.SphereGeometry(0.003, 6, 6), new THREE.MeshBasicMaterial({ color: 0x22c55e }));
+      led.position.set(-0.7 + l * 0.025, 0.045, 0.092);
+      shelfGroup.add(led);
+      this.routerLeds.push(led);
+    }
+
+    // Cassette Tape
+    const tape = new THREE.Mesh(
+      new THREE.BoxGeometry(0.12, 0.02, 0.08),
+      new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.3 })
+    );
+    tape.position.set(0.6, 0.035, 0);
+    shelfGroup.add(tape);
+
+    this.scene.add(shelfGroup);
+  }
+
+  /* ----------------------------------------------------
+     DUAL SERVERS (Replacing the 42U Infra Rack)
+     - Server 1: Primary Core Mainframe Node (INTERACTABLE)
+     - Server 2: Secondary Storage / Failover Array (COMPANION NODE)
+  ---------------------------------------------------- */
+  private buildDualServers() {
+    const serversRoot = new THREE.Group();
+    serversRoot.position.set(-3.5, 0, -3.0);
+
+    // Industrial rolling server cart / rack stand
+    const cartMat = new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.85, roughness: 0.3 });
+    // 4 vertical corner posts
+    const postGeo = new THREE.BoxGeometry(0.05, 1.8, 0.05);
+    const postPositions = [
+      [-0.45, 0.9, -0.4],
+      [0.45, 0.9, -0.4],
+      [-0.45, 0.9, 0.4],
+      [0.45, 0.9, 0.4],
+    ];
+    postPositions.forEach(([px, py, pz]) => {
+      const post = new THREE.Mesh(postGeo, cartMat);
+      post.position.set(px, py, pz);
+      serversRoot.add(post);
+    });
+
+    // 3 shelves on the cart (Bottom, Middle, Top)
+    const shelfGeo = new THREE.BoxGeometry(0.96, 0.03, 0.86);
+    [0.1, 0.85, 1.65].forEach((sy) => {
+      const shelf = new THREE.Mesh(shelfGeo, cartMat);
+      shelf.position.y = sy;
+      serversRoot.add(shelf);
+    });
+
+    // 4 caster wheels on cart base
+    for (const [wx, wz] of [[-0.45, -0.4], [0.45, -0.4], [-0.45, 0.4], [0.45, 0.4]]) {
+      const wheel = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.04, 0.04, 0.03, 12),
+        cartMat
+      );
+      wheel.rotation.z = Math.PI / 2;
+      wheel.position.set(wx, 0.04, wz);
+      serversRoot.add(wheel);
+    }
+
+    /* --------------------------------------------------
+       SERVER 1: PRIMARY CORE MAINFRAME NODE (INTERACTABLE!)
+       Sits on the middle/upper rack shelf (Y = 0.88 to 1.35)
+    -------------------------------------------------- */
+    const server1Group = new THREE.Group();
+    server1Group.position.set(0, 1.15, 0);
+
+    const s1ChassisMat = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      metalness: 0.9,
+      roughness: 0.25,
+    });
+    // 3U Chassis: 0.82m wide, 0.32m high, 0.72m deep
+    const s1Chassis = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.32, 0.72), s1ChassisMat);
+    s1Chassis.castShadow = true;
+    server1Group.add(s1Chassis);
+
+    // Front Metal Rack Handles & Mounting Ears
+    const earMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.95, roughness: 0.2 });
+    [-0.43, 0.43].forEach((ex) => {
+      const ear = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.32, 0.02), earMat);
+      ear.position.set(ex, 0, 0.36);
+      server1Group.add(ear);
+
+      const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.22, 8), earMat);
+      handle.position.set(ex, 0, 0.41);
+      server1Group.add(handle);
+    });
+
+    // Hot-Swap SAS Drive Caddies (12 drives in 3 rows x 4 cols)
+    const caddyMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.35 });
+    const latchMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.7 });
+
+    for (let row = 0; row < 2; row++) {
+      for (let col = 0; col < 6; col++) {
+        const cx = -0.32 + col * 0.128;
+        const cy = -0.06 + row * 0.11;
+
+        // Drive Tray
+        const tray = new THREE.Mesh(new THREE.BoxGeometry(0.116, 0.09, 0.02), caddyMat);
+        tray.position.set(cx, cy, 0.362);
+        server1Group.add(tray);
+
+        // Latch handle
+        const latch = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.018, 0.01), latchMat);
+        latch.position.set(cx, cy - 0.025, 0.374);
+        server1Group.add(latch);
+
+        // Individual Blinking Status LED (Activity Green)
+        const ledGreen = new THREE.Mesh(
+          new THREE.SphereGeometry(0.004, 6, 6),
+          new THREE.MeshBasicMaterial({ color: 0x22c55e })
+        );
+        ledGreen.position.set(cx - 0.035, cy + 0.026, 0.375);
+        server1Group.add(ledGreen);
+        this.server1Leds.push({ mesh: ledGreen, baseColor: 0x22c55e, blinkRate: 3 + Math.random() * 8 });
+
+        // Beacon / SAS Status LED (Blue / Amber)
+        const ledBlue = new THREE.Mesh(
+          new THREE.SphereGeometry(0.004, 6, 6),
+          new THREE.MeshBasicMaterial({ color: col % 2 === 0 ? 0x38bdf8 : 0xf59e0b })
+        );
+        ledBlue.position.set(cx + 0.035, cy + 0.026, 0.375);
+        server1Group.add(ledBlue);
+        this.server1Leds.push({
+          mesh: ledBlue,
+          baseColor: col % 2 === 0 ? 0x38bdf8 : 0xf59e0b,
+          blinkRate: 1.5 + Math.random() * 4,
+        });
+      }
+    }
+
+    // Primary Server 1 Status LCD Panel Screen
+    const lcdScreen = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.24, 0.06),
+      new THREE.MeshBasicMaterial({ map: this.serverLcdTexture })
+    );
+    lcdScreen.position.set(-0.16, 0.1, 0.365);
+    server1Group.add(lcdScreen);
+
+    // Power switch & diagnostic USB on front
+    const s1Power = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.008, 0.008, 0.008, 12),
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+    );
+    s1Power.rotation.x = Math.PI / 2;
+    s1Power.position.set(0.12, 0.1, 0.365);
+    server1Group.add(s1Power);
+
+    // Front Ethernet ports with plugged-in neon cyan & emerald patch cables
+    const ethCableColors = [0x06b6d4, 0x10b981];
+    ethCableColors.forEach((col, idx) => {
+      const port = new THREE.Mesh(
+        new THREE.BoxGeometry(0.02, 0.016, 0.015),
+        new THREE.MeshStandardMaterial({ color: 0xd97706 })
+      );
+      port.position.set(0.2 + idx * 0.045, 0.1, 0.365);
+      server1Group.add(port);
+
+      // Drooping patch cable connecting down into Server 2 or raceway
+      const curve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0.2 + idx * 0.045, 0.1, 0.38),
+        new THREE.Vector3(0.22 + idx * 0.045, -0.15, 0.44),
+        new THREE.Vector3(0.18 + idx * 0.045, -0.45, 0.42),
+        new THREE.Vector3(0.15 + idx * 0.045, -0.65, 0.38),
+      ]);
+      const patchCable = new THREE.Mesh(
+        new THREE.TubeGeometry(curve, 20, 0.006, 8, false),
+        new THREE.MeshBasicMaterial({ color: col })
+      );
+      server1Group.add(patchCable);
+    });
+
+    serversRoot.add(server1Group);
+    // Register Server 1 as the INTERACTABLE station object!
+    this.registerInteractive(server1Group, 'server_rack');
+
+    /* --------------------------------------------------
+       SERVER 2: SECONDARY REPLICA / STORAGE ARRAY (COMPANION NODE)
+       Sits on the bottom rack shelf (Y = 0.12 to 0.6)
+       NON-INTERACTABLE as requested!
+    -------------------------------------------------- */
+    const server2Group = new THREE.Group();
+    server2Group.position.set(0, 0.48, 0);
+
+    // 4U High-Density Storage Chassis: 0.82m wide, 0.42m high, 0.72m deep
+    const s2Chassis = new THREE.Mesh(
+      new THREE.BoxGeometry(0.82, 0.42, 0.72),
+      new THREE.MeshStandardMaterial({ color: 0x0b1120, metalness: 0.85, roughness: 0.35 })
+    );
+    s2Chassis.castShadow = true;
+    server2Group.add(s2Chassis);
+
+    // Server 2 Rack Ears
+    [-0.43, 0.43].forEach((ex) => {
+      const ear = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.42, 0.02), earMat);
+      ear.position.set(ex, 0, 0.36);
+      server2Group.add(ear);
+    });
+
+    // 24 Dense 3.5" Storage Drive Trays in a 4x6 grid
+    for (let row = 0; row < 4; row++) {
+      for (let col = 0; col < 6; col++) {
+        const cx = -0.32 + col * 0.128;
+        const cy = -0.14 + row * 0.092;
+
+        const tray = new THREE.Mesh(new THREE.BoxGeometry(0.116, 0.076, 0.015), caddyMat);
+        tray.position.set(cx, cy, 0.362);
+        server2Group.add(tray);
+
+        // Blinking storage read/write LED
+        const led = new THREE.Mesh(
+          new THREE.SphereGeometry(0.0035, 6, 6),
+          new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+        );
+        led.position.set(cx - 0.035, cy + 0.02, 0.372);
+        server2Group.add(led);
+        this.server2Leds.push({ mesh: led, baseColor: 0x38bdf8, blinkRate: 4 + Math.random() * 10 });
+      }
+    }
+
+    // Fiber Optic LC Duplex Patch Cables (Bright Orange) looping between Server 2 and Server 1
+    for (let f = 0; f < 2; f++) {
+      const fiberCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-0.25 + f * 0.05, 0.18, 0.37),
+        new THREE.Vector3(-0.28 + f * 0.05, 0.4, 0.45),
+        new THREE.Vector3(-0.24 + f * 0.05, 0.58, 0.42),
+        new THREE.Vector3(-0.22 + f * 0.05, 0.65, 0.37),
+      ]);
+      const fiber = new THREE.Mesh(
+        new THREE.TubeGeometry(fiberCurve, 20, 0.005, 8, false),
+        new THREE.MeshBasicMaterial({ color: 0xf97316 })
+      );
+      server2Group.add(fiber);
+    }
+
+    serversRoot.add(server2Group);
+    this.scene.add(serversRoot);
+  }
+
+  /* ----------------------------------------------------
+     CTF Board (Left Wall: X = -4.18, Z = 0.5)
+  ---------------------------------------------------- */
+  private buildCTFBoard() {
+    const boardGroup = new THREE.Group();
+    boardGroup.position.set(-4.16, 1.8, 0.5);
+    boardGroup.rotation.y = Math.PI / 2;
+
+    const back = new THREE.Mesh(
+      new THREE.BoxGeometry(2.8, 1.6, 0.04),
+      new THREE.MeshStandardMaterial({ color: 0x181e2b, roughness: 0.8 })
+    );
+    boardGroup.add(back);
+
+    const titleBar = new THREE.Mesh(
+      new THREE.BoxGeometry(2.6, 0.22, 0.02),
+      new THREE.MeshBasicMaterial({ color: 0x0284c7 })
+    );
+    titleBar.position.set(0, 0.65, 0.025);
+    boardGroup.add(titleBar);
+
+    // Pinned notes & cards in 3D
+    const cardColors = [0xfef08a, 0xa7f3d0, 0xfbcfe8, 0xbae6fd];
+    cardColors.forEach((color, i) => {
+      const note = new THREE.Mesh(
+        new THREE.BoxGeometry(0.55, 0.45, 0.015),
+        new THREE.MeshStandardMaterial({ color, roughness: 0.9 })
+      );
+      note.position.set(-0.9 + i * 0.6, i % 2 === 0 ? 0.15 : -0.2, 0.025);
+      boardGroup.add(note);
+
+      // Red pin
+      const pin = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 8), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+      pin.position.set(-0.9 + i * 0.6, i % 2 === 0 ? 0.35 : 0.0, 0.04);
+      boardGroup.add(pin);
+    });
+
+    this.scene.add(boardGroup);
+    this.registerInteractive(boardGroup, 'ctf_wall');
+  }
+
+  /* ----------------------------------------------------
+     Timeline Wall & CV Board (Right Wall: X = 4.18, Z = 0.5)
   ---------------------------------------------------- */
   private buildTimelineWall() {
-    const timelineGroup = new THREE.Group();
-    timelineGroup.position.set(4.92, 1.8, 0.5);
-    timelineGroup.rotation.y = -Math.PI / 2;
+    const timeGroup = new THREE.Group();
+    timeGroup.position.set(4.16, 1.8, 0.5);
+    timeGroup.rotation.y = -Math.PI / 2;
 
-    // Glowing timeline backbone rail
-    const railGeo = new THREE.BoxGeometry(3.6, 0.02, 0.02);
-    const railMat = new THREE.MeshBasicMaterial({ color: 0xa855f7 });
-    const rail = new THREE.Mesh(railGeo, railMat);
-    rail.position.y = 0;
-    timelineGroup.add(rail);
+    const corkboard = new THREE.Mesh(
+      new THREE.BoxGeometry(2.8, 1.6, 0.04),
+      new THREE.MeshStandardMaterial({ color: 0x3d281a, roughness: 0.95 })
+    );
+    timeGroup.add(corkboard);
 
-    // 4 Milestone plaques (2023, 2024, 2025, 2026)
-    const plaqueGeo = new THREE.BoxGeometry(0.72, 0.95, 0.02);
-    const years = ['2023', '2024', '2025', '2026'];
+    const wire = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.012, 0.012, 2.4, 8),
+      new THREE.MeshBasicMaterial({ color: 0xa855f7 })
+    );
+    wire.rotation.z = Math.PI / 2;
+    wire.position.set(0, 0, 0.025);
+    timeGroup.add(wire);
 
-    years.forEach((_, i) => {
-      const plaqueMat = new THREE.MeshStandardMaterial({
-        color: 0x140d24,
-        metalness: 0.5,
-        roughness: 0.4,
-      });
-      const plaque = new THREE.Mesh(plaqueGeo, plaqueMat);
-      plaque.position.set(-1.35 + i * 0.9, 0.05, 0.015);
-      timelineGroup.add(plaque);
+    for (let i = 0; i < 4; i++) {
+      const plaque = new THREE.Mesh(
+        new THREE.BoxGeometry(0.5, 0.55, 0.02),
+        new THREE.MeshStandardMaterial({ color: 0x1f2430, roughness: 0.5 })
+      );
+      plaque.position.set(-0.9 + i * 0.6, 0.15, 0.025);
+      timeGroup.add(plaque);
 
-      // Node dot on the rail
-      const nodeGeo = new THREE.SphereGeometry(0.035, 12, 12);
-      const nodeMat = new THREE.MeshBasicMaterial({ color: 0xc084fc });
-      const node = new THREE.Mesh(nodeGeo, nodeMat);
-      node.position.set(-1.35 + i * 0.9, 0, 0.028);
-      timelineGroup.add(node);
-    });
+      const node = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 10), new THREE.MeshBasicMaterial({ color: 0xc084fc }));
+      node.position.set(-0.9 + i * 0.6, 0, 0.038);
+      timeGroup.add(node);
+    }
 
-    this.scene.add(timelineGroup);
-    this.registerInteractive(timelineGroup, 'timeline_wall');
+    this.scene.add(timeGroup);
+    this.registerInteractive(timeGroup, 'timeline_wall');
   }
 
   /* ----------------------------------------------------
-     Exit Door (Comms & Contact Terminal)
+     Exit Portal (Z = 4.1)
   ---------------------------------------------------- */
-  private buildExitDoor() {
+  private buildExitPortal() {
     const doorGroup = new THREE.Group();
-    doorGroup.position.set(0, 1.25, 5.46);
+    doorGroup.position.set(0, 1.4, 4.1);
 
-    // Reinforced door frame
-    const frameGeo = new THREE.BoxGeometry(1.5, 2.5, 0.08);
-    const frameMat = new THREE.MeshStandardMaterial({
-      color: 0x050811,
-      metalness: 0.85,
-      roughness: 0.35,
-    });
-    const door = new THREE.Mesh(frameGeo, frameMat);
-    doorGroup.add(door);
+    const doorMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(1.6, 2.6, 0.08),
+      new THREE.MeshStandardMaterial({ color: 0x181a24, metalness: 0.8, roughness: 0.3 })
+    );
+    doorGroup.add(doorMesh);
 
-    // Electronic keypad & illuminated comms interface
-    const keypadGeo = new THREE.BoxGeometry(0.24, 0.42, 0.04);
-    const keypadMat = new THREE.MeshStandardMaterial({
-      color: 0x0b1329,
-      metalness: 0.8,
-      roughness: 0.2,
-    });
-    const keypad = new THREE.Mesh(keypadGeo, keypadMat);
-    keypad.position.set(0.9, 0, 0);
+    const keypad = new THREE.Mesh(
+      new THREE.BoxGeometry(0.25, 0.45, 0.04),
+      new THREE.MeshStandardMaterial({ color: 0x0b1329, metalness: 0.9 })
+    );
+    keypad.position.set(0.95, 0, 0);
     doorGroup.add(keypad);
 
-    // Keypad neon indicator
-    const ledGeo = new THREE.PlaneGeometry(0.18, 0.08);
-    const ledMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
-    const led = new THREE.Mesh(ledGeo, ledMat);
-    led.position.set(0.9, 0.12, 0.025);
+    const led = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.1), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+    led.position.set(0.95, 0.12, 0.025);
     doorGroup.add(led);
 
     this.scene.add(doorGroup);
@@ -930,21 +1649,20 @@ export class RoomScene {
   }
 
   /* ----------------------------------------------------
-     Atmospheric Dust Particles
+     Dust particles
   ---------------------------------------------------- */
   private buildDustParticles() {
-    const count = 350;
+    const count = 300;
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(count * 3);
     const scales = new Float32Array(count);
     const randoms = new Float32Array(count);
 
     for (let i = 0; i < count; i++) {
-      positions[i * 3 + 0] = (Math.random() - 0.5) * 8.5;
-      positions[i * 3 + 1] = Math.random() * 3.2;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 9.5;
-
-      scales[i] = 0.5 + Math.random() * 1.5;
+      positions[i * 3 + 0] = (Math.random() - 0.5) * 8.0;
+      positions[i * 3 + 1] = 0.5 + Math.random() * 2.8;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 7.5;
+      scales[i] = 0.6 + Math.random() * 1.4;
       randoms[i] = Math.random();
     }
 
@@ -969,30 +1687,30 @@ export class RoomScene {
   }
 
   /* ----------------------------------------------------
-     Interactive Object Registration
+     Interactive Registry
   ---------------------------------------------------- */
   private registerInteractive(obj: THREE.Object3D, stationId: StationId) {
     this.interactiveObjects.push(obj);
     this.objectStationMap.set(obj, stationId);
-
-    // Recursively register all children so raycaster catches any part
     obj.traverse((child) => {
       this.objectStationMap.set(child, stationId);
     });
   }
 
   /* ----------------------------------------------------
-     Station Transition & Camera Movement
+     Station Zooming & Transitions
   ---------------------------------------------------- */
   public goToStation(stationId: StationId) {
-    const target = STATIONS[stationId];
-    if (!target) return;
+    const config = STATIONS[stationId];
+    if (!config) return;
 
     this.activeStation = stationId;
-    this.targetCameraPos.set(...target.cameraPos);
-    this.targetCameraLook.set(...target.cameraTarget);
-    this.targetFov = target.fov || 55;
-    this.isTransitioning = true;
+    this.targetCameraPos.set(...config.cameraPos);
+    this.targetCameraLook.set(...config.cameraTarget);
+    this.targetFov = config.fov || 55;
+
+    this.isInspecting = stationId !== 'overview';
+    this.isWalkMode = !this.isInspecting;
 
     soundEngine.playWhoosh();
     if (this.onStationSelect) {
@@ -1000,99 +1718,97 @@ export class RoomScene {
     }
   }
 
-  public getActiveStation(): StationId {
-    return this.activeStation;
+  public stepBackToWalk() {
+    this.isInspecting = false;
+    this.isWalkMode = true;
+    this.goToStation('overview');
   }
 
   public setWalkMode(active: boolean) {
     this.isWalkMode = active;
+    if (active) {
+      this.isInspecting = false;
+    }
   }
 
   public getWalkMode(): boolean {
     return this.isWalkMode;
   }
 
+  public getActiveStation(): StationId {
+    return this.activeStation;
+  }
+
   /* ----------------------------------------------------
-     Event Handlers & Raycasting
+     Event Handlers (WASD Walking, Mouse Look)
   ---------------------------------------------------- */
   private bindEvents() {
     window.addEventListener('resize', this.onWindowResize);
 
     const dom = this.renderer.domElement;
-    dom.addEventListener('pointermove', this.onPointerMove);
-    dom.addEventListener('click', this.onPointerClick);
+    dom.addEventListener('mousedown', this.onMouseDown);
+    window.addEventListener('mousemove', this.onMouseMove);
+    window.addEventListener('mouseup', this.onMouseUp);
 
-    // Keyboard navigation
+    dom.addEventListener('click', this.onClick);
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
   }
 
   private onWindowResize = () => {
     if (!this.container) return;
-    const width = this.container.clientWidth || window.innerWidth;
-    const height = this.container.clientHeight || window.innerHeight;
-    this.camera.aspect = width / height;
+    const w = this.container.clientWidth || window.innerWidth;
+    const h = this.container.clientHeight || window.innerHeight;
+    this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(width, height);
+    this.renderer.setSize(w, h);
   };
 
-  private raycaster = new THREE.Raycaster();
-  private mouse = new THREE.Vector2();
-
-  private onPointerMove = (e: MouseEvent) => {
-    // Start ambient on first mouse interaction
+  private onMouseDown = (e: MouseEvent) => {
     soundEngine.startAmbient();
+    this.isMouseDown = true;
+    this.prevMouseX = e.clientX;
+    this.prevMouseY = e.clientY;
+  };
 
-    const rect = this.renderer.domElement.getBoundingClientRect();
-    this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  private onMouseMove = (e: MouseEvent) => {
+    if (this.isMouseDown && this.isWalkMode) {
+      const deltaX = e.clientX - this.prevMouseX;
+      const deltaY = e.clientY - this.prevMouseY;
 
-    // Raycast against interactive objects
-    this.raycaster.setFromCamera(this.mouse, this.camera);
-    const intersects = this.raycaster.intersectObjects(this.interactiveObjects, true);
+      this.yaw -= deltaX * 0.0035;
+      this.pitch -= deltaY * 0.0035;
+      this.pitch = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, this.pitch));
 
-    if (intersects.length > 0) {
-      let rootObj: THREE.Object3D | null = intersects[0].object;
-      while (rootObj && !this.objectStationMap.has(rootObj)) {
-        rootObj = rootObj.parent;
-      }
+      const lookDir = new THREE.Vector3(
+        -Math.sin(this.yaw) * Math.cos(this.pitch),
+        Math.sin(this.pitch),
+        -Math.cos(this.yaw) * Math.cos(this.pitch)
+      );
 
-      if (rootObj) {
-        const stationId = this.objectStationMap.get(rootObj)!;
-        const config = STATIONS[stationId];
-        this.renderer.domElement.style.cursor = 'pointer';
-        this.hoveredObject = rootObj;
+      this.currentCameraLook.copy(this.camera.position).add(lookDir);
+      this.targetCameraLook.copy(this.currentCameraLook);
+      this.camera.lookAt(this.currentCameraLook);
 
-        if (this.onHoverChange) {
-          this.onHoverChange({
-            stationId,
-            label: config.label,
-            hint: 'Click or press [E] to inspect',
-          });
-        }
-        return;
-      }
-    }
-
-    this.renderer.domElement.style.cursor = 'default';
-    this.hoveredObject = null;
-    if (this.onHoverChange) {
-      this.onHoverChange(null);
+      this.prevMouseX = e.clientX;
+      this.prevMouseY = e.clientY;
     }
   };
 
-  private onPointerClick = () => {
+  private onMouseUp = () => {
+    this.isMouseDown = false;
+  };
+
+  private onClick = (e: MouseEvent) => {
+    soundEngine.startAmbient();
     soundEngine.playKeyClick();
-    if (this.hoveredObject) {
-      const stationId = this.objectStationMap.get(this.hoveredObject);
-      if (stationId) {
-        this.goToStation(stationId);
-      }
+
+    if (this.hoveredStationId) {
+      this.goToStation(this.hoveredStationId);
     }
   };
 
   private onKeyDown = (e: KeyboardEvent) => {
-    // Avoid interfering if active element is an input or textarea
     if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
       return;
     }
@@ -1102,18 +1818,13 @@ export class RoomScene {
     if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') this.moveLeft = true;
     if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') this.moveRight = true;
 
-    // [E] to inspect hovered station
-    if ((e.key === 'e' || e.key === 'E') && this.hoveredObject) {
-      const stationId = this.objectStationMap.get(this.hoveredObject);
-      if (stationId) {
-        this.goToStation(stationId);
-      }
+    if ((e.key === 'e' || e.key === 'E' || e.key === ' ') && this.hoveredStationId) {
+      this.goToStation(this.hoveredStationId);
     }
 
-    // Number keys 1-7 for instant station teleportation
     const num = parseInt(e.key);
     if (!isNaN(num) && num >= 0 && num <= 7) {
-      const stationList: StationId[] = [
+      const stations: StationId[] = [
         'overview',
         'horizontal_monitor',
         'vertical_monitor',
@@ -1123,8 +1834,8 @@ export class RoomScene {
         'server_rack',
         'exit_door',
       ];
-      if (stationList[num]) {
-        this.goToStation(stationList[num]);
+      if (stations[num]) {
+        this.goToStation(stations[num]);
       }
     }
   };
@@ -1137,7 +1848,7 @@ export class RoomScene {
   };
 
   /* ----------------------------------------------------
-     Render Loop & Animation
+     Render Loop
   ---------------------------------------------------- */
   private animate() {
     this.animFrameId = requestAnimationFrame(this.animate);
@@ -1145,80 +1856,137 @@ export class RoomScene {
     const delta = Math.min(this.clock.getDelta(), 0.1);
     const elapsed = this.clock.getElapsedTime();
 
-    // Update screen shaders uniforms
+    // 1. Shaders update
     if (this.horizMaterial.uniforms.uTime) {
       this.horizMaterial.uniforms.uTime.value = elapsed;
     }
     if (this.vertMaterial.uniforms.uTime) {
       this.vertMaterial.uniforms.uTime.value = elapsed;
     }
-    if (this.serverLedMat && this.serverLedMat.uniforms.uTime) {
-      this.serverLedMat.uniforms.uTime.value = elapsed;
-    }
     if (this.dustPoints && (this.dustPoints.material as THREE.ShaderMaterial).uniforms.uTime) {
       (this.dustPoints.material as THREE.ShaderMaterial).uniforms.uTime.value = elapsed;
     }
 
-    // Update canvas screen feeds
+    // 2. Rotate PC fan blades
+    this.fanRotors.forEach((fan) => {
+      fan.rotation.y += delta * 12.0;
+    });
+
+    // 3. Dynamic Server 1 Status LEDs animation
+    this.server1Leds.forEach((led) => {
+      const isLit = Math.sin(elapsed * led.blinkRate) > 0.1;
+      (led.mesh.material as THREE.MeshBasicMaterial).color.setHex(isLit ? led.baseColor : 0x050e14);
+    });
+
+    // 4. Server 2 Replica LEDs animation
+    this.server2Leds.forEach((led) => {
+      const isLit = Math.sin(elapsed * led.blinkRate) > 0.25;
+      (led.mesh.material as THREE.MeshBasicMaterial).color.setHex(isLit ? led.baseColor : 0x03070f);
+    });
+
+    // 5. Dynamic Canvas screens
     this.updateScreensContent(elapsed);
 
-    // First person walk mode displacement
-    if (this.isWalkMode) {
-      const moveVector = new THREE.Vector3();
-      if (this.moveForward) moveVector.z -= 1;
-      if (this.moveBackward) moveVector.z += 1;
-      if (this.moveLeft) moveVector.x -= 1;
-      if (this.moveRight) moveVector.x += 1;
+    // 6. Movement
+    if (this.isWalkMode && !this.isInspecting) {
+      const move = new THREE.Vector3();
+      const forward = new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw)).normalize();
+      const right = new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw)).normalize();
 
-      if (moveVector.lengthSq() > 0) {
-        moveVector.normalize();
-        moveVector.multiplyScalar(this.walkSpeed * delta);
-        this.camera.position.add(moveVector);
+      if (this.moveForward) move.add(forward);
+      if (this.moveBackward) move.sub(forward);
+      if (this.moveRight) move.add(right);
+      if (this.moveLeft) move.sub(right);
 
-        // Keep player within room bounds
-        this.camera.position.x = Math.max(-4.2, Math.min(4.2, this.camera.position.x));
-        this.camera.position.z = Math.max(-4.5, Math.min(4.9, this.camera.position.z));
-        this.camera.position.y = 1.75; // Eye height
+      if (move.lengthSq() > 0) {
+        move.normalize().multiplyScalar(this.walkSpeed * delta);
+        this.camera.position.add(move);
+
+        // Desk collision: desk is at Z = -3.2, player stops at Z = -2.15
+        this.camera.position.x = Math.max(-3.8, Math.min(3.8, this.camera.position.x));
+        this.camera.position.z = Math.max(-2.15, Math.min(3.6, this.camera.position.z));
+        this.camera.position.y = 1.7;
 
         this.currentCameraPos.copy(this.camera.position);
+
+        const lookDir = new THREE.Vector3(
+          -Math.sin(this.yaw) * Math.cos(this.pitch),
+          Math.sin(this.pitch),
+          -Math.cos(this.yaw) * Math.cos(this.pitch)
+        );
+        this.currentCameraLook.copy(this.camera.position).add(lookDir);
+        this.camera.lookAt(this.currentCameraLook);
       }
     } else {
-      // Smooth interpolation toward target camera pose
-      this.currentCameraPos.lerp(this.targetCameraPos, delta * 3.8);
-      this.currentCameraLook.lerp(this.targetCameraLook, delta * 3.8);
+      this.currentCameraPos.lerp(this.targetCameraPos, delta * 4.2);
+      this.currentCameraLook.lerp(this.targetCameraLook, delta * 4.2);
 
       this.camera.position.copy(this.currentCameraPos);
       this.camera.lookAt(this.currentCameraLook);
 
-      // Interpolate FOV
       if (Math.abs(this.camera.fov - this.targetFov) > 0.1) {
-        this.camera.fov += (this.targetFov - this.camera.fov) * delta * 3.5;
+        this.camera.fov += (this.targetFov - this.camera.fov) * delta * 4.0;
         this.camera.updateProjectionMatrix();
-      }
-
-      if (this.currentCameraPos.distanceTo(this.targetCameraPos) < 0.05) {
-        this.isTransitioning = false;
       }
     }
 
-    // Render
+    // 7. Raycast check for interactive objects
+    this.raycaster.setFromCamera(this.centerCrosshair, this.camera);
+    const intersects = this.raycaster.intersectObjects(this.interactiveObjects, true);
+
+    if (intersects.length > 0 && intersects[0].distance < 6.5) {
+      let root: THREE.Object3D | null = intersects[0].object;
+      while (root && !this.objectStationMap.has(root)) {
+        root = root.parent;
+      }
+
+      if (root) {
+        const stationId = this.objectStationMap.get(root)!;
+        this.hoveredStationId = stationId;
+        const config = STATIONS[stationId];
+
+        let hintText = 'Press [E] or Click to Interact';
+        if (stationId === 'vertical_monitor') hintText = 'Press [E] or Click to Run Terminal Shell';
+        else if (stationId === 'horizontal_monitor') hintText = 'Press [E] or Click to Open Desktop (Projects & CV)';
+        else if (stationId === 'ctf_wall') hintText = 'Press [E] or Click to View CTF Writeups';
+        else if (stationId === 'timeline_wall') hintText = 'Press [E] or Click to View CV & Roadmap';
+        else if (stationId === 'server_rack') hintText = 'Press [E] or Click to Inspect Primary Server';
+        else if (stationId === 'exit_door') hintText = 'Press [E] or Click to Dispatch Comms';
+
+        if (this.onHoverChange) {
+          this.onHoverChange({
+            stationId,
+            label: config?.label || 'Workstation',
+            hint: hintText,
+          });
+        }
+      }
+    } else {
+      this.hoveredStationId = null;
+      if (this.onHoverChange) {
+        this.onHoverChange(null);
+      }
+    }
+
     this.renderer.render(this.scene, this.camera);
   }
 
   /* ----------------------------------------------------
-     Cleanup
+     Disposal
   ---------------------------------------------------- */
   public dispose() {
     if (this.animFrameId !== null) {
       cancelAnimationFrame(this.animFrameId);
     }
     window.removeEventListener('resize', this.onWindowResize);
+    window.removeEventListener('mousemove', this.onMouseMove);
+    window.removeEventListener('mouseup', this.onMouseUp);
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
 
     const dom = this.renderer.domElement;
-    dom.removeEventListener('pointermove', this.onPointerMove);
-    dom.removeEventListener('click', this.onPointerClick);
+    dom.removeEventListener('mousedown', this.onMouseDown);
+    dom.removeEventListener('click', this.onClick);
 
     this.renderer.dispose();
     if (this.container.contains(dom)) {

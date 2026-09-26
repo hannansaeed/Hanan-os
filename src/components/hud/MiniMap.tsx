@@ -23,7 +23,7 @@ const MAP_NODES: MapNode[] = [
   { id: 'desk', label: 'Desk & Peripherals', xPercent: 50, yPercent: 58, icon: <Terminal className="w-3.5 h-3.5" /> },
   { id: 'ctf_wall', label: 'CTF Lab Wall', xPercent: 12, yPercent: 50, icon: <Flag className="w-3.5 h-3.5" /> },
   { id: 'timeline_wall', label: 'Timeline Wall', xPercent: 88, yPercent: 50, icon: <History className="w-3.5 h-3.5" /> },
-  { id: 'server_rack', label: 'Server Rack (42U)', xPercent: 18, yPercent: 18, icon: <Server className="w-3.5 h-3.5" /> },
+  { id: 'server_rack', label: 'Dual Servers (Core Node)', xPercent: 18, yPercent: 18, icon: <Server className="w-3.5 h-3.5" /> },
   { id: 'exit_door', label: 'Comms / Exit Door', xPercent: 50, yPercent: 92, icon: <DoorOpen className="w-3.5 h-3.5" /> },
   { id: 'overview', label: 'Room Entry View', xPercent: 50, yPercent: 80, icon: <Crosshair className="w-3.5 h-3.5" /> },
 ];

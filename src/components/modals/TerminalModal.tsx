@@ -61,6 +61,8 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
             <div className="text-cyan-400 font-bold mb-1">AVAILABLE SYSTEM COMMANDS:</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
               <div><span className="text-cyan-300 font-semibold">whoami</span> — Identity & operator summary</div>
+              <div><span className="text-cyan-300 font-semibold">about</span> — Bio & DedSec engineering background</div>
+              <div><span className="text-cyan-300 font-semibold">cv</span> — Display full Curriculum Vitae</div>
               <div><span className="text-cyan-300 font-semibold">projects</span> — List production systems & research</div>
               <div><span className="text-cyan-300 font-semibold">project &lt;id&gt;</span> — Inspect specific project</div>
               <div><span className="text-cyan-300 font-semibold">ctf</span> — High-impact CTF writeups & exploits</div>
@@ -69,6 +71,45 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
               <div><span className="text-cyan-300 font-semibold">nmap &lt;target&gt;</span> — Simulated TCP SYN stealth scan</div>
               <div><span className="text-cyan-300 font-semibold">clear</span> — Clear console buffer</div>
               <div><span className="text-cyan-300 font-semibold">exit</span> — Terminate shell session</div>
+            </div>
+          </div>
+        );
+        break;
+
+      case 'about':
+        output = (
+          <div className="space-y-2 text-xs text-slate-300">
+            <div className="text-white font-semibold">Hanan :: DedSec Underground Cybersecurity Engineer</div>
+            <p className="text-slate-400 leading-relaxed">
+              I analyze and construct low-level systems, kernel telemetry probes, and analyze complex software vulnerabilities. My background bridges hands-on offensive security (glibc heap internals, binary exploitation, Android AOSP Binder IPC hijacking) with high-performance systems engineering (Rust, eBPF, WebGL 3D shaders, and post-quantum cryptographic primitives).
+            </p>
+          </div>
+        );
+        break;
+
+      case 'cv':
+      case 'resume':
+        output = (
+          <div className="space-y-3 text-xs text-slate-300">
+            <div className="text-cyan-400 font-bold border-b border-slate-800 pb-1">
+              CURRICULUM VITAE — HANAN
+            </div>
+            <div>
+              <span className="text-white font-bold">Education:</span> B.S. in Computer Science (Summa Cum Laude, President of Cyber Club)
+            </div>
+            <div>
+              <span className="text-white font-bold">Key Experience:</span>
+              <div className="pl-3 text-slate-400 space-y-1 mt-1">
+                <div>• Cybersecurity Systems Engineer (eBPF Android Binder Monitor, &lt;1.4% overhead)</div>
+                <div>• Offensive Security Researcher (Sentinel CTF Automated Orchestration for 1,200+ hackers)</div>
+                <div>• Discovered 3 zero-permission intent hijack vulnerabilities in vendor system services</div>
+              </div>
+            </div>
+            <div>
+              <span className="text-emerald-400 font-bold">Accreditations:</span> OSCP (PEN-200 Active) · PNPT · CompTIA Security+ · BSCP
+            </div>
+            <div>
+              <span className="text-purple-400 font-bold">CTF Rank:</span> DEFCON Quals Top 2% Worldwide · HackTheBox Global 8th
             </div>
           </div>
         );
