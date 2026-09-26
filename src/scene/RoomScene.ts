@@ -134,10 +134,13 @@ export class RoomScene {
     // 1. Load the authentic room model (roomModel.glb + topChairModel.glb with bakedNight.jpg)
     this.loadBakedRoomModel();
 
-    // 2. Dual Servers beside workstation
+    // 2. Add the remaining two walls and ceiling to complete the 4-walled room
+    this.buildComplementaryWalls();
+
+    // 3. Dual Servers beside workstation
     this.buildDualServers();
 
-    // 3. Atmospheric dust particles
+    // 4. Atmospheric dust particles
     this.buildDustParticles();
 
     // Bind event listeners
@@ -875,6 +878,103 @@ export class RoomScene {
 
     serversRoot.add(server2Group);
     this.scene.add(serversRoot);
+  }
+
+  /* ----------------------------------------------------
+     Complementary Walls & Ceiling (Completes the 4-Walled Room):
+     - East Wall at X = 5.54m (Burgundy #5c2324, matching TV wall)
+     - South Wall at Z = 4.70m (Blue / Slate Navy #262457, on opposite side behind sofa)
+     - Flush Ceiling (Overhead at Y = 6.4m)
+  ---------------------------------------------------- */
+  private buildComplementaryWalls() {
+    const wallsGroup = new THREE.Group();
+
+    // 2 EXACT WALL COLORS MATCHING THE 3D MODEL:
+    const navyWallMat = new THREE.MeshStandardMaterial({
+      color: 0x262457, // Slate Navy Blue on opposite side behind sofa
+      roughness: 0.72,
+      metalness: 0.05,
+      side: THREE.DoubleSide,
+    });
+
+    const burgundyWallMat = new THREE.MeshStandardMaterial({
+      color: 0x5c2324, // Warm Burgundy Red matching TV wall
+      roughness: 0.72,
+      metalness: 0.05,
+      side: THREE.DoubleSide,
+    });
+
+    const baseboardMat = new THREE.MeshStandardMaterial({
+      color: 0x1c130e,
+      roughness: 0.6,
+    });
+
+    // 1. EAST WALL → now WEST WALL (the blue/navy one)
+    const eastWallGeo = new THREE.PlaneGeometry(10.23, 6.4);
+    const eastWallMesh = new THREE.Mesh(eastWallGeo, navyWallMat);
+    eastWallMesh.rotation.y = Math.PI / 2;        // was -Math.PI / 2 — flipped so normal faces +X (into room)
+    eastWallMesh.position.set(-4.96, 3.2, -0.415); // was (5.54, 3.2, -0.415)
+    eastWallMesh.receiveShadow = true;
+    wallsGroup.add(eastWallMesh);
+
+    const bbEast = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 10.23), baseboardMat);
+    bbEast.position.set(-4.92, 0.09, -0.415);  // was (5.50, 0.09, -0.415)
+    wallsGroup.add(bbEast);
+
+    // 2. SOUTH WALL (Z = 4.45m, spans X: -4.96m to +5.54m) - RED WALL
+    const southWallGeo = new THREE.PlaneGeometry(10.50, 6.4);
+    const southWallMesh = new THREE.Mesh(southWallGeo, burgundyWallMat);
+    southWallMesh.rotation.y = Math.PI; // Faces inward (-Z into the room)
+    southWallMesh.position.set(0.287, 3.2, 4.45);
+    southWallMesh.receiveShadow = true;
+    wallsGroup.add(southWallMesh);
+
+    const bbSouth = new THREE.Mesh(new THREE.BoxGeometry(10.50, 0.18, 0.06), baseboardMat);
+    bbSouth.position.set(0.287, 0.09, 4.42);
+    wallsGroup.add(bbSouth);
+
+    // Dedicated Wall Illumination (Warm glow onto East and South walls)
+    const eastWallLight = new THREE.PointLight(0xffedd5, 2.2, 9.0);
+    eastWallLight.position.set(-3.62, 3.6, -0.415); // was (4.2, 3.6, -0.415)
+    wallsGroup.add(eastWallLight);
+
+    const southWallLight = new THREE.PointLight(0xffedd5, 2.2, 9.0);
+    southWallLight.position.set(0.287, 3.6, 3.2);
+    wallsGroup.add(southWallLight);
+
+    // 3. SIMPLE FLUSH CEILING (Y = 6.4m, spans 10.50m x 10.23m)
+    const ceilingMat = new THREE.MeshStandardMaterial({
+      color: 0x141822,
+      roughness: 0.85,
+      metalness: 0.1,
+      side: THREE.DoubleSide,
+    });
+    const ceilingGeo = new THREE.PlaneGeometry(10.50, 10.23);
+    const ceilingMesh = new THREE.Mesh(ceilingGeo, ceilingMat);
+    ceilingMesh.rotation.x = Math.PI / 2; // Facing down
+    ceilingMesh.position.set(0.287, 6.4, -0.415);
+    ceilingMesh.receiveShadow = true;
+    wallsGroup.add(ceilingMesh);
+
+    // Recessed Pot Lights
+    const potLightMat = new THREE.MeshBasicMaterial({ color: 0xffedd5 });
+    const potTrimMat = new THREE.MeshStandardMaterial({ color: 0x222836, metalness: 0.8 });
+    const potPositions: [number, number][] = [
+      [0.287, 2.0], [0.287, -2.8],
+      [-2.5, -0.4], [3.2, -0.4],
+    ];
+    potPositions.forEach(([px, pz]) => {
+      const trim = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.04, 16), potTrimMat);
+      trim.position.set(px, 6.38, pz);
+      wallsGroup.add(trim);
+
+      const bulb = new THREE.Mesh(new THREE.CircleGeometry(0.16, 16), potLightMat);
+      bulb.rotation.x = Math.PI / 2;
+      bulb.position.set(px, 6.36, pz);
+      wallsGroup.add(bulb);
+    });
+
+    this.scene.add(wallsGroup);
   }
 
   /* ----------------------------------------------------
