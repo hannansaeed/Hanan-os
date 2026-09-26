@@ -14,20 +14,25 @@ export const WorkstationCanvas: React.FC<WorkstationCanvasProps> = ({
   sceneRef,
 }) => {
   const mountRef = useRef<HTMLDivElement>(null);
+  const onStationSelectRef = useRef(onStationSelect);
+  const onHoverChangeRef = useRef(onHoverChange);
+
+  onStationSelectRef.current = onStationSelect;
+  onHoverChangeRef.current = onHoverChange;
 
   useEffect(() => {
     if (!mountRef.current) return;
 
     const roomScene = new RoomScene(mountRef.current);
-    roomScene.onStationSelect = onStationSelect;
-    roomScene.onHoverChange = onHoverChange;
+    roomScene.onStationSelect = (id) => onStationSelectRef.current?.(id);
+    roomScene.onHoverChange = (hit) => onHoverChangeRef.current?.(hit);
     sceneRef.current = roomScene;
 
     return () => {
       roomScene.dispose();
       sceneRef.current = null;
     };
-  }, [onStationSelect, onHoverChange, sceneRef]);
+  }, [sceneRef]);
 
   return (
     <div
