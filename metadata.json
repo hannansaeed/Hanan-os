@@ -1,0 +1,6 @@
+{
+  "name": "HANAN//OS — The 3D Cyber Workstation",
+  "description": "An immersive 3D interactive portfolio room featuring shader-based displays, cybersecurity research terminal, project workstations, CTF lab wall, and server infrastructure.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
