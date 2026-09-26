@@ -1,7 +1,7 @@
 import React from 'react';
 import { StationId } from '../../types';
 import { soundEngine } from '../../audio/soundEngine';
-import { X, Crosshair, Monitor, Shield, Terminal, Flag, History, Server, DoorOpen } from 'lucide-react';
+import { X, Crosshair, Monitor, Shield, Terminal, Server } from 'lucide-react';
 
 interface MiniMapProps {
   activeStation: StationId;
@@ -18,14 +18,11 @@ interface MapNode {
 }
 
 const MAP_NODES: MapNode[] = [
-  { id: 'horizontal_monitor', label: 'Workstation Display', xPercent: 48, yPercent: 46, icon: <Monitor className="w-3.5 h-3.5" /> },
-  { id: 'vertical_monitor', label: 'Security Terminal', xPercent: 62, yPercent: 47, icon: <Shield className="w-3.5 h-3.5" /> },
-  { id: 'desk', label: 'Desk & Peripherals', xPercent: 50, yPercent: 58, icon: <Terminal className="w-3.5 h-3.5" /> },
-  { id: 'ctf_wall', label: 'CTF Lab Wall', xPercent: 12, yPercent: 50, icon: <Flag className="w-3.5 h-3.5" /> },
-  { id: 'timeline_wall', label: 'Timeline Wall', xPercent: 88, yPercent: 50, icon: <History className="w-3.5 h-3.5" /> },
-  { id: 'server_rack', label: 'Dual Servers (Core Node)', xPercent: 18, yPercent: 18, icon: <Server className="w-3.5 h-3.5" /> },
-  { id: 'exit_door', label: 'Comms / Exit Door', xPercent: 50, yPercent: 92, icon: <DoorOpen className="w-3.5 h-3.5" /> },
-  { id: 'overview', label: 'Room Entry View', xPercent: 50, yPercent: 80, icon: <Crosshair className="w-3.5 h-3.5" /> },
+  { id: 'overview', label: 'Room Overview', xPercent: 50, yPercent: 78, icon: <Crosshair className="w-3.5 h-3.5" /> },
+  { id: 'horizontal_monitor', label: 'Workstation Display', xPercent: 48, yPercent: 30, icon: <Monitor className="w-3.5 h-3.5" /> },
+  { id: 'vertical_monitor', label: 'Security Terminal', xPercent: 60, yPercent: 30, icon: <Shield className="w-3.5 h-3.5" /> },
+  { id: 'desk', label: 'Desk & Peripherals', xPercent: 50, yPercent: 38, icon: <Terminal className="w-3.5 h-3.5" /> },
+  { id: 'server_rack', label: 'Dual Servers (Core Node)', xPercent: 26, yPercent: 28, icon: <Server className="w-3.5 h-3.5" /> },
 ];
 
 export const MiniMap: React.FC<MiniMapProps> = ({ activeStation, onSelectStation, onClose }) => {
@@ -35,8 +32,8 @@ export const MiniMap: React.FC<MiniMapProps> = ({ activeStation, onSelectStation
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
           <div>
-            <div className="text-xs font-mono text-cyan-400 tracking-wider">TACTICAL BLUEPRINT</div>
-            <h3 className="text-base font-semibold text-slate-100">HANAN//OS Workstation Facility</h3>
+            <div className="text-xs font-mono text-cyan-400 tracking-wider">3D ROOM BLUEPRINT</div>
+            <h3 className="text-base font-semibold text-slate-100">Interactive Workstation & Lab</h3>
           </div>
           <button
             onClick={() => {
@@ -62,23 +59,26 @@ export const MiniMap: React.FC<MiniMapProps> = ({ activeStation, onSelectStation
           />
 
           {/* Room Outer Perimeter */}
-          <div className="absolute inset-6 border border-dashed border-cyan-500/40 rounded pointer-events-none flex flex-col justify-between p-2 text-[10px] font-mono text-slate-500">
-            <div className="flex justify-between">
-              <span>BACK WALL / ACOUSTIC</span>
-              <span>42U INFRA</span>
+          <div className="absolute inset-4 border-2 border-cyan-500/50 rounded pointer-events-none flex flex-col justify-between p-2 text-[10px] font-mono text-slate-400">
+            <div className="flex justify-between border-b border-cyan-500/20 pb-1">
+              <span className="text-cyan-400">BURGUNDY WALL</span>
+              <span>WORKSTATION</span>
             </div>
-            <div className="flex justify-between">
-              <span>CTF RESEARCH</span>
-              <span>CAREER ROADMAP</span>
+            <div className="flex justify-between items-center my-auto">
+              <span className="rotate-[-90deg] origin-left text-cyan-400">WINDOW</span>
+              <div className="text-center opacity-30 text-[9px] tracking-widest text-slate-400">
+                CYBERSPACE RIG<br/>DEV & RESEARCH LAB
+              </div>
+              <span className="rotate-[90deg] origin-right text-cyan-400">SHELVING</span>
             </div>
-            <div className="flex justify-center text-cyan-400">
-              <span>▲ PORTAL ENTRANCE ▲</span>
+            <div className="flex justify-center border-t border-cyan-500/20 pt-1 text-cyan-300">
+              <span>▲ ROOM VIEWPOINT ▲</span>
             </div>
           </div>
 
           {/* Central Desk Outline */}
-          <div className="absolute left-[38%] top-[44%] w-[24%] h-[16%] border border-slate-700 bg-slate-900/60 rounded flex items-center justify-center pointer-events-none">
-            <span className="text-[9px] font-mono text-slate-400">DESK</span>
+          <div className="absolute left-[38%] top-[34%] w-[24%] h-[12%] border border-slate-600 bg-slate-900/80 rounded flex items-center justify-center pointer-events-none">
+            <span className="text-[9px] font-mono text-slate-300">WORKSTATION</span>
           </div>
 
           {/* Station Hotspot Nodes */}

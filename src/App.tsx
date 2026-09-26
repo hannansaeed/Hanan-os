@@ -55,18 +55,11 @@ export default function App() {
     if (stationId === 'horizontal_monitor') {
       setIsProjectModalOpen(true);
     } else if (stationId === 'vertical_monitor') {
-      // User specifically requested the vertical monitor to run the terminal where commands can be executed!
       setIsTerminalOpen(true);
     } else if (stationId === 'desk') {
       setIsTerminalOpen(true);
-    } else if (stationId === 'ctf_wall') {
-      setIsCTFModalOpen(true);
-    } else if (stationId === 'timeline_wall') {
-      setIsTimelineModalOpen(true);
     } else if (stationId === 'server_rack') {
       setIsServerModalOpen(true);
-    } else if (stationId === 'exit_door') {
-      setIsExitModalOpen(true);
     }
   }, [isWalkMode]);
 
@@ -74,10 +67,7 @@ export default function App() {
     setIsProjectModalOpen(false);
     setIsTerminalOpen(false);
     setIsSecurityModalOpen(false);
-    setIsCTFModalOpen(false);
-    setIsTimelineModalOpen(false);
     setIsServerModalOpen(false);
-    setIsExitModalOpen(false);
     setIsWalkMode(true);
     sceneRef.current?.stepBackToWalk();
   }, []);

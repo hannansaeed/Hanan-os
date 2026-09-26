@@ -3,10 +3,7 @@ export type StationId =
   | 'horizontal_monitor'
   | 'vertical_monitor'
   | 'desk'
-  | 'ctf_wall'
-  | 'timeline_wall'
-  | 'server_rack'
-  | 'exit_door';
+  | 'server_rack';
 
 export interface StationConfig {
   id: StationId;

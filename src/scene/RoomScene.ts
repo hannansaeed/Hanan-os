@@ -87,19 +87,19 @@ export class RoomScene {
 
     // Scene & Dark Atmospheric Fog
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0e111a);
-    this.scene.fog = new THREE.FogExp2(0x0e111a, 0.015);
+    this.scene.background = new THREE.Color(0x090c15);
+    this.scene.fog = new THREE.FogExp2(0x090c15, 0.012);
 
     const width = container.clientWidth || window.innerWidth;
     const height = container.clientHeight || window.innerHeight;
     this.camera = new THREE.PerspectiveCamera(56, width / height, 0.1, 100);
 
-    // Initial position: entrance overlooking the room
-    this.camera.position.set(0.5, 3.6, 1.2);
+    // Initial position: overview looking into the room
+    this.camera.position.set(4.2, 3.8, 3.2);
     this.currentCameraPos = this.camera.position.clone();
     this.targetCameraPos = this.camera.position.clone();
 
-    this.currentCameraLook = new THREE.Vector3(0.5, 3.1, -4.2);
+    this.currentCameraLook = new THREE.Vector3(-0.2, 1.8, -1.8);
     this.targetCameraLook = this.currentCameraLook.clone();
     this.camera.lookAt(this.currentCameraLook);
 
@@ -131,17 +131,13 @@ export class RoomScene {
     this.initCanvasScreens();
     this.setupLighting();
 
-    // Load the fetched Bruno Simon Room Models & Assets
+    // 1. Load the authentic room model (roomModel.glb + topChairModel.glb with bakedNight.jpg)
     this.loadBakedRoomModel();
 
-    // Build the User's demanded custom components:
-    // 1. Dual Servers (Server 1 interactive, Server 2 companion)
+    // 2. Dual Servers beside workstation
     this.buildDualServers();
-    // 2. CTF Wall Board & Timeline Wall & Exit Portal
-    this.buildCTFBoard();
-    this.buildTimelineWall();
-    this.buildExitPortal();
-    // 3. Atmospheric particles
+
+    // 3. Atmospheric dust particles
     this.buildDustParticles();
 
     // Bind event listeners
@@ -469,15 +465,22 @@ export class RoomScene {
   }
 
   /* ----------------------------------------------------
-     Atmospheric Lighting
+     Atmospheric Lighting (Warm Cozy Architectural Room)
   ---------------------------------------------------- */
   private setupLighting() {
-    // Ambient & Hemisphere
-    const ambientLight = new THREE.AmbientLight(0xffebd6, 1.2);
+    // Ambient & Hemisphere with warm cozy tone
+    const ambientLight = new THREE.AmbientLight(0xffebd6, 1.25);
     this.scene.add(ambientLight);
 
-    const hemiLight = new THREE.HemisphereLight(0xfff5eb, 0x1a1520, 1.0);
+    const hemiLight = new THREE.HemisphereLight(0xfff7ed, 0x3d2817, 1.4);
     this.scene.add(hemiLight);
+
+    // Upward ceiling illumination (highlights timber beams and wood grain)
+    const ceilingUpLight = new THREE.DirectionalLight(0xffecd6, 0.9);
+    ceilingUpLight.position.set(0, 1.0, 3.0);
+    ceilingUpLight.target.position.set(0, 5.6, 3.0);
+    this.scene.add(ceilingUpLight);
+    this.scene.add(ceilingUpLight.target);
 
     // Warm desk pendant lights
     const pendant1 = new THREE.PointLight(0xff9933, 3.8, 8.0);
@@ -488,8 +491,8 @@ export class RoomScene {
     pendant2.position.set(1.4, 4.2, -3.8);
     this.scene.add(pendant2);
 
-    // Warm desk lamp light focused on desk
-    const deskLamp = new THREE.PointLight(0xffeedd, 3.2, 4.5);
+    // Warm desk lamp focused on workstation
+    const deskLamp = new THREE.PointLight(0xffeedd, 3.4, 5.0);
     deskLamp.position.set(0.8, 3.6, -4.0);
     this.scene.add(deskLamp);
 
@@ -502,10 +505,27 @@ export class RoomScene {
     greenMonitorGlow.position.set(2.22, 2.8, -4.0);
     this.scene.add(greenMonitorGlow);
 
-    // Server rack corner glow (blue/violet)
+    // Server rack ambient glow
     const serverGlow = new THREE.PointLight(0x0284c7, 3.0, 5.0);
     serverGlow.position.set(-3.6, 2.2, -3.8);
     this.scene.add(serverGlow);
+
+    // Warm ceiling pot lights across the expanded room
+    const ceilingWarm1 = new THREE.PointLight(0xffedd5, 2.2, 14.0);
+    ceilingWarm1.position.set(0.5, 5.2, 3.5);
+    this.scene.add(ceilingWarm1);
+
+    const ceilingWarm2 = new THREE.PointLight(0xffedd5, 2.2, 14.0);
+    ceilingWarm2.position.set(0.5, 5.2, 9.0);
+    this.scene.add(ceilingWarm2);
+
+    const ceilingWest = new THREE.PointLight(0xffecd6, 1.8, 10.0);
+    ceilingWest.position.set(-6.0, 5.0, 0.5);
+    this.scene.add(ceilingWest);
+
+    const ceilingEast = new THREE.PointLight(0xffecd6, 1.8, 10.0);
+    ceilingEast.position.set(6.0, 5.0, 0.5);
+    this.scene.add(ceilingEast);
   }
 
   /* ----------------------------------------------------
@@ -519,7 +539,7 @@ export class RoomScene {
 
     const bakedMaterial = new THREE.MeshBasicMaterial({ map: bakedNightTexture });
 
-    // 1. Room Model
+    // 1. Central Workstation Room Model (Loaded once in the room center)
     this.gltfLoader.load(
       '/assets/roomModel.glb',
       (gltf) => {
@@ -635,24 +655,9 @@ export class RoomScene {
   }
 
   /* ----------------------------------------------------
-     Procedural Room Fallback (Ensures full room if GLB fails)
+     Procedural Room Fallback (Ensures desk if GLB fails)
   ---------------------------------------------------- */
   private buildProceduralRoomFallback() {
-    const roomW = 10.0;
-    const roomD = 10.0;
-    const roomH = 5.0;
-
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x1f1612, roughness: 0.4 });
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(roomW, roomD), floorMat);
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.y = 0;
-    this.scene.add(floor);
-
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x12141c, roughness: 0.8 });
-    const backWall = new THREE.Mesh(new THREE.PlaneGeometry(roomW, roomH), wallMat);
-    backWall.position.set(0, roomH / 2, -4.9);
-    this.scene.add(backWall);
-
     const desk = new THREE.Mesh(
       new THREE.BoxGeometry(3.2, 0.1, 1.2),
       new THREE.MeshStandardMaterial({ color: 0x3d281a, roughness: 0.4 })
@@ -873,125 +878,19 @@ export class RoomScene {
   }
 
   /* ----------------------------------------------------
-     CTF Board (Left Wall)
-  ---------------------------------------------------- */
-  private buildCTFBoard() {
-    const boardGroup = new THREE.Group();
-    boardGroup.position.set(-4.8, 3.2, -2.5);
-    boardGroup.rotation.y = Math.PI / 2;
-
-    const back = new THREE.Mesh(
-      new THREE.BoxGeometry(2.6, 1.5, 0.04),
-      new THREE.MeshStandardMaterial({ color: 0x181e2b, roughness: 0.8 })
-    );
-    boardGroup.add(back);
-
-    const titleBar = new THREE.Mesh(
-      new THREE.BoxGeometry(2.4, 0.2, 0.02),
-      new THREE.MeshBasicMaterial({ color: 0x0284c7 })
-    );
-    titleBar.position.set(0, 0.6, 0.025);
-    boardGroup.add(titleBar);
-
-    const cardColors = [0xfef08a, 0xa7f3d0, 0xfbcfe8, 0xbae6fd];
-    cardColors.forEach((color, i) => {
-      const note = new THREE.Mesh(
-        new THREE.BoxGeometry(0.5, 0.4, 0.015),
-        new THREE.MeshStandardMaterial({ color, roughness: 0.9 })
-      );
-      note.position.set(-0.8 + i * 0.55, i % 2 === 0 ? 0.15 : -0.2, 0.025);
-      boardGroup.add(note);
-
-      const pin = new THREE.Mesh(new THREE.SphereGeometry(0.018, 8, 8), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
-      pin.position.set(-0.8 + i * 0.55, i % 2 === 0 ? 0.32 : 0.0, 0.038);
-      boardGroup.add(pin);
-    });
-
-    this.scene.add(boardGroup);
-    this.registerInteractive(boardGroup, 'ctf_wall');
-  }
-
-  /* ----------------------------------------------------
-     Timeline Wall (Right Wall)
-  ---------------------------------------------------- */
-  private buildTimelineWall() {
-    const timeGroup = new THREE.Group();
-    timeGroup.position.set(4.8, 3.2, -2.5);
-    timeGroup.rotation.y = -Math.PI / 2;
-
-    const corkboard = new THREE.Mesh(
-      new THREE.BoxGeometry(2.6, 1.5, 0.04),
-      new THREE.MeshStandardMaterial({ color: 0x3d281a, roughness: 0.95 })
-    );
-    timeGroup.add(corkboard);
-
-    const wire = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.01, 0.01, 2.2, 8),
-      new THREE.MeshBasicMaterial({ color: 0xa855f7 })
-    );
-    wire.rotation.z = Math.PI / 2;
-    wire.position.set(0, 0, 0.025);
-    timeGroup.add(wire);
-
-    for (let i = 0; i < 4; i++) {
-      const plaque = new THREE.Mesh(
-        new THREE.BoxGeometry(0.46, 0.5, 0.02),
-        new THREE.MeshStandardMaterial({ color: 0x1f2430, roughness: 0.5 })
-      );
-      plaque.position.set(-0.8 + i * 0.55, 0.15, 0.025);
-      timeGroup.add(plaque);
-
-      const node = new THREE.Mesh(new THREE.SphereGeometry(0.025, 10, 10), new THREE.MeshBasicMaterial({ color: 0xc084fc }));
-      node.position.set(-0.8 + i * 0.55, 0, 0.038);
-      timeGroup.add(node);
-    }
-
-    this.scene.add(timeGroup);
-    this.registerInteractive(timeGroup, 'timeline_wall');
-  }
-
-  /* ----------------------------------------------------
-     Exit Portal (Entrance Door)
-  ---------------------------------------------------- */
-  private buildExitPortal() {
-    const doorGroup = new THREE.Group();
-    doorGroup.position.set(0.5, 3.0, 0.6);
-
-    const doorMesh = new THREE.Mesh(
-      new THREE.BoxGeometry(1.6, 2.4, 0.08),
-      new THREE.MeshStandardMaterial({ color: 0x181a24, metalness: 0.8, roughness: 0.3 })
-    );
-    doorGroup.add(doorMesh);
-
-    const keypad = new THREE.Mesh(
-      new THREE.BoxGeometry(0.2, 0.35, 0.04),
-      new THREE.MeshStandardMaterial({ color: 0x0b1329, metalness: 0.9 })
-    );
-    keypad.position.set(0.9, 0, 0);
-    doorGroup.add(keypad);
-
-    const led = new THREE.Mesh(new THREE.PlaneGeometry(0.14, 0.08), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
-    led.position.set(0.9, 0.1, 0.025);
-    doorGroup.add(led);
-
-    this.scene.add(doorGroup);
-    this.registerInteractive(doorGroup, 'exit_door');
-  }
-
-  /* ----------------------------------------------------
-     Dust particles
+     Dust particles (Atmospheric floating particles)
   ---------------------------------------------------- */
   private buildDustParticles() {
-    const count = 300;
+    const count = 250;
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(count * 3);
     const scales = new Float32Array(count);
     const randoms = new Float32Array(count);
 
     for (let i = 0; i < count; i++) {
-      positions[i * 3 + 0] = (Math.random() - 0.5) * 8.0;
-      positions[i * 3 + 1] = 1.5 + Math.random() * 3.0;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 8.0;
+      positions[i * 3 + 0] = -4.5 + Math.random() * 9.0;
+      positions[i * 3 + 1] = 0.5 + Math.random() * 3.5;
+      positions[i * 3 + 2] = -4.5 + Math.random() * 5.5;
       scales[i] = 0.6 + Math.random() * 1.4;
       randoms[i] = Math.random();
     }
@@ -1043,9 +942,6 @@ export class RoomScene {
     this.isWalkMode = !this.isInspecting;
 
     soundEngine.playWhoosh();
-    if (this.onStationSelect) {
-      this.onStationSelect(stationId);
-    }
   }
 
   public stepBackToWalk() {
@@ -1108,7 +1004,7 @@ export class RoomScene {
 
       this.yaw -= deltaX * 0.0035;
       this.pitch -= deltaY * 0.0035;
-      this.pitch = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, this.pitch));
+      this.pitch = Math.max(-Math.PI / 2.3, Math.min(Math.PI / 2.3, this.pitch));
 
       const lookDir = new THREE.Vector3(
         -Math.sin(this.yaw) * Math.cos(this.pitch),
@@ -1135,6 +1031,7 @@ export class RoomScene {
 
     if (this.hoveredStationId) {
       this.goToStation(this.hoveredStationId);
+      this.onStationSelect?.(this.hoveredStationId);
     }
   };
 
@@ -1150,6 +1047,7 @@ export class RoomScene {
 
     if ((e.key === 'e' || e.key === 'E' || e.key === ' ') && this.hoveredStationId) {
       this.goToStation(this.hoveredStationId);
+      this.onStationSelect?.(this.hoveredStationId);
     }
 
     const num = parseInt(e.key);
@@ -1159,10 +1057,7 @@ export class RoomScene {
         'horizontal_monitor',
         'vertical_monitor',
         'desk',
-        'ctf_wall',
-        'timeline_wall',
         'server_rack',
-        'exit_door',
       ];
       if (stations[num]) {
         this.goToStation(stations[num]);
@@ -1232,10 +1127,34 @@ export class RoomScene {
         move.normalize().multiplyScalar(this.walkSpeed * delta);
         this.camera.position.add(move);
 
-        // Room boundaries matching Bruno Simon room bounds
-        this.camera.position.x = Math.max(-4.2, Math.min(4.2, this.camera.position.x));
-        this.camera.position.z = Math.max(-3.4, Math.min(1.5, this.camera.position.z));
-        this.camera.position.y = 3.6; // comfortable eye level
+        // 4-walled room boundaries and free space
+        this.camera.position.x = Math.max(-4.2, Math.min(4.8, this.camera.position.x));
+        this.camera.position.z = Math.max(-4.6, Math.min(4.0, this.camera.position.z));
+        this.camera.position.y = 3.2; // comfortable standing eye level
+
+        // Collision buffer around central workstation desk
+        if (
+          this.camera.position.x > -2.2 &&
+          this.camera.position.x < 3.2 &&
+          this.camera.position.z > -5.2 &&
+          this.camera.position.z < -3.2
+        ) {
+          this.camera.position.z = -3.2;
+        }
+
+        // Collision buffer around dual server racks
+        if (
+          this.camera.position.x > -4.8 &&
+          this.camera.position.x < -2.4 &&
+          this.camera.position.z > -5.0 &&
+          this.camera.position.z < -2.6
+        ) {
+          if (this.camera.position.z < -3.8) {
+            this.camera.position.x = -2.3;
+          } else {
+            this.camera.position.z = -2.5;
+          }
+        }
 
         this.currentCameraPos.copy(this.camera.position);
 
@@ -1279,10 +1198,8 @@ export class RoomScene {
           let hintText = 'Press [E] or Click to Interact';
           if (stationId === 'vertical_monitor') hintText = 'Press [E] or Click to Run Terminal Shell';
           else if (stationId === 'horizontal_monitor') hintText = 'Press [E] or Click to Open Desktop (Projects & CV)';
-          else if (stationId === 'ctf_wall') hintText = 'Press [E] or Click to View CTF Writeups';
-          else if (stationId === 'timeline_wall') hintText = 'Press [E] or Click to View CV & Roadmap';
           else if (stationId === 'server_rack') hintText = 'Press [E] or Click to Inspect Primary Server';
-          else if (stationId === 'exit_door') hintText = 'Press [E] or Click to Dispatch Comms';
+          else if (stationId === 'desk') hintText = 'Press [E] or Click to Inspect Workstation';
 
           this.onHoverChange?.({
             stationId,

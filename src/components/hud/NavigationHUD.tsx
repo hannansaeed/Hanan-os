@@ -18,14 +18,11 @@ interface NavigationHUDProps {
 }
 
 const NAV_STATIONS: { id: StationId; label: string; shortcut: string }[] = [
-  { id: 'overview', label: 'Entrance', shortcut: '0' },
+  { id: 'overview', label: 'Overview', shortcut: '0' },
   { id: 'horizontal_monitor', label: 'Workstation', shortcut: '1' },
-  { id: 'vertical_monitor', label: 'Security', shortcut: '2' },
-  { id: 'desk', label: 'Desk & CLI', shortcut: '3' },
-  { id: 'ctf_wall', label: 'CTF Lab', shortcut: '4' },
-  { id: 'timeline_wall', label: 'Timeline', shortcut: '5' },
-  { id: 'server_rack', label: 'Dual Servers', shortcut: '6' },
-  { id: 'exit_door', label: 'Comms / Exit', shortcut: '7' },
+  { id: 'vertical_monitor', label: 'Terminal', shortcut: '2' },
+  { id: 'desk', label: 'Desk', shortcut: '3' },
+  { id: 'server_rack', label: 'Servers', shortcut: '4' },
 ];
 
 export const NavigationHUD: React.FC<NavigationHUDProps> = ({
@@ -90,24 +87,13 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
           <button
             onClick={() => {
               soundEngine.playKeyClick();
-              onSelectStation('ctf_wall');
+              onSelectStation('desk');
             }}
             className={`hover:text-cyan-400 transition-colors ${
-              activeStation === 'ctf_wall' ? 'text-cyan-400 font-semibold' : ''
+              activeStation === 'desk' ? 'text-cyan-400 font-semibold' : ''
             }`}
           >
-            CTF Lab
-          </button>
-          <button
-            onClick={() => {
-              soundEngine.playKeyClick();
-              onSelectStation('timeline_wall');
-            }}
-            className={`hover:text-cyan-400 transition-colors ${
-              activeStation === 'timeline_wall' ? 'text-cyan-400 font-semibold' : ''
-            }`}
-          >
-            Roadmap
+            Workstation Desk
           </button>
           <button
             onClick={() => {
@@ -119,17 +105,6 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
             }`}
           >
             Dual Servers
-          </button>
-          <button
-            onClick={() => {
-              soundEngine.playKeyClick();
-              onSelectStation('exit_door');
-            }}
-            className={`hover:text-cyan-400 transition-colors ${
-              activeStation === 'exit_door' ? 'text-cyan-400 font-semibold' : ''
-            }`}
-          >
-            Contact
           </button>
         </nav>
 
