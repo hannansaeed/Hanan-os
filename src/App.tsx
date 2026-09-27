@@ -60,6 +60,15 @@ export default function App() {
       setIsTerminalOpen(true);
     } else if (stationId === 'server_rack') {
       setIsServerModalOpen(true);
+    } else if (stationId === 'social_linkedin') {
+      window.open('https://www.linkedin.com', '_blank');
+      handleStepBackToWalk();
+    } else if (stationId === 'social_github') {
+      window.open('https://github.com', '_blank');
+      handleStepBackToWalk();
+    } else if (stationId === 'social_steam') {
+      window.open('https://store.steampowered.com', '_blank');
+      handleStepBackToWalk();
     }
   }, [isWalkMode]);
 

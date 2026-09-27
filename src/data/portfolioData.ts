@@ -46,6 +46,33 @@ export const STATIONS: Record<string, StationConfig> = {
     cameraTarget: [-3.8, 2.1, -4.0],
     fov: 50,
   },
+  social_linkedin: {
+    id: 'social_linkedin',
+    label: 'LinkedIn Profile',
+    shortCode: 'LNK',
+    description: 'Professional networking and career history',
+    cameraPos: [-1.6, 3.2, 2.5],
+    cameraTarget: [-1.6, 3.2, 4.41],
+    fov: 45,
+  },
+  social_github: {
+    id: 'social_github',
+    label: 'GitHub Profile',
+    shortCode: 'GH',
+    description: 'Open source repositories and systems code',
+    cameraPos: [0.0, 3.2, 2.5],
+    cameraTarget: [0.0, 3.2, 4.41],
+    fov: 45,
+  },
+  social_steam: {
+    id: 'social_steam',
+    label: 'Steam Profile',
+    shortCode: 'STM',
+    description: 'Gaming profile and VR simulations',
+    cameraPos: [1.6, 3.2, 2.5],
+    cameraTarget: [1.6, 3.2, 4.41],
+    fov: 45,
+  },
 };
 
 export const RESUME_DATA = {

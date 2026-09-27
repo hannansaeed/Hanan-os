@@ -136,11 +136,9 @@ export class RoomScene {
 
     // 2. Add the remaining two walls and ceiling to complete the 4-walled room
     this.buildComplementaryWalls();
+    this.buildSocialFrames();
 
-    // 3. Dual Servers beside workstation
-    this.buildDualServers();
-
-    // 4. Atmospheric dust particles
+    // 3. Atmospheric dust particles
     this.buildDustParticles();
 
     // Bind event listeners
@@ -507,11 +505,6 @@ export class RoomScene {
     const greenMonitorGlow = new THREE.PointLight(0x34d399, 2.5, 3.5);
     greenMonitorGlow.position.set(2.22, 2.8, -4.0);
     this.scene.add(greenMonitorGlow);
-
-    // Server rack ambient glow
-    const serverGlow = new THREE.PointLight(0x0284c7, 3.0, 5.0);
-    serverGlow.position.set(-3.6, 2.2, -3.8);
-    this.scene.add(serverGlow);
 
     // Warm ceiling pot lights across the expanded room
     const ceilingWarm1 = new THREE.PointLight(0xffedd5, 2.2, 14.0);
@@ -890,10 +883,11 @@ export class RoomScene {
     const wallsGroup = new THREE.Group();
 
     // 2 EXACT WALL COLORS MATCHING THE 3D MODEL:
-    const navyWallMat = new THREE.MeshStandardMaterial({
-      color: 0x262457, // Slate Navy Blue on opposite side behind sofa
-      roughness: 0.72,
-      metalness: 0.05,
+    // White wall matching cabinet color tone
+    const whiteWallMat = new THREE.MeshStandardMaterial({
+      color: 0xc4c9d4, // Soft off-white/cream-grey matching the cabinet doors
+      roughness: 0.9,
+      metalness: 0.01,
       side: THREE.DoubleSide,
     });
 
@@ -909,23 +903,23 @@ export class RoomScene {
       roughness: 0.6,
     });
 
-    // 1. EAST WALL → now WEST WALL (the blue/navy one)
-    const eastWallGeo = new THREE.PlaneGeometry(10.23, 6.4);
-    const eastWallMesh = new THREE.Mesh(eastWallGeo, navyWallMat);
-    eastWallMesh.rotation.y = Math.PI / 2;        // was -Math.PI / 2 — flipped so normal faces +X (into room)
-    eastWallMesh.position.set(-4.96, 3.2, -0.415); // was (5.54, 3.2, -0.415)
+    // 1. WEST WALL - RED WALL (matching room style)
+    const eastWallGeo = new THREE.PlaneGeometry(10.23, 6.6);
+    const eastWallMesh = new THREE.Mesh(eastWallGeo, burgundyWallMat);
+    eastWallMesh.rotation.y = Math.PI / 2;        // Normal faces +X (into room)
+    eastWallMesh.position.set(-4.96, 3.1, -0.415);
     eastWallMesh.receiveShadow = true;
     wallsGroup.add(eastWallMesh);
 
     const bbEast = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 10.23), baseboardMat);
-    bbEast.position.set(-4.92, 0.09, -0.415);  // was (5.50, 0.09, -0.415)
+    bbEast.position.set(-4.92, 0.09, -0.415);
     wallsGroup.add(bbEast);
 
     // 2. SOUTH WALL (Z = 4.45m, spans X: -4.96m to +5.54m) - RED WALL
-    const southWallGeo = new THREE.PlaneGeometry(10.50, 6.4);
+    const southWallGeo = new THREE.PlaneGeometry(10.50, 6.6);
     const southWallMesh = new THREE.Mesh(southWallGeo, burgundyWallMat);
     southWallMesh.rotation.y = Math.PI; // Faces inward (-Z into the room)
-    southWallMesh.position.set(0.287, 3.2, 4.45);
+    southWallMesh.position.set(0.287, 3.1, 4.45);
     southWallMesh.receiveShadow = true;
     wallsGroup.add(southWallMesh);
 
@@ -933,20 +927,24 @@ export class RoomScene {
     bbSouth.position.set(0.287, 0.09, 4.42);
     wallsGroup.add(bbSouth);
 
-    // Dedicated Wall Illumination (Warm glow onto East and South walls)
-    const eastWallLight = new THREE.PointLight(0xffedd5, 2.2, 9.0);
-    eastWallLight.position.set(-3.62, 3.6, -0.415); // was (4.2, 3.6, -0.415)
-    wallsGroup.add(eastWallLight);
-
-    const southWallLight = new THREE.PointLight(0xffedd5, 2.2, 9.0);
+    const southWallLight = new THREE.PointLight(0xffedd5, 1.0, 9.0);
     southWallLight.position.set(0.287, 3.6, 3.2);
     wallsGroup.add(southWallLight);
 
-    // 3. SIMPLE FLUSH CEILING (Y = 6.4m, spans 10.50m x 10.23m)
+    // Floor fill lights to lift contact shadows at floor-wall intersections
+    const floorFillLeft = new THREE.PointLight(0xffedd5, 1.2, 8.0);
+    floorFillLeft.position.set(-4.2, 0.2, -0.5);
+    wallsGroup.add(floorFillLeft);
+
+    const floorFillSouth = new THREE.PointLight(0xffedd5, 1.2, 8.0);
+    floorFillSouth.position.set(0.287, 0.2, 3.8);
+    wallsGroup.add(floorFillSouth);
+
+    // 3. ATMOSPHERIC NIGHT STUDIO CEILING (Y = 6.4m, spans 10.50m x 10.23m)
     const ceilingMat = new THREE.MeshStandardMaterial({
-      color: 0x141822,
-      roughness: 0.85,
-      metalness: 0.1,
+      color: 0x0b0f19, // Deep midnight navy slate matching the studio night vibe
+      roughness: 0.9,
+      metalness: 0.15,
       side: THREE.DoubleSide,
     });
     const ceilingGeo = new THREE.PlaneGeometry(10.50, 10.23);
@@ -956,9 +954,9 @@ export class RoomScene {
     ceilingMesh.receiveShadow = true;
     wallsGroup.add(ceilingMesh);
 
-    // Recessed Pot Lights
+    // Recessed Pot Lights with warm down-lighting
     const potLightMat = new THREE.MeshBasicMaterial({ color: 0xffedd5 });
-    const potTrimMat = new THREE.MeshStandardMaterial({ color: 0x222836, metalness: 0.8 });
+    const potTrimMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 });
     const potPositions: [number, number][] = [
       [0.287, 2.0], [0.287, -2.8],
       [-2.5, -0.4], [3.2, -0.4],
@@ -972,9 +970,114 @@ export class RoomScene {
       bulb.rotation.x = Math.PI / 2;
       bulb.position.set(px, 6.36, pz);
       wallsGroup.add(bulb);
+
+      // Warm overhead downlight for atmospheric studio glow
+      const downLight = new THREE.PointLight(0xffedd5, 1.2, 6.0);
+      downLight.position.set(px, 6.2, pz);
+      wallsGroup.add(downLight);
     });
 
     this.scene.add(wallsGroup);
+  }
+
+  /* ----------------------------------------------------
+     Procedural Social Media Interactive Frames (West Wall)
+     - Synchronous 2D canvas textures for LinkedIn, GitHub, and Steam on cream matte
+  ---------------------------------------------------- */
+  private buildSocialFrames() {
+    const socialLinks = [
+      { id: 'social_linkedin' as StationId, type: 'linkedin', z: 2.2, y: 4.5 },
+      { id: 'social_github' as StationId, type: 'github', z: 1.2, y: 3.6 },
+      { id: 'social_steam' as StationId, type: 'steam', z: 2.2, y: 2.7 },
+    ];
+
+    socialLinks.forEach((item) => {
+      const group = new THREE.Group();
+
+      // 1. Dark Wood Outer Frame
+      const frameGeo = new THREE.BoxGeometry(0.85, 0.85, 0.06);
+      const frameMat = new THREE.MeshStandardMaterial({
+        color: 0x322622,
+        roughness: 0.7,
+        metalness: 0.1,
+      });
+      const frameMesh = new THREE.Mesh(frameGeo, frameMat);
+      frameMesh.castShadow = true;
+      group.add(frameMesh);
+
+      // 2. Inner Canvas displaying Cream Matte + Logo synchronously
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d')!;
+
+      // Cream matte background
+      ctx.fillStyle = '#f4f1ea';
+      ctx.fillRect(0, 0, 512, 512);
+
+      // Render crisp logo directly onto 2D canvas context
+      if (item.type === 'linkedin') {
+        // LinkedIn Logo (Official Light Blue Rounded Square + White 'in')
+        ctx.fillStyle = '#0a66c2';
+        ctx.beginPath();
+        ctx.roundRect(100, 100, 312, 312, 54);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        // 'i' dot & stem
+        ctx.beginPath();
+        ctx.arc(172, 190, 22, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(150, 235, 44, 125);
+
+        // 'n' path
+        const nPath = new Path2D(
+          'M225 235 h44 v20 h2 c8-15 28-25 48-25 38 0 51 24 51 62 v88 h-44 v-78 c0-19-7-32-23-32-13 0-21 9-24 17-1 3-1 8-1 13 v80 h-44 V235 z'
+        );
+        ctx.fill(nPath);
+      } else if (item.type === 'github') {
+        // GitHub Logo (Dark Circle + White Octocat Silhouette - KEPT)
+        ctx.fillStyle = '#171a21';
+        ctx.beginPath();
+        ctx.arc(256, 256, 160, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        const path = new Path2D(
+          'M256 120c-75.1 0-136 60.9-136 136 0 60.1 39 111.1 93.1 129.1 6.8 1.3 9.3-3 9.3-6.6 0-3.3-.1-14.2-.2-25.8-37.8 8.2-45.8-16-45.8-16-6.2-15.7-15.1-19.9-15.1-19.9-12.3-8.4.9-8.2.9-8.2 13.6 1 20.8 14 20.8 14 12.1 20.7 31.8 14.7 39.5 11.2 1.2-8.8 4.7-14.7 8.6-18.1-30.2-3.4-61.9-15.1-61.9-67.2 0-14.8 5.3-27 14-36.5-1.4-3.4-6.1-17.3 1.3-36 0 0 11.4-3.6 37.4 13.9 10.8-3 22.5-4.5 34.1-4.6 11.6.1 23.3 1.6 34.1 4.6 26-17.6 37.3-13.9 37.3-13.9 7.4 18.7 2.7 32.6 1.3 36 8.7 9.5 14 21.7 14 36.5 0 52.2-31.8 63.7-62.1 67.1 4.9 4.2 9.2 12.5 9.2 25.2 0 18.2-.2 32.9-.2 37.4 0 3.7 2.5 8 9.4 6.6C393.1 367 432 316.1 432 256c0-75.1-60.9-136-136-136z'
+        );
+        ctx.fill(path);
+      } else if (item.type === 'steam') {
+        // Steam Logo (Dark Circle + Official White Steam Piston Vector)
+        ctx.fillStyle = '#171a21';
+        ctx.beginPath();
+        ctx.arc(256, 256, 160, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        const steamPath = new Path2D(
+          'M256 120c-75.1 0-136 60.9-136 136 0 62.1 41.5 114.5 98.4 131l24.6-35.5c-5.4-2.1-10.2-5.4-14-9.6l-32 13.1c-1.5.6-3.1.9-4.8.9-7.1 0-12.8-5.7-12.8-12.8 0-5.4 3.4-10.1 8.1-11.9l33.1-13.6c2.3-13.2 12.2-23.5 25.1-25.9l18.4-44.7c-17.5-6.7-26.1-26.3-19.4-43.8 6.7-17.5 26.3-26.1 43.8-19.4 17.5 6.7 26.1 26.3 19.4 43.8-5.1 13.4-18.3 22.2-32.6 22.2h-1.7l-17.9 43.5c.8.1 1.7.1 2.5.1 15.1 0 27.4-12.3 27.4-27.4 0-1.5-.1-2.9-.4-4.3l36.6 15.1c7.9 3.3 11.7 12.4 8.5 20.3-3.3 7.9-12.4 11.7-20.3 8.5l-35.8-14.7c-6.1 7-15 11.1-24.6 11.1-6.7 0-13.1-2-18.6-5.7l-25.7 37.1c24.7 7.1 50.7 6.6 75.1-1.4C354.7 354.7 392 308.8 392 256c0-75.1-60.9-136-136-136zm50.4 108.4c-8.8 0-15.8-7.1-15.8-15.8 0-8.8 7.1-15.8 15.8-15.8s15.8 7.1 15.8 15.8c0 8.7-7.1 15.8-15.8 15.8z'
+        );
+        ctx.fill(steamPath);
+      }
+
+      const canvasTexture = new THREE.CanvasTexture(canvas);
+      canvasTexture.colorSpace = THREE.SRGBColorSpace;
+      canvasTexture.needsUpdate = true;
+
+      const matteMat = new THREE.MeshBasicMaterial({ map: canvasTexture });
+      const matteGeo = new THREE.PlaneGeometry(0.72, 0.72);
+      const matteMesh = new THREE.Mesh(matteGeo, matteMat);
+      matteMesh.position.set(0, 0, 0.032);
+      group.add(matteMesh);
+
+      // Position on West Wall (X = -4.93, facing +X into the room)
+      group.position.set(-4.93, item.y, item.z);
+      group.rotation.y = Math.PI / 2;
+
+      this.scene.add(group);
+      this.registerInteractive(group, item.id);
+    });
   }
 
   /* ----------------------------------------------------
@@ -1300,6 +1403,9 @@ export class RoomScene {
           else if (stationId === 'horizontal_monitor') hintText = 'Press [E] or Click to Open Desktop (Projects & CV)';
           else if (stationId === 'server_rack') hintText = 'Press [E] or Click to Inspect Primary Server';
           else if (stationId === 'desk') hintText = 'Press [E] or Click to Inspect Workstation';
+          else if (stationId === 'social_linkedin') hintText = 'Click to Open LinkedIn Profile ↗';
+          else if (stationId === 'social_github') hintText = 'Click to Open GitHub Profile ↗';
+          else if (stationId === 'social_steam') hintText = 'Click to Open Steam Profile ↗';
 
           this.onHoverChange?.({
             stationId,
