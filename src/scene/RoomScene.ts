@@ -6,6 +6,7 @@ import { STATIONS } from '../data/portfolioData';
 import { CRTShader } from './shaders/crtShader';
 import { DustParticleShader } from './shaders/serverLedShader';
 import { CoffeeSteamShader } from './shaders/coffeeSteamShader';
+import { SkyWindowShader } from './shaders/skyWindowShader';
 import { soundEngine } from '../audio/soundEngine';
 
 export interface RaycastHitInfo {
@@ -50,6 +51,13 @@ export class RoomScene {
   private prevMouseX = 0;
   private prevMouseY = 0;
 
+  // Saved player walk state before zooming into any object
+  private savedWalkPos = new THREE.Vector3(4.2, 3.2, 3.2);
+  private savedWalkLook = new THREE.Vector3(-0.2, 2.0, -1.8);
+  private savedYaw: number = 0;
+  private savedPitch: number = 0;
+  private hasSavedWalkState: boolean = false;
+
   // Interactive raycasting
   private interactiveObjects: THREE.Object3D[] = [];
   private objectStationMap = new Map<THREE.Object3D, StationId>();
@@ -82,6 +90,7 @@ export class RoomScene {
 
   // 3D Objects & Models
   private topChairMesh: THREE.Object3D | null = null;
+  private skyWindowMaterial!: THREE.ShaderMaterial;
   private dustPoints!: THREE.Points;
   private server1Leds: { mesh: THREE.Mesh; baseColor: number; blinkRate: number }[] = [];
   private server2Leds: { mesh: THREE.Mesh; baseColor: number; blinkRate: number }[] = [];
@@ -111,6 +120,14 @@ export class RoomScene {
     this.currentCameraLook = new THREE.Vector3(-0.2, 1.8, -1.8);
     this.targetCameraLook = this.currentCameraLook.clone();
     this.camera.lookAt(this.currentCameraLook);
+
+    const initialDir = new THREE.Vector3().subVectors(this.currentCameraLook, this.camera.position).normalize();
+    this.yaw = Math.atan2(-initialDir.x, -initialDir.z);
+    this.pitch = Math.asin(Math.max(-0.99, Math.min(0.99, initialDir.y)));
+    this.savedYaw = this.yaw;
+    this.savedPitch = this.pitch;
+    this.savedWalkPos.copy(this.camera.position);
+    this.savedWalkLook.copy(this.currentCameraLook);
 
     // High quality WebGL Renderer with graceful context fallback
     try {
@@ -269,6 +286,16 @@ export class RoomScene {
       depthWrite: false,
       side: THREE.DoubleSide,
       blending: THREE.NormalBlending,
+    });
+
+    // 5. Sky & Drifting Clouds Window Backdrop Material
+    this.skyWindowMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0.0 },
+      },
+      vertexShader: SkyWindowShader.vertexShader,
+      fragmentShader: SkyWindowShader.fragmentShader,
+      side: THREE.DoubleSide,
     });
   }
 
@@ -746,8 +773,11 @@ export class RoomScene {
             child.material = bakedMaterial;
           }
         });
-        this.topChairMesh = gltf.scene;
-        this.scene.add(this.topChairMesh);
+        // Target the chair's actual spindle empty (Empty.012) rather than the scene root (0,0,0)
+        // so the chair rotates on its own center instead of orbiting the room origin
+        const chairSpindle = gltf.scene.getObjectByName('Empty.012') || gltf.scene.children[0] || gltf.scene;
+        this.topChairMesh = chairSpindle;
+        this.scene.add(gltf.scene);
       },
       undefined,
       () => {
@@ -757,6 +787,7 @@ export class RoomScene {
           new THREE.MeshStandardMaterial({ color: 0x1e2430 })
         );
         chair.position.set(0.8, 1.8, -2.5);
+        this.topChairMesh = chair;
         this.scene.add(chair);
       }
     );
@@ -1162,17 +1193,47 @@ export class RoomScene {
       roughness: 0.6,
     });
 
-    // 1. WEST WALL - RED WALL (matching room style)
-    const eastWallGeo = new THREE.PlaneGeometry(10.23, 6.6);
-    const eastWallMesh = new THREE.Mesh(eastWallGeo, burgundyWallMat);
-    eastWallMesh.rotation.y = Math.PI / 2;        // Normal faces +X (into room)
-    eastWallMesh.position.set(-4.96, 3.1, -0.415);
-    eastWallMesh.receiveShadow = true;
-    wallsGroup.add(eastWallMesh);
+    // 1. WEST WALL - ALL SOLID RED BURGUNDY INTERIOR WALL (X = -4.96m, fully solid, untouched)
+    const westWallGeo = new THREE.PlaneGeometry(10.23, 6.6);
+    const westWallMesh = new THREE.Mesh(westWallGeo, burgundyWallMat);
+    westWallMesh.rotation.y = Math.PI / 2; // Normal faces +X (into the room)
+    westWallMesh.position.set(-4.96, 3.1, -0.415);
+    westWallMesh.receiveShadow = true;
+    wallsGroup.add(westWallMesh);
 
-    const bbEast = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 10.23), baseboardMat);
-    bbEast.position.set(-4.92, 0.09, -0.415);
-    wallsGroup.add(bbEast);
+    const bbWest = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 10.23), baseboardMat);
+    bbWest.position.set(-4.92, 0.09, -0.415);
+    wallsGroup.add(bbWest);
+
+    /* ----------------------------------------------------
+       WALL OUTSIDE THE ROOM BEHIND THE WINDOW (BLUE SKY & DRIFTING CLOUDS):
+       - Placed strictly OUTSIDE the East window opening (X = +6.50m)
+       - Large panoramic exterior sky backdrop facing -X into the window
+       - Corner exterior sky wing at North (Z = -6.20m)
+       - Unobstructed view of drifting clouds and daytime sky through the window
+    ---------------------------------------------------- */
+    const extSkyEastGeo = new THREE.PlaneGeometry(28.0, 16.0);
+    const extSkyEastMesh = new THREE.Mesh(extSkyEastGeo, this.skyWindowMaterial);
+    extSkyEastMesh.rotation.y = -Math.PI / 2; // Faces -X directly into the room through the East window
+    extSkyEastMesh.position.set(6.50, 3.5, 0.0);
+    wallsGroup.add(extSkyEastMesh);
+
+    const extSkyNorthGeo = new THREE.PlaneGeometry(28.0, 16.0);
+    const extSkyNorthMesh = new THREE.Mesh(extSkyNorthGeo, this.skyWindowMaterial);
+    extSkyNorthMesh.rotation.y = 0; // Faces +Z directly into the room
+    extSkyNorthMesh.position.set(2.0, 3.5, -6.20);
+    wallsGroup.add(extSkyNorthMesh);
+
+    // Cool starlight & moonlight ambient glow spilling through the East window from the starry sky
+    const windowMoonlight = new THREE.DirectionalLight(0xa5b4fc, 0.85);
+    windowMoonlight.position.set(8.5, 5.5, 0.0);
+    windowMoonlight.target.position.set(2.0, 2.0, 0.0);
+    wallsGroup.add(windowMoonlight);
+    wallsGroup.add(windowMoonlight.target);
+
+    const windowAtmosphere = new THREE.PointLight(0x818cf8, 1.1, 9.0);
+    windowAtmosphere.position.set(5.2, 3.2, 0.8);
+    wallsGroup.add(windowAtmosphere);
 
     // 2. SOUTH WALL (Z = 4.45m, spans X: -4.96m to +5.54m) - RED WALL
     const southWallGeo = new THREE.PlaneGeometry(10.50, 6.6);
@@ -1768,20 +1829,46 @@ export class RoomScene {
     const config = STATIONS[stationId];
     if (!config) return;
 
-    this.activeStation = stationId;
-    this.targetCameraPos.set(...config.cameraPos);
-    this.targetCameraLook.set(...config.cameraTarget);
-    this.targetFov = config.fov || 52;
+    if (stationId !== 'overview') {
+      // Zooming INTO an interactive object / station
+      // Save current walk position and look direction so we return right here on zoom out!
+      if (this.activeStation === 'overview') {
+        this.savedWalkPos.copy(this.camera.position);
+        this.savedWalkLook.copy(this.currentCameraLook);
+        this.savedYaw = this.yaw;
+        this.savedPitch = this.pitch;
+        this.hasSavedWalkState = true;
+      }
 
-    if (stationId === 'overview') {
-      this.isInspecting = false;
-      this.isWalkMode = false;
-      this.isTransitioningBack = true;
-    } else {
+      this.activeStation = stationId;
+      this.targetCameraPos.set(...config.cameraPos);
+      this.targetCameraLook.set(...config.cameraTarget);
+      this.targetFov = config.fov || 52;
+
       this.isInspecting = true;
       this.isWalkMode = false;
       this.isTransitioningBack = false;
       this.exitPointerLock();
+    } else {
+      // Zooming OUT back to walk mode!
+      const wasInspectingObject = this.activeStation !== 'overview';
+      this.activeStation = 'overview';
+      this.isInspecting = false;
+      this.isWalkMode = false;
+      this.isTransitioningBack = true;
+
+      if (this.hasSavedWalkState && wasInspectingObject) {
+        // Return to EXACT position and look direction the user zoomed in from!
+        this.targetCameraPos.copy(this.savedWalkPos);
+        this.targetCameraLook.copy(this.savedWalkLook);
+        this.targetFov = 56;
+      } else {
+        // Default overview spawn position
+        this.targetCameraPos.set(...config.cameraPos);
+        this.targetCameraLook.set(...config.cameraTarget);
+        this.targetFov = config.fov || 52;
+        this.hasSavedWalkState = false;
+      }
     }
 
     soundEngine.playWhoosh();
@@ -1804,7 +1891,12 @@ export class RoomScene {
   public requestPointerLock = () => {
     if (this.isWalkMode && document.pointerLockElement !== this.renderer.domElement) {
       try {
-        this.renderer.domElement.requestPointerLock();
+        const res = this.renderer.domElement.requestPointerLock() as unknown;
+        if (res && typeof (res as Promise<void>).catch === 'function') {
+          (res as Promise<void>).catch(() => {
+            // Silently handle expected pointer lock rejection (e.g. iframe unfocused)
+          });
+        }
       } catch {
         // Pointer lock request fallback
       }
@@ -1901,6 +1993,29 @@ export class RoomScene {
     this.isMouseDown = false;
   };
 
+  private safeOpenLink(url: string) {
+    try {
+      const win = window.open(url, '_blank', 'noopener,noreferrer');
+      if (!win) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.click();
+      }
+    } catch {
+      try {
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.click();
+      } catch {
+        // Fallback for sandboxed context
+      }
+    }
+  }
+
   private onClick = (e: MouseEvent) => {
     soundEngine.startAmbient();
     soundEngine.playKeyClick();
@@ -1915,7 +2030,7 @@ export class RoomScene {
         if (this.hoveredStationId === 'social_github') url = 'https://github.com';
         if (this.hoveredStationId === 'social_steam') url = 'https://store.steampowered.com';
 
-        window.open(url, '_blank', 'noopener,noreferrer');
+        this.safeOpenLink(url);
         soundEngine.playChirp('success');
         return;
       }
@@ -1947,7 +2062,7 @@ export class RoomScene {
         if (this.hoveredStationId === 'social_github') url = 'https://github.com';
         if (this.hoveredStationId === 'social_steam') url = 'https://store.steampowered.com';
 
-        window.open(url, '_blank', 'noopener,noreferrer');
+        this.safeOpenLink(url);
         soundEngine.playChirp('success');
         return;
       }
@@ -1988,22 +2103,29 @@ export class RoomScene {
     const elapsed = this.clock.getElapsedTime();
 
     // 1. Shaders update
-    if (this.horizMaterial.uniforms.uTime) {
+    if (this.horizMaterial?.uniforms?.uTime) {
       this.horizMaterial.uniforms.uTime.value = elapsed;
     }
-    if (this.vertMaterial.uniforms.uTime) {
+    if (this.vertMaterial?.uniforms?.uTime) {
       this.vertMaterial.uniforms.uTime.value = elapsed;
     }
-    if (this.coffeeSteamMaterial && this.coffeeSteamMaterial.uniforms.uTime) {
+    if (this.coffeeSteamMaterial?.uniforms?.uTime) {
       this.coffeeSteamMaterial.uniforms.uTime.value = elapsed;
     }
-    if (this.dustPoints && (this.dustPoints.material as THREE.ShaderMaterial).uniforms.uTime) {
+    if (this.skyWindowMaterial?.uniforms?.uTime) {
+      this.skyWindowMaterial.uniforms.uTime.value = elapsed;
+    }
+    if (this.dustPoints && (this.dustPoints.material as THREE.ShaderMaterial)?.uniforms?.uTime) {
       (this.dustPoints.material as THREE.ShaderMaterial).uniforms.uTime.value = elapsed;
     }
 
-    // 2. Swivel chair top gently
+    // 2. Swivel chair top back and forth between cabinets/guitar and octopus toy on sofa
     if (this.topChairMesh) {
-      this.topChairMesh.rotation.y = Math.sin(elapsed * 0.5) * 0.12;
+      // Swivel between facing the cabinets & guitar on West wall and the octopus toy on sofa on South side
+      // Reversed 180 degrees so the front of the seat faces the targets across the open room
+      const midAngle = 0.693; // Center point (~39.7° facing into room towards South-West)
+      const halfSpan = 0.825; // Swing amplitude (~47.3° to each side)
+      this.topChairMesh.rotation.y = midAngle + Math.sin(elapsed * 0.35) * halfSpan;
     }
 
     // 3. Dynamic Server 1 Status LEDs animation
@@ -2090,9 +2212,25 @@ export class RoomScene {
       if (this.isTransitioningBack && this.currentCameraPos.distanceTo(this.targetCameraPos) < 0.15) {
         this.isTransitioningBack = false;
         this.isWalkMode = true;
-        const dir = new THREE.Vector3().subVectors(this.targetCameraLook, this.targetCameraPos).normalize();
-        this.yaw = Math.atan2(-dir.x, -dir.z);
-        this.pitch = Math.asin(Math.max(-0.99, Math.min(0.99, dir.y)));
+        this.camera.position.copy(this.targetCameraPos);
+        this.currentCameraPos.copy(this.targetCameraPos);
+
+        if (this.hasSavedWalkState) {
+          this.yaw = this.savedYaw;
+          this.pitch = this.savedPitch;
+          const lookDir = new THREE.Vector3(
+            -Math.sin(this.yaw) * Math.cos(this.pitch),
+            Math.sin(this.pitch),
+            -Math.cos(this.yaw) * Math.cos(this.pitch)
+          );
+          this.currentCameraLook.copy(this.camera.position).add(lookDir);
+          this.targetCameraLook.copy(this.currentCameraLook);
+          this.camera.lookAt(this.currentCameraLook);
+        } else {
+          const dir = new THREE.Vector3().subVectors(this.targetCameraLook, this.targetCameraPos).normalize();
+          this.yaw = Math.atan2(-dir.x, -dir.z);
+          this.pitch = Math.asin(Math.max(-0.99, Math.min(0.99, dir.y)));
+        }
         this.requestPointerLock();
       }
     }

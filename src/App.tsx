@@ -36,7 +36,26 @@ export default function App() {
       if (stationId === 'social_github') url = 'https://github.com';
       if (stationId === 'social_steam') url = 'https://store.steampowered.com';
 
-      window.open(url, '_blank', 'noopener,noreferrer');
+      try {
+        const win = window.open(url, '_blank', 'noopener,noreferrer');
+        if (!win) {
+          const a = document.createElement('a');
+          a.href = url;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.click();
+        }
+      } catch {
+        try {
+          const a = document.createElement('a');
+          a.href = url;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.click();
+        } catch {
+          // Fallback for sandboxed context
+        }
+      }
       soundEngine.playChirp('success');
       return;
     }
