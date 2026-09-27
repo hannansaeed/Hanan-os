@@ -13,7 +13,13 @@
     color: #e2e8f0;
     overflow: hidden;
     user-select: none;
+    cursor: none !important;
     -webkit-font-smoothing: antialiased;
+  }
+
+  /* Show standard pointer when modal overlays are active */
+  [role="dialog"], button, a, input, textarea {
+    cursor: auto;
   }
 
   h1, h2, h3, .font-display {

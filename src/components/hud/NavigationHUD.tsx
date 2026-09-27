@@ -175,13 +175,20 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
         {isWalkMode && !hoverInfo && (
           <div className="absolute top-20 left-6 pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-950/80 backdrop-blur-md border border-slate-800 text-[11px] font-mono text-slate-300">
             <span className="text-cyan-400 font-bold">[W][A][S][D]</span>
-            <span>Walk</span>
+            <span>Move</span>
             <span>·</span>
-            <span className="text-cyan-400 font-bold">Drag Mouse</span>
-            <span>Look</span>
+            <span className="text-cyan-400 font-bold">Move Mouse</span>
+            <span>Look around</span>
             <span>·</span>
-            <span className="text-cyan-400 font-bold">[E]</span>
+            <span className="text-cyan-400 font-bold">[E] / Click</span>
             <span>Interact</span>
+          </div>
+        )}
+
+        {/* Center FPS Crosshair Reticle Dot (ONLY appears when aiming directly at an interactable object) */}
+        {isWalkMode && hoverInfo && (
+          <div className="relative flex items-center justify-center pointer-events-none my-auto">
+            <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_#ffffff] ring-1 ring-white/90" />
           </div>
         )}
 
@@ -196,42 +203,6 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
           </div>
         )}
       </div>
-
-      {/* ========================================================
-          BOTTOM DOCK: Station Carousel & Viewport Coordinates
-      ======================================================== */}
-      <footer className="pointer-events-auto flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-2.5 rounded-xl bg-slate-950/75 backdrop-blur-md border border-slate-800/80 shadow-lg">
-        {/* Station Navigation Strip */}
-        <div className="flex items-center gap-1.5 overflow-x-auto max-w-full py-1">
-          {NAV_STATIONS.map((st) => {
-            const isActive = activeStation === st.id;
-            return (
-              <button
-                key={st.id}
-                onClick={() => {
-                  soundEngine.playKeyClick();
-                  onSelectStation(st.id);
-                }}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono whitespace-nowrap transition-colors ${
-                  isActive
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-semibold'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
-                }`}
-              >
-                <span className="text-[10px] text-slate-500">[{st.shortcut}]</span>
-                <span>{st.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Active Station Description / Camera Indicator */}
-        <div className="hidden md:flex items-center gap-3 text-xs font-mono text-slate-400 whitespace-nowrap">
-          <span>STATION: {STATIONS[activeStation]?.shortCode}</span>
-          <span>·</span>
-          <span className="text-slate-300">{STATIONS[activeStation]?.description}</span>
-        </div>
-      </footer>
     </div>
   );
 };

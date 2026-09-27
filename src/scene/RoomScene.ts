@@ -5,6 +5,7 @@ import { StationId } from '../types';
 import { STATIONS } from '../data/portfolioData';
 import { CRTShader } from './shaders/crtShader';
 import { DustParticleShader } from './shaders/serverLedShader';
+import { CoffeeSteamShader } from './shaders/coffeeSteamShader';
 import { soundEngine } from '../audio/soundEngine';
 
 export interface RaycastHitInfo {
@@ -65,6 +66,7 @@ export class RoomScene {
   private vertCtx!: CanvasRenderingContext2D;
   private vertTexture!: THREE.CanvasTexture;
   private vertMaterial!: THREE.ShaderMaterial;
+  private coffeeSteamMaterial!: THREE.ShaderMaterial;
 
   // Dynamic canvas for Primary Server 1 Status LCD
   private serverLcdCanvas!: HTMLCanvasElement;
@@ -137,6 +139,7 @@ export class RoomScene {
     // 2. Add the remaining two walls and ceiling to complete the 4-walled room
     this.buildComplementaryWalls();
     this.buildSocialFrames();
+    this.buildBlankWhiteboard();
 
     // 3. Atmospheric dust particles
     this.buildDustParticles();
@@ -201,6 +204,21 @@ export class RoomScene {
     this.serverLcdCanvas.height = 64;
     this.serverLcdCtx = this.serverLcdCanvas.getContext('2d')!;
     this.serverLcdTexture = new THREE.CanvasTexture(this.serverLcdCanvas);
+
+    // 4. Coffee Steam Material (Organic Wispy Steam Shader)
+    this.coffeeSteamMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0.0 },
+        uColor: { value: CoffeeSteamShader.uniforms.uColor.value.clone() },
+        uOpacity: { value: 0.12 },
+      },
+      vertexShader: CoffeeSteamShader.vertexShader,
+      fragmentShader: CoffeeSteamShader.fragmentShader,
+      transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      blending: THREE.NormalBlending,
+    });
   }
 
   private updateScreensContent(elapsed: number) {
@@ -629,18 +647,94 @@ export class RoomScene {
       }
     );
 
-    // 5. Coffee Steam
+    // 5. Coffee Steam (Volumetric cross-quad setup centered over the mug)
     this.gltfLoader.load(
       '/assets/coffeeSteamModel.glb',
       (gltf) => {
         gltf.scene.traverse((child) => {
           if (child instanceof THREE.Mesh) {
-            child.material = new THREE.MeshBasicMaterial({
-              color: 0xffffff,
-              transparent: true,
-              opacity: 0.25,
-              depthWrite: false,
-            });
+            child.material = this.coffeeSteamMaterial;
+          }
+        });
+
+        // Add original plane (0 deg)
+        this.scene.add(gltf.scene);
+
+        // Calculate bounding box center of the steam mesh
+        const box = new THREE.Box3().setFromObject(gltf.scene);
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+
+        // Helper to clone and rotate around the steam center axis C
+        const addRotatedSteam = (angle: number) => {
+          const clone = gltf.scene.clone(true);
+          clone.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+              child.material = this.coffeeSteamMaterial;
+            }
+          });
+          clone.position.sub(center);
+          clone.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+          clone.position.add(center);
+          clone.rotation.y += angle;
+          this.scene.add(clone);
+        };
+
+        // Add 60 deg and 120 deg cross planes for 3D volumetric coverage from every side
+        addRotatedSteam(Math.PI / 3);
+        addRotatedSteam((2 * Math.PI) / 3);
+      },
+      undefined,
+      () => {}
+    );
+
+    // 6. Elgato Key Light (Solid studio panel light mounted above monitor)
+    this.gltfLoader.load(
+      '/assets/elgatoLightModel.glb',
+      (gltf) => {
+        gltf.scene.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            // Apply solid warm key light panel material to diffuser screen, baked material to frame
+            const name = child.name.toLowerCase();
+            if (name.includes('light') || name.includes('panel') || name.includes('screen') || name.includes('plane')) {
+              child.material = new THREE.MeshBasicMaterial({
+                color: 0xfffaf0,
+                transparent: false,
+                side: THREE.DoubleSide,
+              });
+            } else {
+              child.material = bakedMaterial;
+            }
+          }
+        });
+        this.scene.add(gltf.scene);
+      },
+      undefined,
+      () => {}
+    );
+
+    // 7. Loupedeck Buttons
+    this.gltfLoader.load(
+      '/assets/loupedeckButtonsModel.glb',
+      (gltf) => {
+        gltf.scene.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.material = bakedMaterial;
+          }
+        });
+        this.scene.add(gltf.scene);
+      },
+      undefined,
+      () => {}
+    );
+
+    // 8. Google Home LEDs
+    this.gltfLoader.load(
+      '/assets/googleHomeLedsModel.glb',
+      (gltf) => {
+        gltf.scene.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.material = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
           }
         });
         this.scene.add(gltf.scene);
@@ -1011,9 +1105,34 @@ export class RoomScene {
       canvas.height = 512;
       const ctx = canvas.getContext('2d')!;
 
-      // Cream matte background
-      ctx.fillStyle = '#f4f1ea';
+      // Warm off-white / cream matte background
+      ctx.fillStyle = '#e5ded3';
       ctx.fillRect(0, 0, 512, 512);
+
+      // Inner frame edge shadow (top & left inner shadows)
+      const gradTop = ctx.createLinearGradient(0, 0, 0, 36);
+      gradTop.addColorStop(0, 'rgba(0, 0, 0, 0.3)');
+      gradTop.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = gradTop;
+      ctx.fillRect(0, 0, 512, 36);
+
+      const gradLeft = ctx.createLinearGradient(0, 0, 36, 0);
+      gradLeft.addColorStop(0, 'rgba(0, 0, 0, 0.3)');
+      gradLeft.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = gradLeft;
+      ctx.fillRect(0, 0, 36, 512);
+
+      // Soft paper bevel border
+      ctx.strokeStyle = 'rgba(100, 85, 70, 0.15)';
+      ctx.lineWidth = 12;
+      ctx.strokeRect(6, 6, 500, 500);
+
+      // Drop shadow for logo element depth inside frame
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+      ctx.shadowBlur = 16;
+      ctx.shadowOffsetX = 4;
+      ctx.shadowOffsetY = 8;
 
       // Render crisp logo directly onto 2D canvas context
       if (item.type === 'linkedin') {
@@ -1023,6 +1142,7 @@ export class RoomScene {
         ctx.roundRect(100, 100, 312, 312, 54);
         ctx.fill();
 
+        ctx.restore(); // Disable shadow for inner text fill
         ctx.fillStyle = '#ffffff';
         // 'i' dot
         ctx.beginPath();
@@ -1055,6 +1175,7 @@ export class RoomScene {
         ctx.arc(256, 256, 160, 0, Math.PI * 2);
         ctx.fill();
 
+        ctx.restore(); // Disable shadow for inner white Octocat fill
         ctx.fillStyle = '#ffffff';
         const path = new Path2D(
           'M256 120c-75.1 0-136 60.9-136 136 0 60.1 39 111.1 93.1 129.1 6.8 1.3 9.3-3 9.3-6.6 0-3.3-.1-14.2-.2-25.8-37.8 8.2-45.8-16-45.8-16-6.2-15.7-15.1-19.9-15.1-19.9-12.3-8.4.9-8.2.9-8.2 13.6 1 20.8 14 20.8 14 12.1 20.7 31.8 14.7 39.5 11.2 1.2-8.8 4.7-14.7 8.6-18.1-30.2-3.4-61.9-15.1-61.9-67.2 0-14.8 5.3-27 14-36.5-1.4-3.4-6.1-17.3 1.3-36 0 0 11.4-3.6 37.4 13.9 10.8-3 22.5-4.5 34.1-4.6 11.6.1 23.3 1.6 34.1 4.6 26-17.6 37.3-13.9 37.3-13.9 7.4 18.7 2.7 32.6 1.3 36 8.7 9.5 14 21.7 14 36.5 0 52.2-31.8 63.7-62.1 67.1 4.9 4.2 9.2 12.5 9.2 25.2 0 18.2-.2 32.9-.2 37.4 0 3.7 2.5 8 9.4 6.6C393.1 367 432 316.1 432 256c0-75.1-60.9-136-136-136z'
@@ -1067,6 +1188,7 @@ export class RoomScene {
         ctx.arc(256, 256, 160, 0, Math.PI * 2);
         ctx.fill();
 
+        ctx.restore(); // Disable shadow for inner white Piston fill
         ctx.fillStyle = '#ffffff';
         const steamPath = new Path2D(
           'M256 120c-75.1 0-136 60.9-136 136 0 62.1 41.5 114.5 98.4 131l24.6-35.5c-5.4-2.1-10.2-5.4-14-9.6l-32 13.1c-1.5.6-3.1.9-4.8.9-7.1 0-12.8-5.7-12.8-12.8 0-5.4 3.4-10.1 8.1-11.9l33.1-13.6c2.3-13.2 12.2-23.5 25.1-25.9l18.4-44.7c-17.5-6.7-26.1-26.3-19.4-43.8 6.7-17.5 26.3-26.1 43.8-19.4 17.5 6.7 26.1 26.3 19.4 43.8-5.1 13.4-18.3 22.2-32.6 22.2h-1.7l-17.9 43.5c.8.1 1.7.1 2.5.1 15.1 0 27.4-12.3 27.4-27.4 0-1.5-.1-2.9-.4-4.3l36.6 15.1c7.9 3.3 11.7 12.4 8.5 20.3-3.3 7.9-12.4 11.7-20.3 8.5l-35.8-14.7c-6.1 7-15 11.1-24.6 11.1-6.7 0-13.1-2-18.6-5.7l-25.7 37.1c24.7 7.1 50.7 6.6 75.1-1.4C354.7 354.7 392 308.8 392 256c0-75.1-60.9-136-136-136zm50.4 108.4c-8.8 0-15.8-7.1-15.8-15.8 0-8.8 7.1-15.8 15.8-15.8s15.8 7.1 15.8 15.8c0 8.7-7.1 15.8-15.8 15.8z'
@@ -1091,6 +1213,276 @@ export class RoomScene {
       this.scene.add(group);
       this.registerInteractive(group, item.id);
     });
+  }
+
+  /* ----------------------------------------------------
+     Blank Whiteboard (Mounted on South Wall)
+     - Photorealistic enamel whiteboard surface with clearcoat gloss
+     - Extruded anodized aluminum frame with black rubber trim gasket
+     - Dark grey corner caps with metallic mounting rivets
+     - Wall Z-mounting brackets at top & bottom
+     - Detailed marker tray with end plugs, 4 dry-erase markers & felt eraser
+  ---------------------------------------------------- */
+  private buildBlankWhiteboard() {
+    const wbGroup = new THREE.Group();
+
+    const boardWidth = 2.4;
+    const boardHeight = 1.5;
+    const boardDepth = 0.03;
+
+    // 1. High-Gloss Whiteboard Enamel Panel Surface (Clearcoat Physical Material)
+    const boardMat = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      roughness: 0.12,
+      metalness: 0.02,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.06,
+      reflectivity: 0.9,
+    });
+    const boardMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(boardWidth, boardHeight),
+      boardMat
+    );
+    boardMesh.position.set(0, 0, boardDepth / 2 + 0.002);
+    boardMesh.receiveShadow = true;
+    wbGroup.add(boardMesh);
+
+    // Galvanized Steel Backing Board
+    const backingMat = new THREE.MeshStandardMaterial({
+      color: 0xd1d5db,
+      metalness: 0.5,
+      roughness: 0.4,
+    });
+    const backingMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(boardWidth, boardHeight, boardDepth),
+      backingMat
+    );
+    backingMesh.castShadow = true;
+    wbGroup.add(backingMesh);
+
+    // 2. Extruded Anodized Silver Aluminum Frame Rails
+    const alumMat = new THREE.MeshStandardMaterial({
+      color: 0xd1d5db,
+      metalness: 0.92,
+      roughness: 0.2,
+    });
+
+    const rubberMat = new THREE.MeshStandardMaterial({
+      color: 0x1f2937,
+      roughness: 0.9,
+    });
+
+    const railThickness = 0.048;
+    const railDepth = 0.045;
+
+    // Top & Bottom Rails
+    [boardHeight / 2 + railThickness / 2, -boardHeight / 2 - railThickness / 2].forEach((yPos) => {
+      const rail = new THREE.Mesh(
+        new THREE.BoxGeometry(boardWidth, railThickness, railDepth),
+        alumMat
+      );
+      rail.position.set(0, yPos, railDepth / 2 - 0.008);
+      rail.castShadow = true;
+      wbGroup.add(rail);
+
+      // Inner Rubber Trim Gasket
+      const gasket = new THREE.Mesh(
+        new THREE.BoxGeometry(boardWidth, 0.008, 0.012),
+        rubberMat
+      );
+      gasket.position.set(0, yPos > 0 ? yPos - railThickness / 2 - 0.004 : yPos + railThickness / 2 + 0.004, boardDepth / 2 + 0.004);
+      wbGroup.add(gasket);
+    });
+
+    // Left & Right Rails
+    [-boardWidth / 2 - railThickness / 2, boardWidth / 2 + railThickness / 2].forEach((xPos) => {
+      const rail = new THREE.Mesh(
+        new THREE.BoxGeometry(railThickness, boardHeight + railThickness * 2, railDepth),
+        alumMat
+      );
+      rail.position.set(xPos, 0, railDepth / 2 - 0.008);
+      rail.castShadow = true;
+      wbGroup.add(rail);
+
+      // Inner Rubber Trim Gasket
+      const gasket = new THREE.Mesh(
+        new THREE.BoxGeometry(0.008, boardHeight, 0.012),
+        rubberMat
+      );
+      gasket.position.set(xPos > 0 ? xPos - railThickness / 2 - 0.004 : xPos + railThickness / 2 + 0.004, 0, boardDepth / 2 + 0.004);
+      wbGroup.add(gasket);
+    });
+
+    // 3. Dark Molded Corner Caps with Metallic Mounting Rivets
+    const capMat = new THREE.MeshStandardMaterial({
+      color: 0x27272a,
+      roughness: 0.6,
+      metalness: 0.1,
+    });
+
+    const rivetMat = new THREE.MeshStandardMaterial({
+      color: 0x9ca3af,
+      metalness: 0.95,
+      roughness: 0.15,
+    });
+
+    const capSize = 0.075;
+    const corners = [
+      [-boardWidth / 2 - railThickness / 2, boardHeight / 2 + railThickness / 2],
+      [boardWidth / 2 + railThickness / 2, boardHeight / 2 + railThickness / 2],
+      [-boardWidth / 2 - railThickness / 2, -boardHeight / 2 - railThickness / 2],
+      [boardWidth / 2 + railThickness / 2, -boardHeight / 2 - railThickness / 2],
+    ];
+
+    corners.forEach(([cx, cy]) => {
+      const cornerMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(capSize, capSize, railDepth + 0.008),
+        capMat
+      );
+      cornerMesh.position.set(cx, cy, railDepth / 2 - 0.004);
+      cornerMesh.castShadow = true;
+      wbGroup.add(cornerMesh);
+
+      // Center Screw / Rivet
+      const rivet = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.006, 0.006, 0.008, 16),
+        rivetMat
+      );
+      rivet.rotation.x = Math.PI / 2;
+      rivet.position.set(cx, cy, railDepth + 0.002);
+      wbGroup.add(rivet);
+    });
+
+    // 4. Wall Mounting Z-Brackets
+    [-boardWidth * 0.35, boardWidth * 0.35].forEach((bx) => {
+      [boardHeight / 2 + railThickness + 0.015, -boardHeight / 2 - railThickness - 0.015].forEach((by) => {
+        const bracket = new THREE.Mesh(
+          new THREE.BoxGeometry(0.04, 0.03, 0.012),
+          alumMat
+        );
+        bracket.position.set(bx, by, 0.004);
+        wbGroup.add(bracket);
+      });
+    });
+
+    // 5. Full-Length Aluminum Accessory Tray
+    const trayWidth = boardWidth * 0.88;
+    const trayDepth = 0.095;
+    const trayHeight = 0.018;
+
+    const trayGroup = new THREE.Group();
+
+    // Tray Base Plate
+    const trayBase = new THREE.Mesh(
+      new THREE.BoxGeometry(trayWidth, trayHeight, trayDepth),
+      alumMat
+    );
+    trayBase.position.set(0, -boardHeight / 2 - railThickness - trayHeight / 2, trayDepth / 2 + 0.008);
+    trayBase.castShadow = true;
+    trayGroup.add(trayBase);
+
+    // Front Lip Rail
+    const frontLip = new THREE.Mesh(
+      new THREE.BoxGeometry(trayWidth, 0.026, 0.008),
+      alumMat
+    );
+    frontLip.position.set(0, -boardHeight / 2 - railThickness + 0.006, trayDepth + 0.012);
+    frontLip.castShadow = true;
+    trayGroup.add(frontLip);
+
+    // Tray Black Plastic End Plugs
+    [-trayWidth / 2 - 0.004, trayWidth / 2 + 0.004].forEach((px) => {
+      const endPlug = new THREE.Mesh(
+        new THREE.BoxGeometry(0.008, 0.028, trayDepth + 0.008),
+        capMat
+      );
+      endPlug.position.set(px, -boardHeight / 2 - railThickness + 0.002, trayDepth / 2 + 0.008);
+      trayGroup.add(endPlug);
+    });
+
+    wbGroup.add(trayGroup);
+
+    // 6. Accessories: Detailed Contoured Felt Eraser & EXPO Dry Erase Markers
+    const accessoriesGroup = new THREE.Group();
+
+    // Contoured Eraser
+    const eraserGroup = new THREE.Group();
+    const eraserTopHandle = new THREE.Mesh(
+      new THREE.BoxGeometry(0.15, 0.028, 0.055),
+      new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 })
+    );
+    eraserTopHandle.castShadow = true;
+
+    const eraserFeltPad = new THREE.Mesh(
+      new THREE.BoxGeometry(0.152, 0.008, 0.057),
+      new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.95 })
+    );
+    eraserFeltPad.position.y = -0.016;
+
+    eraserGroup.add(eraserTopHandle);
+    eraserGroup.add(eraserFeltPad);
+    eraserGroup.position.set(-0.45, -boardHeight / 2 - railThickness + 0.022, trayDepth / 2 + 0.008);
+    eraserGroup.rotation.y = -0.08;
+    accessoriesGroup.add(eraserGroup);
+
+    // EXPO Markers (Black, Blue, Red, Green)
+    const markerColors = [
+      { capColor: 0x18181b, offset: -0.15, angle: 0.05 },
+      { capColor: 0x2563eb, offset: 0.02, angle: -0.02 },
+      { capColor: 0xd97706, offset: 0.18, angle: 0.08 },
+      { capColor: 0x16a34a, offset: 0.35, angle: -0.04 },
+    ];
+
+    markerColors.forEach(({ capColor, offset, angle }) => {
+      const marker = new THREE.Group();
+
+      // White Body
+      const body = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.009, 0.009, 0.12, 16),
+        new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.25 })
+      );
+      body.rotation.z = Math.PI / 2;
+      body.castShadow = true;
+      marker.add(body);
+
+      // Color Ring Band
+      const band = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.0092, 0.0092, 0.015, 16),
+        new THREE.MeshStandardMaterial({ color: capColor, roughness: 0.3 })
+      );
+      band.rotation.z = Math.PI / 2;
+      band.position.x = 0.025;
+      marker.add(band);
+
+      // Tapered Cap with Pocket Clip
+      const cap = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.010, 0.0095, 0.045, 16),
+        new THREE.MeshStandardMaterial({ color: capColor, roughness: 0.35 })
+      );
+      cap.rotation.z = Math.PI / 2;
+      cap.position.x = 0.075;
+      cap.castShadow = true;
+      marker.add(cap);
+
+      const clip = new THREE.Mesh(
+        new THREE.BoxGeometry(0.03, 0.004, 0.005),
+        new THREE.MeshStandardMaterial({ color: capColor, roughness: 0.35 })
+      );
+      clip.position.set(0.07, 0.012, 0);
+      marker.add(clip);
+
+      marker.position.set(offset, -boardHeight / 2 - railThickness + 0.018, trayDepth / 2 + 0.008);
+      marker.rotation.y = angle;
+      accessoriesGroup.add(marker);
+    });
+
+    wbGroup.add(accessoriesGroup);
+
+    // Position on South Wall (Z = 4.40, facing inward -Z into room)
+    wbGroup.position.set(0.0, 3.5, 4.40);
+    wbGroup.rotation.y = Math.PI;
+
+    this.scene.add(wbGroup);
   }
 
   /* ----------------------------------------------------
@@ -1157,12 +1549,19 @@ export class RoomScene {
     this.isInspecting = stationId !== 'overview';
     this.isWalkMode = !this.isInspecting;
 
+    if (this.isInspecting) {
+      this.exitPointerLock();
+    } else {
+      this.requestPointerLock();
+    }
+
     soundEngine.playWhoosh();
   }
 
   public stepBackToWalk() {
     this.isInspecting = false;
     this.isWalkMode = true;
+    this.requestPointerLock();
     this.goToStation('overview');
   }
 
@@ -1170,8 +1569,31 @@ export class RoomScene {
     this.isWalkMode = active;
     if (active) {
       this.isInspecting = false;
+      this.requestPointerLock();
+    } else {
+      this.exitPointerLock();
     }
   }
+
+  public requestPointerLock = () => {
+    if (this.isWalkMode && document.pointerLockElement !== this.renderer.domElement) {
+      try {
+        this.renderer.domElement.requestPointerLock();
+      } catch {
+        // Pointer lock request fallback
+      }
+    }
+  };
+
+  public exitPointerLock = () => {
+    if (document.pointerLockElement === this.renderer.domElement) {
+      try {
+        document.exitPointerLock();
+      } catch {
+        // Ignore exit error
+      }
+    }
+  };
 
   public getWalkMode(): boolean {
     return this.isWalkMode;
@@ -1182,7 +1604,7 @@ export class RoomScene {
   }
 
   /* ----------------------------------------------------
-     Event Handlers (WASD Walking, Mouse Look)
+     Event Handlers (FPS Game Navigation & Pointer Lock Mouse Look)
   ---------------------------------------------------- */
   private bindEvents() {
     window.addEventListener('resize', this.onWindowResize);
@@ -1211,26 +1633,38 @@ export class RoomScene {
     this.isMouseDown = true;
     this.prevMouseX = e.clientX;
     this.prevMouseY = e.clientY;
+
+    if (this.isWalkMode) {
+      this.requestPointerLock();
+    }
   };
 
   private onMouseMove = (e: MouseEvent) => {
-    if (this.isMouseDown && this.isWalkMode) {
-      const deltaX = e.clientX - this.prevMouseX;
-      const deltaY = e.clientY - this.prevMouseY;
+    if (this.isWalkMode) {
+      // Direct mouse movement tracking like in FPS video games
+      let deltaX = e.movementX;
+      let deltaY = e.movementY;
 
-      this.yaw -= deltaX * 0.0035;
-      this.pitch -= deltaY * 0.0035;
-      this.pitch = Math.max(-Math.PI / 2.3, Math.min(Math.PI / 2.3, this.pitch));
+      if (deltaX === undefined || deltaY === undefined) {
+        deltaX = e.clientX - this.prevMouseX;
+        deltaY = e.clientY - this.prevMouseY;
+      }
 
-      const lookDir = new THREE.Vector3(
-        -Math.sin(this.yaw) * Math.cos(this.pitch),
-        Math.sin(this.pitch),
-        -Math.cos(this.yaw) * Math.cos(this.pitch)
-      );
+      if (deltaX !== 0 || deltaY !== 0) {
+        this.yaw -= deltaX * 0.0022;
+        this.pitch -= deltaY * 0.0022;
+        this.pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, this.pitch));
 
-      this.currentCameraLook.copy(this.camera.position).add(lookDir);
-      this.targetCameraLook.copy(this.currentCameraLook);
-      this.camera.lookAt(this.currentCameraLook);
+        const lookDir = new THREE.Vector3(
+          -Math.sin(this.yaw) * Math.cos(this.pitch),
+          Math.sin(this.pitch),
+          -Math.cos(this.yaw) * Math.cos(this.pitch)
+        );
+
+        this.currentCameraLook.copy(this.camera.position).add(lookDir);
+        this.targetCameraLook.copy(this.currentCameraLook);
+        this.camera.lookAt(this.currentCameraLook);
+      }
 
       this.prevMouseX = e.clientX;
       this.prevMouseY = e.clientY;
@@ -1244,6 +1678,10 @@ export class RoomScene {
   private onClick = (e: MouseEvent) => {
     soundEngine.startAmbient();
     soundEngine.playKeyClick();
+
+    if (this.isWalkMode) {
+      this.requestPointerLock();
+    }
 
     if (this.hoveredStationId) {
       this.goToStation(this.hoveredStationId);
@@ -1303,6 +1741,9 @@ export class RoomScene {
     }
     if (this.vertMaterial.uniforms.uTime) {
       this.vertMaterial.uniforms.uTime.value = elapsed;
+    }
+    if (this.coffeeSteamMaterial && this.coffeeSteamMaterial.uniforms.uTime) {
+      this.coffeeSteamMaterial.uniforms.uTime.value = elapsed;
     }
     if (this.dustPoints && (this.dustPoints.material as THREE.ShaderMaterial).uniforms.uTime) {
       (this.dustPoints.material as THREE.ShaderMaterial).uniforms.uTime.value = elapsed;
@@ -1425,6 +1866,11 @@ export class RoomScene {
             label: config?.label || 'Workstation',
             hint: hintText,
           });
+        }
+      } else {
+        if (this.hoveredStationId !== null) {
+          this.hoveredStationId = null;
+          this.onHoverChange?.(null);
         }
       }
     } else {
