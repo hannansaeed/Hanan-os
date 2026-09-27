@@ -35,6 +35,7 @@ export class RoomScene {
   private targetFov: number = 56;
   private activeStation: StationId = 'overview';
   private isInspecting: boolean = false;
+  private isTransitioningBack: boolean = false;
 
   // First-person walk controls
   private isWalkMode: boolean = true;
@@ -73,6 +74,12 @@ export class RoomScene {
   private serverLcdCtx!: CanvasRenderingContext2D;
   private serverLcdTexture!: THREE.CanvasTexture;
 
+  // Dynamic canvas for Interactive Whiteboard
+  private whiteboardCanvas!: HTMLCanvasElement;
+  private whiteboardCtx!: CanvasRenderingContext2D;
+  private whiteboardTexture!: THREE.CanvasTexture;
+  private boardMesh!: THREE.Mesh;
+
   // 3D Objects & Models
   private topChairMesh: THREE.Object3D | null = null;
   private dustPoints!: THREE.Points;
@@ -105,21 +112,57 @@ export class RoomScene {
     this.targetCameraLook = this.currentCameraLook.clone();
     this.camera.lookAt(this.currentCameraLook);
 
-    // High quality WebGL Renderer
-    this.renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      powerPreference: 'high-performance',
-      stencil: false,
-      depth: true,
-    });
+    // High quality WebGL Renderer with graceful context fallback
+    try {
+      this.renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        powerPreference: 'high-performance',
+        stencil: false,
+        depth: true,
+        failIfMajorPerformanceCaveat: false,
+      });
+    } catch {
+      try {
+        this.renderer = new THREE.WebGLRenderer({
+          antialias: false,
+          powerPreference: 'default',
+        });
+      } catch (err) {
+        console.error('WebGL Renderer Error:', err);
+        throw new Error('WebGL is not supported or context lost in this browser environment.');
+      }
+    }
+
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.35;
-    // Standard default cursor (no custom pointer dot or grab cursor)
+    // Standard default cursor
     this.renderer.domElement.style.cursor = 'default';
+
+    // Handle WebGL context loss and restoration
+    this.renderer.domElement.addEventListener(
+      'webglcontextlost',
+      (e) => {
+        e.preventDefault();
+        if (this.animFrameId !== null) {
+          cancelAnimationFrame(this.animFrameId);
+          this.animFrameId = null;
+        }
+      },
+      false
+    );
+
+    this.renderer.domElement.addEventListener(
+      'webglcontextrestored',
+      () => {
+        this.animate();
+      },
+      false
+    );
+
     container.appendChild(this.renderer.domElement);
 
     // Setup DRACO and GLTF loaders
@@ -204,6 +247,14 @@ export class RoomScene {
     this.serverLcdCanvas.height = 64;
     this.serverLcdCtx = this.serverLcdCanvas.getContext('2d')!;
     this.serverLcdTexture = new THREE.CanvasTexture(this.serverLcdCanvas);
+
+    // 4. Interactive Whiteboard Canvas (1536x960, 1.6 aspect ratio)
+    this.whiteboardCanvas = document.createElement('canvas');
+    this.whiteboardCanvas.width = 1536;
+    this.whiteboardCanvas.height = 960;
+    this.whiteboardCtx = this.whiteboardCanvas.getContext('2d')!;
+    this.initWhiteboardCanvas();
+    this.whiteboardTexture = new THREE.CanvasTexture(this.whiteboardCanvas);
 
     // 4. Coffee Steam Material (Organic Wispy Steam Shader)
     this.coffeeSteamMaterial = new THREE.ShaderMaterial({
@@ -481,6 +532,120 @@ export class RoomScene {
     sc.fillStyle = '#94a3b8';
     sc.fillText(`LOAD: 0.14  SANDBOXES: 4 ACTIVE`, 10, 52);
     this.serverLcdTexture.needsUpdate = true;
+  }
+
+  /* ----------------------------------------------------
+     Interactive Whiteboard Canvas Methods
+  ---------------------------------------------------- */
+  private initWhiteboardCanvas() {
+    if (!this.whiteboardCtx) return;
+
+    // Fill enamel off-white surface
+    this.whiteboardCtx.fillStyle = '#fcfcfd';
+    this.whiteboardCtx.fillRect(0, 0, 1536, 960);
+
+    // Faint grey grid dots
+    this.whiteboardCtx.fillStyle = 'rgba(203, 213, 225, 0.45)';
+    for (let x = 40; x < 1536; x += 48) {
+      for (let y = 40; y < 960; y += 48) {
+        this.whiteboardCtx.beginPath();
+        this.whiteboardCtx.arc(x, y, 1.5, 0, Math.PI * 2);
+        this.whiteboardCtx.fill();
+      }
+    }
+
+    const saved = localStorage.getItem('hananos_whiteboard_drawing');
+    if (saved) {
+      const img = new Image();
+      img.onload = () => {
+        this.whiteboardCtx.drawImage(img, 0, 0);
+        if (this.whiteboardTexture) {
+          this.whiteboardTexture.needsUpdate = true;
+        }
+      };
+      img.src = saved;
+    } else {
+      this.drawDefaultWhiteboardContent();
+    }
+  }
+
+  private drawDefaultWhiteboardContent() {
+    const ctx = this.whiteboardCtx;
+
+    // Title banner
+    ctx.font = 'bold 30px sans-serif';
+    ctx.fillStyle = '#0f172a';
+    ctx.fillText('HANAN//OS RESEARCH WHITEBOARD', 60, 75);
+
+    ctx.font = '16px monospace';
+    ctx.fillStyle = '#64748b';
+    ctx.fillText('// Press [E] to zoom in & sketch diagrams, notes, or equations', 60, 105);
+
+    // Architecture diagram box 1
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#2563eb';
+    ctx.fillStyle = '#eff6ff';
+    ctx.beginPath();
+    ctx.roundRect(60, 150, 230, 110, 12);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.font = 'bold 18px sans-serif';
+    ctx.fillStyle = '#1e3a8a';
+    ctx.fillText('Client Web App', 90, 192);
+    ctx.font = '14px monospace';
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillText('Vite + Three.js', 90, 222);
+
+    // Connecting Arrow
+    ctx.strokeStyle = '#475569';
+    ctx.beginPath();
+    ctx.moveTo(290, 205);
+    ctx.lineTo(390, 205);
+    ctx.stroke();
+
+    ctx.fillStyle = '#475569';
+    ctx.beginPath();
+    ctx.moveTo(390, 205);
+    ctx.lineTo(375, 197);
+    ctx.lineTo(375, 213);
+    ctx.closePath();
+    ctx.fill();
+
+    // Box 2
+    ctx.strokeStyle = '#dc2626';
+    ctx.fillStyle = '#fef2f2';
+    ctx.beginPath();
+    ctx.roundRect(390, 150, 240, 110, 12);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.font = 'bold 18px sans-serif';
+    ctx.fillStyle = '#991b1b';
+    ctx.fillText('eBPF Kernel Agent', 410, 192);
+    ctx.font = '14px monospace';
+    ctx.fillStyle = '#ef4444';
+    ctx.fillText('Syscall Telemetry', 410, 222);
+
+    // Yellow Sticky Note
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetX = 4;
+    ctx.shadowOffsetY = 6;
+
+    ctx.fillStyle = '#fef08a';
+    ctx.fillRect(720, 140, 220, 170);
+
+    ctx.shadowColor = 'transparent';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.fillStyle = '#854d0e';
+    ctx.fillText('VISITOR NOTES:', 740, 175);
+    ctx.font = '14px sans-serif';
+    ctx.fillText('• Press [E] to draw!', 740, 210);
+    ctx.fillText('• Sketches stay saved', 740, 238);
+    ctx.fillText('  in 3D room', 740, 260);
+    ctx.restore();
   }
 
   /* ----------------------------------------------------
@@ -1106,7 +1271,8 @@ export class RoomScene {
       const ctx = canvas.getContext('2d')!;
 
       // Warm off-white / cream matte background
-      ctx.fillStyle = '#e5ded3';
+      const artPaperBg = '#e5ded3';
+      ctx.fillStyle = artPaperBg;
       ctx.fillRect(0, 0, 512, 512);
 
       // Inner frame edge shadow (top & left inner shadows)
@@ -1169,14 +1335,14 @@ export class RoomScene {
         ctx.closePath();
         ctx.fill();
       } else if (item.type === 'github') {
-        // GitHub Logo (Dark Circle + White Octocat Silhouette - KEPT)
+        // GitHub Logo (Dark Circle + Cutout matching outer art paper background)
         ctx.fillStyle = '#171a21';
         ctx.beginPath();
         ctx.arc(256, 256, 160, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.restore(); // Disable shadow for inner white Octocat fill
-        ctx.fillStyle = '#ffffff';
+        ctx.restore(); // Disable shadow for inner fill
+        ctx.fillStyle = artPaperBg; // Exactly matches outer paper color
         const path = new Path2D(
           'M256 120c-75.1 0-136 60.9-136 136 0 60.1 39 111.1 93.1 129.1 6.8 1.3 9.3-3 9.3-6.6 0-3.3-.1-14.2-.2-25.8-37.8 8.2-45.8-16-45.8-16-6.2-15.7-15.1-19.9-15.1-19.9-12.3-8.4.9-8.2.9-8.2 13.6 1 20.8 14 20.8 14 12.1 20.7 31.8 14.7 39.5 11.2 1.2-8.8 4.7-14.7 8.6-18.1-30.2-3.4-61.9-15.1-61.9-67.2 0-14.8 5.3-27 14-36.5-1.4-3.4-6.1-17.3 1.3-36 0 0 11.4-3.6 37.4 13.9 10.8-3 22.5-4.5 34.1-4.6 11.6.1 23.3 1.6 34.1 4.6 26-17.6 37.3-13.9 37.3-13.9 7.4 18.7 2.7 32.6 1.3 36 8.7 9.5 14 21.7 14 36.5 0 52.2-31.8 63.7-62.1 67.1 4.9 4.2 9.2 12.5 9.2 25.2 0 18.2-.2 32.9-.2 37.4 0 3.7 2.5 8 9.4 6.6C393.1 367 432 316.1 432 256c0-75.1-60.9-136-136-136z'
         );
@@ -1232,20 +1398,20 @@ export class RoomScene {
 
     // 1. High-Gloss Whiteboard Enamel Panel Surface (Clearcoat Physical Material)
     const boardMat = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff,
+      map: this.whiteboardTexture,
       roughness: 0.12,
       metalness: 0.02,
-      clearcoat: 1.0,
+      clearcoat: 0.8,
       clearcoatRoughness: 0.06,
       reflectivity: 0.9,
     });
-    const boardMesh = new THREE.Mesh(
+    this.boardMesh = new THREE.Mesh(
       new THREE.PlaneGeometry(boardWidth, boardHeight),
       boardMat
     );
-    boardMesh.position.set(0, 0, boardDepth / 2 + 0.002);
-    boardMesh.receiveShadow = true;
-    wbGroup.add(boardMesh);
+    this.boardMesh.position.set(0, 0, boardDepth / 2 + 0.002);
+    this.boardMesh.receiveShadow = true;
+    wbGroup.add(this.boardMesh);
 
     // Galvanized Steel Backing Board
     const backingMat = new THREE.MeshStandardMaterial({
@@ -1483,6 +1649,7 @@ export class RoomScene {
     wbGroup.rotation.y = Math.PI;
 
     this.scene.add(wbGroup);
+    this.registerInteractive(wbGroup, 'whiteboard');
   }
 
   /* ----------------------------------------------------
@@ -1535,6 +1702,66 @@ export class RoomScene {
   }
 
   /* ----------------------------------------------------
+     Public Whiteboard Canvas Interface
+  ---------------------------------------------------- */
+  public getWhiteboardCanvas(): HTMLCanvasElement {
+    return this.whiteboardCanvas;
+  }
+
+  public notifyWhiteboardUpdated() {
+    if (this.whiteboardTexture) {
+      this.whiteboardTexture.needsUpdate = true;
+    }
+  }
+
+  public clearWhiteboard() {
+    if (!this.whiteboardCtx) return;
+    this.whiteboardCtx.fillStyle = '#fcfcfd';
+    this.whiteboardCtx.fillRect(0, 0, this.whiteboardCanvas.width, this.whiteboardCanvas.height);
+
+    // Draw background dot grid
+    this.whiteboardCtx.fillStyle = 'rgba(203, 213, 225, 0.45)';
+    for (let x = 40; x < 1536; x += 48) {
+      for (let y = 40; y < 960; y += 48) {
+        this.whiteboardCtx.beginPath();
+        this.whiteboardCtx.arc(x, y, 1.5, 0, Math.PI * 2);
+        this.whiteboardCtx.fill();
+      }
+    }
+
+    if (this.whiteboardTexture) {
+      this.whiteboardTexture.needsUpdate = true;
+    }
+    localStorage.removeItem('hananos_whiteboard_drawing');
+  }
+
+  public saveWhiteboardToStorage() {
+    if (this.whiteboardCanvas) {
+      try {
+        const dataUrl = this.whiteboardCanvas.toDataURL('image/png');
+        localStorage.setItem('hananos_whiteboard_drawing', dataUrl);
+      } catch (err) {
+        console.warn('Failed to save whiteboard drawing to localStorage:', err);
+      }
+    }
+  }
+
+  public raycastWhiteboard(normX: number, normY: number): { x: number; y: number } | null {
+    if (!this.boardMesh) return null;
+
+    this.raycaster.setFromCamera(new THREE.Vector2(normX, normY), this.camera);
+    const intersects = this.raycaster.intersectObject(this.boardMesh, true);
+
+    if (intersects.length > 0 && intersects[0].uv) {
+      const uv = intersects[0].uv;
+      const x = uv.x * 1536;
+      const y = (1 - uv.y) * 960;
+      return { x, y };
+    }
+    return null;
+  }
+
+  /* ----------------------------------------------------
      Station Zooming & Transitions
   ---------------------------------------------------- */
   public goToStation(stationId: StationId) {
@@ -1546,22 +1773,21 @@ export class RoomScene {
     this.targetCameraLook.set(...config.cameraTarget);
     this.targetFov = config.fov || 52;
 
-    this.isInspecting = stationId !== 'overview';
-    this.isWalkMode = !this.isInspecting;
-
-    if (this.isInspecting) {
-      this.exitPointerLock();
+    if (stationId === 'overview') {
+      this.isInspecting = false;
+      this.isWalkMode = false;
+      this.isTransitioningBack = true;
     } else {
-      this.requestPointerLock();
+      this.isInspecting = true;
+      this.isWalkMode = false;
+      this.isTransitioningBack = false;
+      this.exitPointerLock();
     }
 
     soundEngine.playWhoosh();
   }
 
   public stepBackToWalk() {
-    this.isInspecting = false;
-    this.isWalkMode = true;
-    this.requestPointerLock();
     this.goToStation('overview');
   }
 
@@ -1679,13 +1905,25 @@ export class RoomScene {
     soundEngine.startAmbient();
     soundEngine.playKeyClick();
 
-    if (this.isWalkMode) {
-      this.requestPointerLock();
-    }
-
     if (this.hoveredStationId) {
+      if (
+        this.hoveredStationId === 'social_linkedin' ||
+        this.hoveredStationId === 'social_github' ||
+        this.hoveredStationId === 'social_steam'
+      ) {
+        let url = 'https://linkedin.com';
+        if (this.hoveredStationId === 'social_github') url = 'https://github.com';
+        if (this.hoveredStationId === 'social_steam') url = 'https://store.steampowered.com';
+
+        window.open(url, '_blank', 'noopener,noreferrer');
+        soundEngine.playChirp('success');
+        return;
+      }
+
       this.goToStation(this.hoveredStationId);
       this.onStationSelect?.(this.hoveredStationId);
+    } else if (this.isWalkMode) {
+      this.requestPointerLock();
     }
   };
 
@@ -1700,6 +1938,20 @@ export class RoomScene {
     if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') this.moveRight = true;
 
     if ((e.key === 'e' || e.key === 'E' || e.key === ' ') && this.hoveredStationId) {
+      if (
+        this.hoveredStationId === 'social_linkedin' ||
+        this.hoveredStationId === 'social_github' ||
+        this.hoveredStationId === 'social_steam'
+      ) {
+        let url = 'https://linkedin.com';
+        if (this.hoveredStationId === 'social_github') url = 'https://github.com';
+        if (this.hoveredStationId === 'social_steam') url = 'https://store.steampowered.com';
+
+        window.open(url, '_blank', 'noopener,noreferrer');
+        soundEngine.playChirp('success');
+        return;
+      }
+
       this.goToStation(this.hoveredStationId);
       this.onStationSelect?.(this.hoveredStationId);
     }
@@ -1824,8 +2076,8 @@ export class RoomScene {
         this.camera.lookAt(this.currentCameraLook);
       }
     } else {
-      this.currentCameraPos.lerp(this.targetCameraPos, delta * 4.2);
-      this.currentCameraLook.lerp(this.targetCameraLook, delta * 4.2);
+      this.currentCameraPos.lerp(this.targetCameraPos, delta * 4.8);
+      this.currentCameraLook.lerp(this.targetCameraLook, delta * 4.8);
 
       this.camera.position.copy(this.currentCameraPos);
       this.camera.lookAt(this.currentCameraLook);
@@ -1834,9 +2086,27 @@ export class RoomScene {
         this.camera.fov += (this.targetFov - this.camera.fov) * delta * 4.0;
         this.camera.updateProjectionMatrix();
       }
+
+      if (this.isTransitioningBack && this.currentCameraPos.distanceTo(this.targetCameraPos) < 0.15) {
+        this.isTransitioningBack = false;
+        this.isWalkMode = true;
+        const dir = new THREE.Vector3().subVectors(this.targetCameraLook, this.targetCameraPos).normalize();
+        this.yaw = Math.atan2(-dir.x, -dir.z);
+        this.pitch = Math.asin(Math.max(-0.99, Math.min(0.99, dir.y)));
+        this.requestPointerLock();
+      }
     }
 
-    // 7. Raycast check for interactive objects
+    // 7. Raycast check for interactive objects (ONLY in overview walk mode)
+    if (this.isInspecting || this.activeStation !== 'overview') {
+      if (this.hoveredStationId !== null) {
+        this.hoveredStationId = null;
+        this.onHoverChange?.(null);
+      }
+      this.renderer.render(this.scene, this.camera);
+      return;
+    }
+
     this.raycaster.setFromCamera(this.centerCrosshair, this.camera);
     const intersects = this.raycaster.intersectObjects(this.interactiveObjects, true);
 
@@ -1889,6 +2159,7 @@ export class RoomScene {
   public dispose() {
     if (this.animFrameId !== null) {
       cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
     }
     window.removeEventListener('resize', this.onWindowResize);
     window.removeEventListener('mousemove', this.onMouseMove);
@@ -1896,13 +2167,38 @@ export class RoomScene {
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
 
-    const dom = this.renderer.domElement;
-    dom.removeEventListener('mousedown', this.onMouseDown);
-    dom.removeEventListener('click', this.onClick);
+    const dom = this.renderer?.domElement;
+    if (dom) {
+      dom.removeEventListener('mousedown', this.onMouseDown);
+      dom.removeEventListener('click', this.onClick);
+    }
 
-    this.renderer.dispose();
-    if (this.container.contains(dom)) {
-      this.container.removeChild(dom);
+    if (this.dracoLoader) {
+      this.dracoLoader.dispose();
+    }
+
+    if (this.scene) {
+      this.scene.traverse((obj) => {
+        if ((obj as THREE.Mesh).geometry) {
+          (obj as THREE.Mesh).geometry.dispose();
+        }
+        if ((obj as THREE.Mesh).material) {
+          const mat = (obj as THREE.Mesh).material;
+          if (Array.isArray(mat)) {
+            mat.forEach((m) => m.dispose());
+          } else if (mat) {
+            mat.dispose();
+          }
+        }
+      });
+    }
+
+    if (this.renderer) {
+      this.renderer.forceContextLoss();
+      this.renderer.dispose();
+      if (dom && this.container.contains(dom)) {
+        this.container.removeChild(dom);
+      }
     }
   }
 }

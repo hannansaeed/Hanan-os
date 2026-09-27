@@ -300,8 +300,8 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-[#060a12] border border-cyan-500/40 rounded-2xl shadow-2xl shadow-cyan-950/60 flex flex-col h-[80vh] overflow-hidden">
+    <div className="fixed inset-0 z-40 flex items-center justify-center p-3 sm:p-6 pointer-events-none select-none animate-fade-in">
+      <div className="pointer-events-auto relative w-full max-w-4xl bg-[#060a12]/95 border border-cyan-500/40 rounded-2xl shadow-2xl shadow-cyan-950/80 flex flex-col h-[80vh] overflow-hidden">
         {/* Titlebar */}
         <div className="flex items-center justify-between px-6 py-3.5 border-b border-slate-800 bg-[#090e1a]">
           <div className="flex items-center gap-3">

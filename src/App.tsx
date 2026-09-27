@@ -8,14 +8,8 @@ import { WorkstationCanvas } from './components/canvas/WorkstationCanvas';
 import { NavigationHUD } from './components/hud/NavigationHUD';
 import { MiniMap } from './components/hud/MiniMap';
 import { BootScreen } from './components/hud/BootScreen';
-import { ProjectModal } from './components/modals/ProjectModal';
-import { SecurityTerminalModal } from './components/modals/SecurityTerminalModal';
-import { TerminalModal } from './components/modals/TerminalModal';
-import { CTFWallModal } from './components/modals/CTFWallModal';
-import { TimelineModal } from './components/modals/TimelineModal';
-import { ServerRackModal } from './components/modals/ServerRackModal';
-import { ExitDoorModal } from './components/modals/ExitDoorModal';
 import { RoomScene, RaycastHitInfo } from './scene/RoomScene';
+import { WhiteboardModal } from './components/modals/WhiteboardModal';
 import { StationId } from './types';
 import { soundEngine } from './audio/soundEngine';
 
@@ -25,58 +19,40 @@ export default function App() {
   const [hoverInfo, setHoverInfo] = useState<RaycastHitInfo | null>(null);
   const [isWalkMode, setIsWalkMode] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
-
-  // Modals
   const [isMapOpen, setIsMapOpen] = useState(false);
-  const [isTerminalOpen, setIsTerminalOpen] = useState(false);
-  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(undefined);
-  const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
-  const [isCTFModalOpen, setIsCTFModalOpen] = useState(false);
-  const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
-  const [isServerModalOpen, setIsServerModalOpen] = useState(false);
-  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
 
   const sceneRef = useRef<RoomScene | null>(null);
 
-  // Handle station selection
+  // Handle station zoom selection (Direct 3D in-room camera zoom)
   const handleSelectStation = useCallback((stationId: StationId) => {
     setShowEntranceBanner(false);
+
+    if (
+      stationId === 'social_linkedin' ||
+      stationId === 'social_github' ||
+      stationId === 'social_steam'
+    ) {
+      let url = 'https://linkedin.com';
+      if (stationId === 'social_github') url = 'https://github.com';
+      if (stationId === 'social_steam') url = 'https://store.steampowered.com';
+
+      window.open(url, '_blank', 'noopener,noreferrer');
+      soundEngine.playChirp('success');
+      return;
+    }
+
     setActiveStation(stationId);
     sceneRef.current?.goToStation(stationId);
 
-    // If walk mode was active, switch back to camera target focus
-    if (isWalkMode) {
+    if (stationId !== 'overview') {
       setIsWalkMode(false);
-      sceneRef.current?.setWalkMode(false);
+    } else {
+      setIsWalkMode(true);
     }
-
-    // Automatically open corresponding detail inspector when station is inspected
-    if (stationId === 'horizontal_monitor') {
-      setIsProjectModalOpen(true);
-    } else if (stationId === 'vertical_monitor') {
-      setIsTerminalOpen(true);
-    } else if (stationId === 'desk') {
-      setIsTerminalOpen(true);
-    } else if (stationId === 'server_rack') {
-      setIsServerModalOpen(true);
-    } else if (stationId === 'social_linkedin') {
-      window.open('https://www.linkedin.com', '_blank');
-      handleStepBackToWalk();
-    } else if (stationId === 'social_github') {
-      window.open('https://github.com', '_blank');
-      handleStepBackToWalk();
-    } else if (stationId === 'social_steam') {
-      window.open('https://store.steampowered.com', '_blank');
-      handleStepBackToWalk();
-    }
-  }, [isWalkMode]);
+  }, []);
 
   const handleStepBackToWalk = useCallback(() => {
-    setIsProjectModalOpen(false);
-    setIsTerminalOpen(false);
-    setIsSecurityModalOpen(false);
-    setIsServerModalOpen(false);
+    setActiveStation('overview');
     setIsWalkMode(true);
     sceneRef.current?.stepBackToWalk();
   }, []);
@@ -95,41 +71,26 @@ export default function App() {
     setIsMuted(muted);
   }, []);
 
-  // Keyboard shortcut listeners
+  // Keyboard shortcuts
   useEffect(() => {
     const onGlobalKeyDown = (e: KeyboardEvent) => {
-      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
-        return;
-      }
-
-      // Any navigation key dismisses entrance banner
       setShowEntranceBanner(false);
 
       if (e.key === 'm' || e.key === 'M') {
         soundEngine.playKeyClick();
         setIsMapOpen((prev) => !prev);
-      } else if (e.key === 't' || e.key === 'T') {
-        soundEngine.playKeyClick();
-        setIsTerminalOpen((prev) => !prev);
-      } else if (e.key === 'c' || e.key === 'C') {
-        soundEngine.playKeyClick();
-        handleToggleWalkMode();
       } else if (e.key === 'Escape') {
         setShowEntranceBanner(false);
         setIsMapOpen(false);
-        setIsTerminalOpen(false);
-        setIsProjectModalOpen(false);
-        setIsSecurityModalOpen(false);
-        setIsCTFModalOpen(false);
-        setIsTimelineModalOpen(false);
-        setIsServerModalOpen(false);
-        setIsExitModalOpen(false);
+        if (activeStation !== 'overview') {
+          handleStepBackToWalk();
+        }
       }
     };
 
     window.addEventListener('keydown', onGlobalKeyDown);
     return () => window.removeEventListener('keydown', onGlobalKeyDown);
-  }, [handleToggleWalkMode]);
+  }, [activeStation, handleStepBackToWalk]);
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#06080e] select-none text-slate-100">
@@ -140,7 +101,7 @@ export default function App() {
         onHoverChange={setHoverInfo}
       />
 
-      {/* Primary Navigation & HUD Overlay (ALWAYS active and clickable) */}
+      {/* Primary Navigation & HUD Overlay */}
       <NavigationHUD
         activeStation={activeStation}
         isWalkMode={isWalkMode}
@@ -150,7 +111,7 @@ export default function App() {
         onToggleWalkMode={handleToggleWalkMode}
         onToggleAudio={handleToggleAudio}
         onOpenMap={() => setIsMapOpen(true)}
-        onOpenTerminal={() => setIsTerminalOpen(true)}
+        onOpenTerminal={() => handleSelectStation('vertical_monitor')}
       />
 
       {/* Dismissible entrance intro banner */}
@@ -173,65 +134,11 @@ export default function App() {
         />
       )}
 
-      {/* Horizontal Monitor (Projects & Workstation) Modal */}
-      {isProjectModalOpen && (
-        <ProjectModal
-          initialProjectId={selectedProjectId}
-          onClose={() => {
-            setIsProjectModalOpen(false);
-            setSelectedProjectId(undefined);
-          }}
-        />
-      )}
-
-      {/* Vertical Monitor (Cybersecurity & Packet Sniffer) Modal */}
-      {isSecurityModalOpen && (
-        <SecurityTerminalModal
-          onClose={() => setIsSecurityModalOpen(false)}
-        />
-      )}
-
-      {/* Interactive CLI Terminal Shell Modal */}
-      {isTerminalOpen && (
-        <TerminalModal
-          onClose={() => setIsTerminalOpen(false)}
-          onOpenProject={(pId) => {
-            setIsTerminalOpen(false);
-            setSelectedProjectId(pId);
-            setIsProjectModalOpen(true);
-          }}
-        />
-      )}
-
-      {/* CTF Lab Wall Writeups Modal */}
-      {isCTFModalOpen && (
-        <CTFWallModal
-          onClose={() => setIsCTFModalOpen(false)}
-        />
-      )}
-
-      {/* Career & Research Timeline Wall Modal */}
-      {isTimelineModalOpen && (
-        <TimelineModal
-          onClose={() => setIsTimelineModalOpen(false)}
-        />
-      )}
-
-      {/* 42U Server Rack Infrastructure Modal */}
-      {isServerModalOpen && (
-        <ServerRackModal
-          onClose={() => setIsServerModalOpen(false)}
-        />
-      )}
-
-      {/* Exit Door & Secure Comms Dispatch Modal */}
-      {isExitModalOpen && (
-        <ExitDoorModal
-          onClose={() => setIsExitModalOpen(false)}
-          onReturnToEntrance={() => {
-            setIsExitModalOpen(false);
-            handleSelectStation('overview');
-          }}
+      {/* Direct 3D Whiteboard 4-Color Marker Toolbar Overlay */}
+      {activeStation === 'whiteboard' && (
+        <WhiteboardModal
+          sceneRef={sceneRef}
+          onClose={handleStepBackToWalk}
         />
       )}
     </div>

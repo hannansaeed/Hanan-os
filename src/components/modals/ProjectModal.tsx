@@ -100,8 +100,8 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="relative w-full max-w-5xl bg-[#090e1a] border border-cyan-500/40 rounded-2xl shadow-2xl shadow-cyan-950/50 flex flex-col max-h-[92vh] overflow-hidden">
+    <div className="fixed inset-0 z-40 flex items-center justify-center p-3 sm:p-6 pointer-events-none select-none animate-fade-in">
+      <div className="pointer-events-auto relative w-full max-w-5xl bg-[#090e1a]/95 border border-cyan-500/40 rounded-2xl shadow-2xl shadow-cyan-950/80 flex flex-col max-h-[90vh] overflow-hidden">
         {/* Top OS Window Title Bar */}
         <div className="flex items-center justify-between px-6 py-3.5 border-b border-slate-800 bg-[#050912]">
           <div className="flex items-center gap-3">

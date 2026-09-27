@@ -1,7 +1,7 @@
 import React from 'react';
 import { StationId } from '../../types';
 import { soundEngine } from '../../audio/soundEngine';
-import { X, Crosshair, Monitor, Shield, Terminal, Server } from 'lucide-react';
+import { X, Crosshair, Monitor, Shield, Terminal, Server, Edit3 } from 'lucide-react';
 
 interface MiniMapProps {
   activeStation: StationId;
@@ -23,6 +23,7 @@ const MAP_NODES: MapNode[] = [
   { id: 'vertical_monitor', label: 'Security Terminal', xPercent: 60, yPercent: 30, icon: <Shield className="w-3.5 h-3.5" /> },
   { id: 'desk', label: 'Desk & Peripherals', xPercent: 50, yPercent: 38, icon: <Terminal className="w-3.5 h-3.5" /> },
   { id: 'server_rack', label: 'Dual Servers (Core Node)', xPercent: 26, yPercent: 28, icon: <Server className="w-3.5 h-3.5" /> },
+  { id: 'whiteboard', label: 'Interactive Whiteboard', xPercent: 50, yPercent: 88, icon: <Edit3 className="w-3.5 h-3.5" /> },
 ];
 
 export const MiniMap: React.FC<MiniMapProps> = ({ activeStation, onSelectStation, onClose }) => {

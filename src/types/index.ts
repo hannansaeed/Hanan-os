@@ -4,6 +4,7 @@ export type StationId =
   | 'vertical_monitor'
   | 'desk'
   | 'server_rack'
+  | 'whiteboard'
   | 'social_linkedin'
   | 'social_github'
   | 'social_steam';

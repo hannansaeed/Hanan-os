@@ -69,8 +69,8 @@ export const SecurityTerminalModal: React.FC<SecurityTerminalModalProps> = ({ on
   );
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="relative w-full max-w-5xl bg-[#07100c] border border-emerald-500/30 rounded-2xl shadow-2xl shadow-emerald-950/40 flex flex-col max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 z-40 flex items-center justify-center p-3 sm:p-6 pointer-events-none select-none animate-fade-in">
+      <div className="pointer-events-auto relative w-full max-w-5xl bg-[#07100c]/95 border border-emerald-500/30 rounded-2xl shadow-2xl shadow-emerald-950/80 flex flex-col max-h-[90vh] overflow-hidden">
         {/* Top Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-emerald-950 bg-[#050c09]">
           <div className="flex items-center gap-3">
