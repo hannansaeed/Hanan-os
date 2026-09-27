@@ -1017,24 +1017,37 @@ export class RoomScene {
 
       // Render crisp logo directly onto 2D canvas context
       if (item.type === 'linkedin') {
-        // LinkedIn Logo (Official Light Blue Rounded Square + White 'in')
+        // LinkedIn Logo (Light Blue Rounded Square + White 'in' with aligned baseline)
         ctx.fillStyle = '#0a66c2';
         ctx.beginPath();
         ctx.roundRect(100, 100, 312, 312, 54);
         ctx.fill();
 
         ctx.fillStyle = '#ffffff';
-        // 'i' dot & stem
+        // 'i' dot
         ctx.beginPath();
-        ctx.arc(172, 190, 22, 0, Math.PI * 2);
+        ctx.arc(170, 182, 22, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillRect(150, 235, 44, 125);
 
-        // 'n' path
-        const nPath = new Path2D(
-          'M225 235 h44 v20 h2 c8-15 28-25 48-25 38 0 51 24 51 62 v88 h-44 v-78 c0-19-7-32-23-32-13 0-21 9-24 17-1 3-1 8-1 13 v80 h-44 V235 z'
-        );
-        ctx.fill(nPath);
+        // 'i' stem (top: 225, bottom: 350)
+        ctx.fillRect(148, 225, 44, 125);
+
+        // 'n' (top: 225, bottom: 350, perfectly aligned with 'i')
+        ctx.beginPath();
+        ctx.moveTo(218, 225);
+        ctx.lineTo(260, 225);
+        ctx.lineTo(260, 250);
+        ctx.bezierCurveTo(275, 222, 298, 220, 318, 220);
+        ctx.bezierCurveTo(350, 220, 350, 250, 350, 275);
+        ctx.lineTo(350, 350);
+        ctx.lineTo(308, 350);
+        ctx.lineTo(308, 272);
+        ctx.bezierCurveTo(308, 256, 302, 250, 288, 250);
+        ctx.bezierCurveTo(272, 250, 260, 262, 260, 278);
+        ctx.lineTo(260, 350);
+        ctx.lineTo(218, 350);
+        ctx.closePath();
+        ctx.fill();
       } else if (item.type === 'github') {
         // GitHub Logo (Dark Circle + White Octocat Silhouette - KEPT)
         ctx.fillStyle = '#171a21';
