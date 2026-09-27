@@ -1,0 +1,898 @@
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { soundEngine } from '../../audio/soundEngine';
+import { PROJECTS, CTF_CHALLENGES, CERTIFICATIONS, SKILLS_SUMMARY } from '../../data/portfolioData';
+import {
+  Terminal as TerminalIcon,
+  X,
+  Volume2,
+  VolumeX,
+  Sparkles,
+  Shield,
+} from 'lucide-react';
+
+interface InteractiveLaptopTerminalModalProps {
+  onClose: () => void;
+  onOpenProject?: (projectId: string) => void;
+}
+
+interface CommandOutput {
+  id: string;
+  command: string;
+  cwd: string;
+  output: React.ReactNode;
+  timestamp: string;
+}
+
+type TerminalTheme = 'cyan' | 'emerald' | 'amber' | 'violet';
+
+const THEME_STYLES: Record<
+  TerminalTheme,
+  {
+    border: string;
+    text: string;
+    prompt: string;
+    accent: string;
+    bg: string;
+    glow: string;
+    badge: string;
+  }
+> = {
+  cyan: {
+    border: 'border-cyan-500/40',
+    text: 'text-cyan-300',
+    prompt: 'text-cyan-400',
+    accent: 'text-cyan-200',
+    bg: 'bg-[#040810]/95',
+    glow: 'shadow-cyan-950/80',
+    badge: 'bg-cyan-950/50 text-cyan-300 border-cyan-800/50 hover:bg-cyan-900/60',
+  },
+  emerald: {
+    border: 'border-emerald-500/40',
+    text: 'text-emerald-300',
+    prompt: 'text-emerald-400',
+    accent: 'text-emerald-200',
+    bg: 'bg-[#030a06]/95',
+    glow: 'shadow-emerald-950/80',
+    badge: 'bg-emerald-950/50 text-emerald-300 border-emerald-800/50 hover:bg-emerald-900/60',
+  },
+  amber: {
+    border: 'border-amber-500/40',
+    text: 'text-amber-300',
+    prompt: 'text-amber-400',
+    accent: 'text-amber-200',
+    bg: 'bg-[#0a0702]/95',
+    glow: 'shadow-amber-950/80',
+    badge: 'bg-amber-950/50 text-amber-300 border-amber-800/50 hover:bg-amber-900/60',
+  },
+  violet: {
+    border: 'border-purple-500/40',
+    text: 'text-purple-300',
+    prompt: 'text-purple-400',
+    accent: 'text-purple-200',
+    bg: 'bg-[#08030d]/95',
+    glow: 'shadow-purple-950/80',
+    badge: 'bg-purple-950/50 text-purple-300 border-purple-800/50 hover:bg-purple-900/60',
+  },
+};
+
+const VIRTUAL_FS: Record<string, { type: 'file' | 'dir'; content?: string }> = {
+  'about.md': {
+    type: 'file',
+    content: `# Hanan // Senior Systems & Cybersecurity Research Engineer\n\nSpecialized in kernel telemetry probes (eBPF), binary exploitation, glibc heap internals, and post-quantum cryptographic primitives. Dedicated to constructing high-performance systems with rigorous security invariants.`,
+  },
+  'cv.txt': {
+    type: 'file',
+    content: `CURRICULUM VITAE — HANAN\n========================================\nRole: Lead Cybersecurity & Systems Engineer\nFocus: Kernel Internals, eBPF, Binary Exploitation, Post-Quantum Crypto\nEducation: B.S. in Computer Science (Summa Cum Laude)\nKey Languages: Rust, C/C++, TypeScript, Python, x86_64 ASM\nCertifications: OSCP, CISSP, eWPTX, CKAD`,
+  },
+  'skills.json': {
+    type: 'file',
+    content: `{\n  "languages": ["Rust", "C/C++", "TypeScript", "Python", "Go", "x86_64 ASM"],\n  "security": ["eBPF / XDP", "Kernel Debugging", "Heap Exploitation", "Fuzzing (AFL++)"],\n  "cryptography": ["Kyber-768", "Dilithium-3", "Zero-Knowledge SNARKs", "TLS 1.3"],\n  "infrastructure": ["Linux / FreeBSD", "Docker / K8s", "QEMU / KVM", "eBPF Tracing"]\n}`,
+  },
+  'notes.txt': {
+    type: 'file',
+    content: `TODO & Research Vectors:\n[x] eBPF ringbuf syscall auditing engine.\n[x] Post-quantum Key Encapsulation Mechanism benchmark.\n[/] Android AOSP Binder IPC memory boundary fuzzer.\n[ ] Zero-Knowledge Proof verify node optimization.`,
+  },
+  'projects': { type: 'dir' },
+  'ctf': { type: 'dir' },
+};
+
+export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalModalProps> = ({
+  onClose,
+}) => {
+  const [theme, setTheme] = useState<TerminalTheme>('cyan');
+  const [currentPath, setCurrentPath] = useState<string>('~');
+  const [inputVal, setInputVal] = useState<string>('');
+  const [history, setHistory] = useState<CommandOutput[]>([
+    {
+      id: 'init-1',
+      command: 'system --boot',
+      cwd: '~',
+      timestamp: '00:00:01',
+      output: (
+        <div className="space-y-1.5 text-xs text-slate-300">
+          <div className="text-cyan-400 font-bold font-mono">
+            HANAN//OS Workstation Shell [Version 4.2.0-x86_64-hardened-linux]
+          </div>
+          <div className="text-slate-400">
+            Host: <span className="text-white font-semibold">cyberlab-node-alpha</span> · Kernel:{' '}
+            <span className="text-cyan-300 font-mono">6.8.9-dedsec-ebpf</span> · Uptime: 42 days
+          </div>
+          <div className="text-xs text-slate-400 pt-1">
+            Type <span className="text-cyan-300 font-bold font-mono underline cursor-pointer">'help'</span> to view available commands, or click any quick command chip below.
+          </div>
+        </div>
+      ),
+    },
+  ]);
+  const [cmdHistoryList, setCmdHistoryList] = useState<string[]>([]);
+  const [cmdHistoryIndex, setCmdHistoryIndex] = useState<number>(-1);
+  const [isMatrixRunning, setIsMatrixRunning] = useState<boolean>(false);
+  const [isScanning, setIsScanning] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
+
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const matrixCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  const tStyle = THEME_STYLES[theme];
+
+  // Auto-focus input
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  // Auto-scroll to bottom on output updates
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [history, isScanning]);
+
+  // Matrix falling rain animation
+  useEffect(() => {
+    if (!isMatrixRunning) return;
+
+    const canvas = matrixCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width = canvas.parentElement?.clientWidth || 800;
+    canvas.height = canvas.parentElement?.clientHeight || 450;
+
+    const chars = '0123456789ABCDEF@#$%&*+-=<>~ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ';
+    const fontSize = 14;
+    const columns = Math.floor(canvas.width / fontSize);
+    const drops: number[] = Array(columns).fill(1);
+
+    let animId: number;
+    const render = () => {
+      ctx.fillStyle = 'rgba(4, 8, 16, 0.08)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = theme === 'emerald' ? '#10b981' : theme === 'amber' ? '#f59e0b' : theme === 'violet' ? '#c084fc' : '#38bdf8';
+      ctx.font = `${fontSize}px monospace`;
+
+      for (let i = 0; i < drops.length; i++) {
+        const char = chars[Math.floor(Math.random() * chars.length)];
+        ctx.fillText(char, i * fontSize, drops[i] * fontSize);
+
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+      animId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      cancelAnimationFrame(animId);
+    };
+  }, [isMatrixRunning, theme]);
+
+  // Execute terminal command
+  const executeCommand = useCallback(
+    (rawCommand: string) => {
+      const trimmed = rawCommand.trim();
+      if (!trimmed) return;
+
+      if (!isMuted) soundEngine.playKeyClick();
+
+      setCmdHistoryList((prev) => [...prev, trimmed]);
+      setCmdHistoryIndex(-1);
+
+      const parts = trimmed.split(' ').filter(Boolean);
+      const cmd = parts[0]?.toLowerCase();
+      const args = parts.slice(1);
+      const now = new Date().toTimeString().split(' ')[0];
+
+      let output: React.ReactNode = null;
+
+      switch (cmd) {
+        case 'help':
+        case '?':
+          output = (
+            <div className="space-y-3 text-xs">
+              <div className="text-cyan-400 font-bold border-b border-slate-800 pb-1 flex items-center gap-2">
+                <TerminalIcon className="w-3.5 h-3.5" />
+                <span>HANAN//OS SHELL COMMAND DIRECTORY</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
+                <div>
+                  <div className="text-white font-semibold mb-1 text-[11px] uppercase tracking-wider text-cyan-300">
+                    Portfolio & Biography:
+                  </div>
+                  <div className="space-y-1 text-slate-300">
+                    <div><span className="text-cyan-300 font-mono font-bold">whoami</span> — Identity & summary</div>
+                    <div><span className="text-cyan-300 font-mono font-bold">about</span> — Bio & DedSec research</div>
+                    <div><span className="text-cyan-300 font-mono font-bold">cv</span> — Full curriculum vitae</div>
+                    <div><span className="text-cyan-300 font-mono font-bold">skills</span> — Proficiency matrix</div>
+                    <div><span className="text-cyan-300 font-mono font-bold">projects</span> — List production systems</div>
+                    <div><span className="text-cyan-300 font-mono font-bold">project &lt;id&gt;</span> — Inspect specific project</div>
+                    <div><span className="text-cyan-300 font-mono font-bold">certs</span> — Security certifications</div>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-white font-semibold mb-1 text-[11px] uppercase tracking-wider text-emerald-300">
+                    Cyber & Diagnostic Tools:
+                  </div>
+                  <div className="space-y-1 text-slate-300">
+                    <div><span className="text-emerald-300 font-mono font-bold">nmap &lt;target&gt;</span> — Simulated TCP SYN scan</div>
+                    <div><span className="text-emerald-300 font-mono font-bold">ctf</span> — CTF exploits & writeups</div>
+                    <div><span className="text-emerald-300 font-mono font-bold">submit &lt;flag&gt;</span> — Validate capture flag</div>
+                    <div><span className="text-emerald-300 font-mono font-bold">matrix</span> — Toggle digital glyph rain</div>
+                    <div><span className="text-emerald-300 font-mono font-bold">neofetch</span> — Hardware/OS specs</div>
+                    <div><span className="text-emerald-300 font-mono font-bold">top</span> — Live system processes</div>
+                    <div><span className="text-emerald-300 font-mono font-bold">ping &lt;host&gt;</span> — ICMP packet test</div>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-white font-semibold mb-1 text-[11px] uppercase tracking-wider text-amber-300">
+                    Filesystem & Utilities:
+                  </div>
+                  <div className="space-y-1 text-slate-300">
+                    <div><span className="text-amber-300 font-mono font-bold">ls</span> — List directory contents</div>
+                    <div><span className="text-amber-300 font-mono font-bold">cd &lt;dir&gt;</span> — Change directory</div>
+                    <div><span className="text-amber-300 font-mono font-bold">pwd</span> — Print current directory</div>
+                    <div><span className="text-amber-300 font-mono font-bold">cat &lt;file&gt;</span> — View file content</div>
+                    <div><span className="text-amber-300 font-mono font-bold">tree</span> — Hierarchy tree view</div>
+                    <div><span className="text-amber-300 font-mono font-bold">calc &lt;expr&gt;</span> — Math calculator</div>
+                    <div><span className="text-amber-300 font-mono font-bold">date / uptime</span> — Clock telemetry</div>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-white font-semibold mb-1 text-[11px] uppercase tracking-wider text-purple-300">
+                    Environment Controls:
+                  </div>
+                  <div className="space-y-1 text-slate-300">
+                    <div><span className="text-purple-300 font-mono font-bold">theme &lt;name&gt;</span> — cyan|emerald|amber|violet</div>
+                    <div><span className="text-purple-300 font-mono font-bold">sound</span> — Toggle audio clicks</div>
+                    <div><span className="text-purple-300 font-mono font-bold">clear</span> (or Ctrl+L) — Clear buffer</div>
+                    <div><span className="text-purple-300 font-mono font-bold">exit</span> (or Esc) — Return to 3D room</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+          break;
+
+        case 'clear':
+        case 'cls':
+          setHistory([]);
+          setInputVal('');
+          return;
+
+        case 'whoami':
+          output = (
+            <div className="text-xs space-y-1 text-slate-300">
+              <div className="text-cyan-400 font-bold">UID: 1000(hanan) GID: 1000(dedsec) GROUPS: 1000(dedsec),4(adm),27(sudo),998(wheel)</div>
+              <div>Primary Role: <span className="text-white font-semibold">Senior Cybersecurity Research & Systems Engineer</span></div>
+              <div>Specialization: <span className="text-emerald-300">eBPF Telemetry Probes · Binary Exploitation · Post-Quantum Crypto</span></div>
+              <div>Station: <span className="text-cyan-300">cyberlab-workstation-laptop</span></div>
+            </div>
+          );
+          break;
+
+        case 'about':
+          output = (
+            <div className="space-y-2 text-xs text-slate-300">
+              <div className="text-white font-bold text-sm">Hanan :: DedSec Systems & Cyber Research</div>
+              <p className="text-slate-400 leading-relaxed">
+                I build and break low-level systems, kernel observability agents, and high-assurance cryptographic protocols. My background bridges deep offensive security (glibc heap internals, binary exploitation, Android AOSP Binder IPC hijacking) with high-performance systems engineering (Rust, eBPF/XDP, WebGL 3D architectures, and post-quantum cryptographic primitives).
+              </p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <span className="px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-800/40 text-cyan-300 text-[11px]">Rust</span>
+                <span className="px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-800/40 text-emerald-300 text-[11px]">eBPF / XDP</span>
+                <span className="px-2 py-0.5 rounded bg-indigo-950/60 border border-indigo-800/40 text-indigo-300 text-[11px]">C / C++ / ASM</span>
+                <span className="px-2 py-0.5 rounded bg-amber-950/60 border border-amber-800/40 text-amber-300 text-[11px]">Kyber-768</span>
+                <span className="px-2 py-0.5 rounded bg-purple-950/60 border border-purple-800/40 text-purple-300 text-[11px]">Binary Exploits</span>
+              </div>
+            </div>
+          );
+          break;
+
+        case 'cv':
+        case 'resume':
+          output = (
+            <div className="space-y-3 text-xs text-slate-300">
+              <div className="text-cyan-400 font-bold border-b border-slate-800 pb-1 text-sm">
+                CURRICULUM VITAE — HANAN
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="text-white font-semibold">EDUCATION & HONORS</div>
+                  <div className="text-slate-400">
+                    <div className="text-cyan-300 font-medium">B.S. in Computer Science</div>
+                    <div>Summa Cum Laude · Cyber Defense Club President</div>
+                    <div className="text-xs text-slate-500">GPA: 3.96 / 4.0 · Dean's List 8 Consecutive Terms</div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-white font-semibold">LEAD RESEARCH & ROLES</div>
+                  <div className="text-slate-400">
+                    <div className="text-emerald-300 font-medium">Lead Security Systems Architect · DedSec Research</div>
+                    <div className="text-xs">Engineered production eBPF kernel telemetry agents processing &gt;1.2M events/sec with &lt;1.8% CPU overhead.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+          break;
+
+        case 'projects':
+          output = (
+            <div className="space-y-2 text-xs">
+              <div className="text-cyan-400 font-bold">PRODUCTION SYSTEMS & RESEARCH REPOSITORIES ({PROJECTS.length}):</div>
+              <div className="space-y-2">
+                {PROJECTS.map((p) => (
+                  <div
+                    key={p.id}
+                    className="p-2 rounded bg-slate-900/60 border border-slate-800/80 hover:border-cyan-500/40 transition-colors cursor-pointer"
+                    onClick={() => {
+                      executeCommand(`project ${p.id}`);
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="font-bold text-white flex items-center gap-2">
+                        <span className="text-cyan-400 font-mono">[{p.id}]</span>
+                        <span>{p.title}</span>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/40">
+                        {p.category}
+                      </span>
+                    </div>
+                    <div className="text-slate-400 text-[11px] mt-1 line-clamp-1">{p.subtitle}</div>
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {p.technologies.map((tech) => (
+                        <span key={tech} className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300">
+                          {tech}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="text-[11px] text-slate-500">
+                Tip: Run <span className="text-cyan-300 font-mono">project &lt;id&gt;</span> (e.g. <span className="text-cyan-300 font-mono">project android-kernel-ipc</span>) to inspect details.
+              </div>
+            </div>
+          );
+          break;
+
+        case 'project':
+          if (!args[0]) {
+            output = <div className="text-xs text-amber-400">Usage: project &lt;project-id&gt; (e.g. 'project android-kernel-ipc')</div>;
+          } else {
+            const pid = args[0].toLowerCase();
+            const found = PROJECTS.find((p) => p.id.toLowerCase() === pid || p.title.toLowerCase().includes(pid));
+            if (!found) {
+              output = (
+                <div className="text-xs text-red-400">
+                  Project '{args[0]}' not found. Run <span className="text-cyan-300 underline font-mono">projects</span> to list valid IDs.
+                </div>
+              );
+            } else {
+              output = (
+                <div className="space-y-3 text-xs bg-slate-900/80 p-3 rounded-lg border border-cyan-500/30">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <div>
+                      <div className="text-sm font-bold text-white font-mono">{found.title}</div>
+                      <div className="text-cyan-300 text-[11px]">{found.subtitle}</div>
+                    </div>
+                    <span className="text-[10px] px-2 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
+                      {found.status} · {found.year}
+                    </span>
+                  </div>
+                  <p className="text-slate-300 leading-relaxed">{found.description}</p>
+                  <div>
+                    <div className="text-white font-semibold text-[11px] mb-1">KEY TECHNICAL HIGHLIGHTS:</div>
+                    <ul className="list-disc list-inside space-y-1 text-slate-400">
+                      {found.architectureNotes.map((h, i) => (
+                        <li key={i}>{h}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {found.technologies.map((tech) => (
+                      <span key={tech} className="px-2 py-0.5 rounded bg-slate-800 text-cyan-300 font-mono text-[10px]">
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+          }
+          break;
+
+        case 'skills':
+          output = (
+            <div className="space-y-3 text-xs">
+              <div className="text-cyan-400 font-bold border-b border-slate-800 pb-1">TECHNICAL PROFICIENCY DOMAINS:</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="p-3 rounded bg-slate-900/60 border border-slate-800 space-y-1">
+                  <div className="text-cyan-300 font-bold text-[11px]">OFFENSIVE SECURITY</div>
+                  <div className="text-slate-300 leading-relaxed">{SKILLS_SUMMARY.offensive.join(' · ')}</div>
+                </div>
+                <div className="p-3 rounded bg-slate-900/60 border border-slate-800 space-y-1">
+                  <div className="text-emerald-300 font-bold text-[11px]">LANGUAGES & COMPILERS</div>
+                  <div className="text-slate-300 leading-relaxed">{SKILLS_SUMMARY.languages.join(' · ')}</div>
+                </div>
+                <div className="p-3 rounded bg-slate-900/60 border border-slate-800 space-y-1">
+                  <div className="text-indigo-300 font-bold text-[11px]">SYSTEMS & INFRASTRUCTURE</div>
+                  <div className="text-slate-300 leading-relaxed">{SKILLS_SUMMARY.systems.join(' · ')}</div>
+                </div>
+                <div className="p-3 rounded bg-slate-900/60 border border-slate-800 space-y-1">
+                  <div className="text-amber-300 font-bold text-[11px]">DEFENSIVE & CRYPTO</div>
+                  <div className="text-slate-300 leading-relaxed">{SKILLS_SUMMARY.defense.join(' · ')}</div>
+                </div>
+              </div>
+            </div>
+          );
+          break;
+
+        case 'certs':
+        case 'certifications':
+          output = (
+            <div className="space-y-2 text-xs">
+              <div className="text-cyan-400 font-bold border-b border-slate-800 pb-1">VERIFIED SECURITY CREDENTIALS:</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {CERTIFICATIONS.map((cert) => (
+                  <div key={cert.verificationId} className="p-2.5 rounded bg-slate-900/60 border border-slate-800 flex items-start gap-2.5">
+                    <Shield className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                    <div>
+                      <div className="font-bold text-white text-[11px]">{cert.name}</div>
+                      <div className="text-slate-400 text-[10px]">{cert.issuer} · <span className="text-cyan-300 font-mono">{cert.badgeCode}</span></div>
+                      <div className="text-[10px] text-emerald-400 font-mono mt-0.5">Status: Verified ({cert.year})</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+          break;
+
+        case 'ctf':
+          output = (
+            <div className="space-y-2 text-xs">
+              <div className="text-emerald-400 font-bold border-b border-slate-800 pb-1 flex items-center justify-between">
+                <span>OFFENSIVE CTF EXPLOITATION WRITEUPS</span>
+                <span className="text-xs text-slate-400">Total Points: 4,450 pts</span>
+              </div>
+              <div className="space-y-2">
+                {CTF_CHALLENGES.map((ch) => (
+                  <div key={ch.id} className="p-2.5 rounded bg-slate-900/60 border border-slate-800">
+                    <div className="flex items-center justify-between">
+                      <div className="font-bold text-white flex items-center gap-2">
+                        <span className="text-emerald-400 font-mono">[{ch.category}]</span>
+                        <span>{ch.title}</span>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 font-mono">
+                        {ch.points} pts · {ch.difficulty}
+                      </span>
+                    </div>
+                    <p className="text-slate-400 text-[11px] mt-1">{ch.overview}</p>
+                    <div className="text-xs font-mono text-cyan-300 mt-1 bg-black/40 p-1.5 rounded">
+                      Vulnerability: {ch.vulnerability}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="text-[11px] text-slate-500">
+                Run <span className="text-emerald-300 font-mono font-bold">submit flag&#123;...&#125;</span> to test flag verification.
+              </div>
+            </div>
+          );
+          break;
+
+        case 'submit':
+          if (!args[0]) {
+            output = <div className="text-xs text-amber-400">Usage: submit flag&#123;your_flag_here&#125;</div>;
+          } else {
+            const userFlag = args[0];
+            if (userFlag.startsWith('flag{') || userFlag.includes('ebpf')) {
+              if (!isMuted) soundEngine.playChirp('success');
+              output = (
+                <div className="p-3 rounded bg-emerald-950/60 border border-emerald-500/50 text-emerald-300 text-xs space-y-1">
+                  <div className="font-bold flex items-center gap-2 text-emerald-200">
+                    <Sparkles className="w-4 h-4 text-emerald-400" />
+                    <span>FLAG ACCEPTED! +500 PTS AWARDED</span>
+                  </div>
+                  <div className="font-mono text-[11px]">Valid submission: {userFlag}</div>
+                  <div className="text-[10px] text-emerald-400">Exploit verified. Added to leaderboard tally.</div>
+                </div>
+              );
+            } else {
+              output = (
+                <div className="text-xs text-rose-400">
+                  [-] Invalid flag hash. Review exploit primitives and try again.
+                </div>
+              );
+            }
+          }
+          break;
+
+        case 'nmap':
+          const target = args[0] || '192.168.1.1';
+          setIsScanning(true);
+          output = (
+            <div className="space-y-2 text-xs font-mono">
+              <div className="text-cyan-400">Starting Nmap 7.94 ( https://nmap.org ) at {now} UTC</div>
+              <div className="text-slate-400">Initiating SYN Stealth Scan against {target} [1000 ports]...</div>
+              <div className="text-slate-300 pl-2 border-l border-cyan-500/40 space-y-1 py-1">
+                <div>Discovered open port <span className="text-emerald-400 font-bold">22/tcp</span> on {target} (OpenSSH 9.6p1)</div>
+                <div>Discovered open port <span className="text-emerald-400 font-bold">80/tcp</span> on {target} (nginx/1.24.0)</div>
+                <div>Discovered open port <span className="text-emerald-400 font-bold">443/tcp</span> on {target} (TLS 1.3 / Kyber-768 Hybrid)</div>
+                <div>Discovered open port <span className="text-emerald-400 font-bold">9090/tcp</span> on {target} (eBPF Prometheus Exporter)</div>
+                <div>Discovered open port <span className="text-emerald-400 font-bold">51820/udp</span> on {target} (WireGuard Secure Tunnel)</div>
+              </div>
+              <div className="text-emerald-400 font-bold">
+                Nmap done: 1 IP address (1 host up) scanned in 0.48 seconds. OS: Linux 6.8.x
+              </div>
+            </div>
+          );
+          setTimeout(() => setIsScanning(false), 600);
+          break;
+
+        case 'matrix':
+          setIsMatrixRunning((prev) => !prev);
+          output = (
+            <div className="text-xs text-emerald-400 font-mono">
+              [+] Matrix glyph stream {isMatrixRunning ? 'HALTED' : 'ACTIVATED'}. Click terminal or press Matrix button to toggle.
+            </div>
+          );
+          break;
+
+        case 'neofetch':
+          output = (
+            <div className="font-mono text-xs text-slate-300 flex flex-col sm:flex-row gap-4 py-2">
+              <pre className="text-cyan-400 font-bold text-[10px] leading-tight select-none">
+{`       /\\
+      /  \\
+     / /\\ \\
+    / /  \\ \\
+   / /    \\ \\
+  / /  __  \\ \\
+ / /  /  \\  \\ \\
+/ /__/ /\\ \\__\\ \\
+\\____\\/  \\_____/`}
+              </pre>
+              <div className="space-y-1 text-[11px]">
+                <div className="text-cyan-300 font-bold">hanan@cyberlab-workstation</div>
+                <div className="text-slate-500">--------------------------</div>
+                <div><span className="text-cyan-400 font-semibold">OS:</span> HANAN//OS Hardened Linux x86_64</div>
+                <div><span className="text-cyan-400 font-semibold">Host:</span> DedSec Workstation Node 01</div>
+                <div><span className="text-cyan-400 font-semibold">Kernel:</span> 6.8.9-dedsec-ebpf-probes</div>
+                <div><span className="text-cyan-400 font-semibold">Uptime:</span> 42 days, 7 hours, 14 mins</div>
+                <div><span className="text-cyan-400 font-semibold">Shell:</span> dedsec-zsh 5.9 (x86_64)</div>
+                <div><span className="text-cyan-400 font-semibold">Resolution:</span> 2560x1440 (Horizontal) + 1920x1080 (Laptop)</div>
+                <div><span className="text-cyan-400 font-semibold">DE / WM:</span> HANAN Desktop v4.2</div>
+                <div><span className="text-cyan-400 font-semibold">CPU:</span> AMD Ryzen 9 7950X (32) @ 5.700GHz</div>
+                <div><span className="text-cyan-400 font-semibold">GPU:</span> NVIDIA RTX 4090 24GB [Vulkan / WebGL 2.0]</div>
+                <div><span className="text-cyan-400 font-semibold">Memory:</span> 12410MiB / 64230MiB (19%)</div>
+              </div>
+            </div>
+          );
+          break;
+
+        case 'top':
+        case 'htop':
+          output = (
+            <div className="font-mono text-[11px] text-slate-300 space-y-1">
+              <div className="text-cyan-400">Tasks: 184 total, 2 running, 182 sleeping, 0 stopped, 0 zombie</div>
+              <div>%Cpu(s): 3.2 us, 1.1 sy, 0.0 ni, 95.4 id, 0.1 wa, 0.2 hi, 0.0 si</div>
+              <div>MiB Mem : 64230.4 total, 42110.2 free, 12410.5 used, 9709.7 buff/cache</div>
+              <div className="border-t border-slate-800 pt-1 mt-1">
+                <div className="text-cyan-300 font-bold grid grid-cols-5 gap-2">
+                  <span>PID</span>
+                  <span>USER</span>
+                  <span>%CPU</span>
+                  <span>%MEM</span>
+                  <span>COMMAND</span>
+                </div>
+                <div className="grid grid-cols-5 gap-2 text-slate-400">
+                  <span>1042</span><span>hanan</span><span className="text-emerald-400">1.8</span><span>2.4</span><span>ebpf-xdp-daemon</span>
+                </div>
+                <div className="grid grid-cols-5 gap-2 text-slate-400">
+                  <span>1188</span><span>hanan</span><span className="text-emerald-400">1.2</span><span>3.1</span><span>threejs-renderer</span>
+                </div>
+                <div className="grid grid-cols-5 gap-2 text-slate-400">
+                  <span>942</span><span>root</span><span>0.4</span><span>0.8</span><span>sshd: [accepted]</span>
+                </div>
+                <div className="grid grid-cols-5 gap-2 text-slate-400">
+                  <span>2201</span><span>hanan</span><span>0.2</span><span>1.4</span><span>wireguard-node</span>
+                </div>
+              </div>
+            </div>
+          );
+          break;
+
+        case 'ls':
+          const targetDir = args[0] || currentPath;
+          if (targetDir === 'projects' || targetDir === '~/projects') {
+            output = (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs font-mono">
+                {PROJECTS.map((p) => (
+                  <div key={p.id} className="text-cyan-300 flex items-center gap-1">
+                    <span>📁</span> <span>{p.id}/</span>
+                  </div>
+                ))}
+              </div>
+            );
+          } else if (targetDir === 'ctf' || targetDir === '~/ctf') {
+            output = (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs font-mono">
+                {CTF_CHALLENGES.map((c) => (
+                  <div key={c.id} className="text-emerald-300 flex items-center gap-1">
+                    <span>📄</span> <span>{c.id}.md</span>
+                  </div>
+                ))}
+              </div>
+            );
+          } else {
+            output = (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+                <span className="text-cyan-400 font-bold">📁 projects/</span>
+                <span className="text-emerald-400 font-bold">📁 ctf/</span>
+                <span className="text-slate-300">📄 about.md</span>
+                <span className="text-slate-300">📄 cv.txt</span>
+                <span className="text-slate-300">📄 skills.json</span>
+                <span className="text-slate-300">📄 notes.txt</span>
+              </div>
+            );
+          }
+          break;
+
+        case 'pwd':
+          output = <div className="text-xs font-mono text-cyan-300">/home/hanan/{currentPath === '~' ? '' : currentPath.replace('~/', '')}</div>;
+          break;
+
+        case 'cd':
+          const newDir = args[0] || '~';
+          if (newDir === '~' || newDir === '/' || newDir === '..') {
+            setCurrentPath('~');
+            output = <div className="text-xs font-mono text-slate-400">Switched directory to ~</div>;
+          } else if (newDir === 'projects' || newDir === 'ctf') {
+            setCurrentPath(`~/${newDir}`);
+            output = <div className="text-xs font-mono text-slate-400">Switched directory to ~/{newDir}</div>;
+          } else {
+            output = <div className="text-xs text-rose-400">cd: no such directory: {newDir}</div>;
+          }
+          break;
+
+        case 'cat':
+          const fileToRead = args[0];
+          if (!fileToRead) {
+            output = <div className="text-xs text-amber-400">Usage: cat &lt;filename&gt; (e.g. 'cat about.md', 'cat cv.txt')</div>;
+          } else if (VIRTUAL_FS[fileToRead] && VIRTUAL_FS[fileToRead].content) {
+            output = (
+              <pre className="text-xs font-mono text-slate-300 whitespace-pre-wrap bg-slate-900/60 p-2.5 rounded border border-slate-800">
+                {VIRTUAL_FS[fileToRead].content}
+              </pre>
+            );
+          } else {
+            output = <div className="text-xs text-rose-400">cat: {fileToRead}: No such file or directory</div>;
+          }
+          break;
+
+        case 'tree':
+          output = (
+            <pre className="text-xs font-mono text-cyan-300 leading-relaxed select-none">
+{`.
+├── about.md
+├── cv.txt
+├── skills.json
+├── notes.txt
+├── projects/
+│   ├── android-kernel-ipc/
+│   ├── sentinel-autonomous-ctf/
+│   ├── post-quantum-pqc/
+│   ├── ebpf-zero-overhead/
+│   └── secure-enclave-vault/
+└── ctf/
+    ├── glibc-tcache-poison.md
+    ├── aosp-binder-hijack.md
+    └── kyber-sidechannel.md`}
+            </pre>
+          );
+          break;
+
+        case 'calc':
+          if (!args[0]) {
+            output = <div className="text-xs text-amber-400">Usage: calc &lt;expression&gt; (e.g. 'calc 1024 * 768')</div>;
+          } else {
+            try {
+              const expr = args.join(' ').replace(/[^0-9+\-*/().\s]/g, '');
+              // eslint-disable-next-line no-eval
+              const res = Function(`'use strict'; return (${expr})`)();
+              output = <div className="text-xs font-mono text-emerald-400">{expr} = <span className="font-bold text-white">{res}</span></div>;
+            } catch {
+              output = <div className="text-xs text-rose-400">Invalid mathematical expression.</div>;
+            }
+          }
+          break;
+
+        case 'ping':
+          const pingHost = args[0] || '1.1.1.1';
+          output = (
+            <div className="text-xs font-mono space-y-1 text-slate-300">
+              <div className="text-cyan-400">PING {pingHost} ({pingHost}) 56(84) bytes of data.</div>
+              <div>64 bytes from {pingHost}: icmp_seq=1 ttl=58 time=12.4 ms</div>
+              <div>64 bytes from {pingHost}: icmp_seq=2 ttl=58 time=11.8 ms</div>
+              <div>64 bytes from {pingHost}: icmp_seq=3 ttl=58 time=12.1 ms</div>
+              <div className="text-emerald-400 font-bold">--- {pingHost} ping statistics --- 3 packets transmitted, 3 received, 0% packet loss</div>
+            </div>
+          );
+          break;
+
+        case 'date':
+          output = <div className="text-xs font-mono text-cyan-300">{new Date().toUTCString()}</div>;
+          break;
+
+        case 'uptime':
+          output = <div className="text-xs font-mono text-cyan-300">up 42 days, 7:14, 2 users, load average: 0.12, 0.08, 0.04</div>;
+          break;
+
+        case 'theme':
+          const nextTheme = args[0]?.toLowerCase() as TerminalTheme;
+          if (nextTheme && THEME_STYLES[nextTheme]) {
+            setTheme(nextTheme);
+            output = <div className="text-xs text-emerald-400 font-mono">Theme switched to '{nextTheme}'.</div>;
+          } else {
+            output = <div className="text-xs text-amber-400">Usage: theme &lt;cyan|emerald|amber|violet&gt;</div>;
+          }
+          break;
+
+        case 'sound':
+          setIsMuted((prev) => {
+            const next = !prev;
+            soundEngine.toggleMute();
+            return next;
+          });
+          output = <div className="text-xs text-cyan-300 font-mono">Audio clicks {isMuted ? 'ENABLED' : 'MUTED'}.</div>;
+          break;
+
+        case 'exit':
+          if (!isMuted) soundEngine.playKeyClick();
+          onClose();
+          return;
+
+        default:
+          output = (
+            <div className="text-xs text-rose-400">
+              zsh: command not found: {cmd}. Type <span className="text-cyan-300 underline font-mono cursor-pointer" onClick={() => executeCommand('help')}>'help'</span> for available commands.
+            </div>
+          );
+      }
+
+      setHistory((prev) => [
+        ...prev,
+        {
+          id: `cmd-${Date.now()}`,
+          command: trimmed,
+          cwd: currentPath,
+          output,
+          timestamp: now,
+        },
+      ]);
+      setInputVal('');
+    },
+    [currentPath, isMatrixRunning, isMuted, onClose]
+  );
+
+  // Key down handling
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      executeCommand(inputVal);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (cmdHistoryList.length === 0) return;
+      const nextIdx = cmdHistoryIndex === -1 ? cmdHistoryList.length - 1 : Math.max(0, cmdHistoryIndex - 1);
+      setCmdHistoryIndex(nextIdx);
+      setInputVal(cmdHistoryList[nextIdx] || '');
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (cmdHistoryIndex === -1) return;
+      const nextIdx = cmdHistoryIndex + 1;
+      if (nextIdx >= cmdHistoryList.length) {
+        setCmdHistoryIndex(-1);
+        setInputVal('');
+      } else {
+        setCmdHistoryIndex(nextIdx);
+        setInputVal(cmdHistoryList[nextIdx] || '');
+      }
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      // Simple autocompletion
+      const cmds = ['help', 'about', 'whoami', 'cv', 'projects', 'skills', 'certs', 'ctf', 'nmap', 'matrix', 'neofetch', 'top', 'clear', 'ls', 'cat', 'tree', 'theme'];
+      const match = cmds.find((c) => c.startsWith(inputVal.toLowerCase()));
+      if (match) {
+        setInputVal(match);
+      }
+    } else if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) {
+      e.preventDefault();
+      setHistory([]);
+    } else if (e.key === 'Escape') {
+      onClose();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 bg-black">
+      <div
+        className={`relative w-full h-full ${tStyle.bg} flex flex-col overflow-hidden`}
+        onClick={() => inputRef.current?.focus()}
+      >
+        {/* Matrix Canvas Layer */}
+        {isMatrixRunning && (
+          <canvas
+            ref={matrixCanvasRef}
+            className="absolute inset-0 pointer-events-none opacity-40 z-0"
+          />
+        )}
+
+        {/* Scrollable Terminal Output Body */}
+        <div className="relative z-10 flex-1 p-6 overflow-y-auto space-y-4 font-mono select-text text-lg">
+          {history.map((item) => (
+            <div key={item.id} className="space-y-1.5">
+              {/* Command Prompt Row */}
+              <div className="flex items-center gap-3">
+                <span className={`${tStyle.prompt} font-bold`}>hanan@cyberlab</span>
+                <span className="text-slate-500">:</span>
+                <span className="text-blue-400 font-semibold">{item.cwd}</span>
+                <span className="text-slate-500">$</span>
+                <span className="text-white font-bold">{item.command}</span>
+              </div>
+              {/* Command Result */}
+              <div className="pl-6 border-l-2 border-slate-800/80">{item.output}</div>
+            </div>
+          ))}
+
+          {/* Active Input Row */}
+          <div className="flex items-center gap-3 pt-1">
+            <span className={`${tStyle.prompt} font-bold`}>hanan@cyberlab</span>
+            <span className="text-slate-500">:</span>
+            <span className="text-blue-400 font-semibold">{currentPath}</span>
+            <span className="text-slate-500">$</span>
+            <div className="relative flex-1 flex items-center">
+              <input
+                ref={inputRef}
+                type="text"
+                value={inputVal}
+                onChange={(e) => setInputVal(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="w-full bg-transparent text-white font-mono font-semibold focus:outline-none placeholder-slate-600"
+                placeholder="Type command..."
+                autoFocus
+                spellCheck={false}
+                autoComplete="off"
+              />
+            </div>
+          </div>
+
+          <div ref={bottomRef} />
+        </div>
+      </div>
+    </div>
+  );
+};

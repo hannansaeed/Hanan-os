@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
-import { StationId } from '../types';
-import { STATIONS } from '../data/portfolioData';
+import { StationId, ProjectItem } from '../types';
+import { STATIONS, PROJECTS, CTF_CHALLENGES, CERTIFICATIONS, SKILLS_SUMMARY, SERVER_METRICS } from '../data/portfolioData';
 import { CRTShader } from './shaders/crtShader';
 import { DustParticleShader } from './shaders/serverLedShader';
 import { CoffeeSteamShader } from './shaders/coffeeSteamShader';
@@ -65,6 +65,10 @@ export class RoomScene {
   private raycaster = new THREE.Raycaster();
   private centerCrosshair = new THREE.Vector2(0, 0);
 
+  // Screen meshes for exact UV raycasting
+  private pcScreenMesh: THREE.Mesh | null = null;
+  private macScreenMesh: THREE.Mesh | null = null;
+
   // Dynamic canvas textures for monitors
   private horizCanvas!: HTMLCanvasElement;
   private horizCtx!: CanvasRenderingContext2D;
@@ -94,6 +98,35 @@ export class RoomScene {
   private dustPoints!: THREE.Points;
   private server1Leds: { mesh: THREE.Mesh; baseColor: number; blinkRate: number }[] = [];
   private server2Leds: { mesh: THREE.Mesh; baseColor: number; blinkRate: number }[] = [];
+
+  /* ----------------------------------------------------
+     INTERACTIVE 3D SCREEN STATES (DIRECT ON-SCREEN EXECUTION)
+  ---------------------------------------------------- */
+  // 1. Interactive Laptop CLI Terminal State
+  private terminalInput: string = '';
+  private terminalLines: Array<{ text: string; color: string; bold?: boolean }> = [
+    { text: 'NULL//OS Workstation Shell [Version 5.0.0-x86_64-hardened]', color: '#34d399', bold: true },
+    { text: 'Host: cyberlab-node-alpha · Kernel: 6.8.9-dedsec-ebpf · Uptime: 42 days', color: '#94a3b8' },
+    { text: 'Type commands directly on keyboard (e.g. help, whoami, projects, nmap, matrix)', color: '#6ee7b7' },
+    { text: '----------------------------------------------------------------', color: '#1e293b' },
+  ];
+  private terminalCmdHistory: string[] = [];
+  private terminalCmdIndex: number = -1;
+  private terminalTheme: 'emerald' | 'cyan' | 'amber' | 'violet' = 'emerald';
+  private terminalMatrixActive: boolean = false;
+  private terminalMatrixDrops: number[] = [];
+  private terminalMatrixCols: number = 32;
+
+  // 2. Interactive Monitor Desktop OS State (NullOS)
+  private desktopWallpaperImg: HTMLImageElement | null = null;
+  private desktopActiveWindow: 'about' | 'notes' | 'resume' | 'mail' | 'settings' | 'photos' | 'trash' | 'none' = 'none';
+  private desktopStartMenuOpen: boolean = false;
+  private desktopActiveProjectIdx: number = 0;
+  private desktopProjectCategory: 'All' | 'Cybersecurity' | 'Systems' | 'Mobile' = 'All';
+  private desktopRestartingService: string | null = null;
+  private desktopNotesText: string = `# Research Vectors // DedSec Workstation\n\n- [x] eBPF ringbuf syscall auditing engine.\n- [x] Post-quantum KEM (Kyber-768) benchmark.\n- [/] Android AOSP Binder IPC fuzzer.\n- [ ] Zero-Knowledge Proof verify node.`;
+  private desktopMousePos: { x: number; y: number } | null = null;
+  private desktopAccentTheme: 'cyan' | 'emerald' | 'amber' | 'violet' = 'cyan';
 
   // Callbacks
   public onStationSelect?: (stationId: StationId) => void;
@@ -216,54 +249,76 @@ export class RoomScene {
      Canvas Screens: Horizontal Desktop, Vertical Terminal, Server LCD
   ---------------------------------------------------- */
   private initCanvasScreens() {
-    // 1. Horizontal Desktop Screen (1024x576)
+    const maxAniso = this.renderer?.capabilities?.getMaxAnisotropy?.() || 16;
+
+    // 1. High-DPI Horizontal Desktop Screen (2048x1152 - 16:9 2K Canvas)
     this.horizCanvas = document.createElement('canvas');
-    this.horizCanvas.width = 1024;
-    this.horizCanvas.height = 576;
-    this.horizCtx = this.horizCanvas.getContext('2d')!;
+    this.horizCanvas.width = 2048;
+    this.horizCanvas.height = 1152;
+    this.horizCtx = this.horizCanvas.getContext('2d', { alpha: false })!;
     this.horizTexture = new THREE.CanvasTexture(this.horizCanvas);
+    this.horizTexture.minFilter = THREE.LinearFilter;
+    this.horizTexture.magFilter = THREE.LinearFilter;
+    this.horizTexture.generateMipmaps = false;
+    this.horizTexture.anisotropy = maxAniso;
+
+    // Load custom NullOS wallpaper
+    this.desktopWallpaperImg = new Image();
+    this.desktopWallpaperImg.crossOrigin = 'anonymous';
+    this.desktopWallpaperImg.src = '/assets/nullos_wallpaper.jpg';
+    this.desktopWallpaperImg.onload = () => {
+      if (this.horizTexture) {
+        this.horizTexture.needsUpdate = true;
+      }
+    };
 
     this.horizMaterial = new THREE.ShaderMaterial({
       uniforms: {
         tDiffuse: { value: this.horizTexture },
         uTime: { value: 0.0 },
-        uCurvature: { value: 0.03 },
-        uScanlineIntensity: { value: 0.12 },
-        uFlicker: { value: 0.01 },
-        uBrightness: { value: 1.2 },
-        uTint: { value: new THREE.Color(0.96, 0.98, 1.0) },
+        uCurvature: { value: 0.0 },
+        uScanlineIntensity: { value: 0.02 },
+        uFlicker: { value: 0.0 },
+        uBrightness: { value: 1.05 },
+        uTint: { value: new THREE.Color(1.0, 1.0, 1.0) },
       },
       vertexShader: CRTShader.vertexShader,
       fragmentShader: CRTShader.fragmentShader,
     });
 
-    // 2. Vertical Terminal Screen (512x1024)
+    // 2. High-DPI Vertical Laptop Terminal Screen (2048x4096)
     this.vertCanvas = document.createElement('canvas');
-    this.vertCanvas.width = 512;
-    this.vertCanvas.height = 1024;
-    this.vertCtx = this.vertCanvas.getContext('2d')!;
+    this.vertCanvas.width = 2048;
+    this.vertCanvas.height = 4096;
+    this.vertCtx = this.vertCanvas.getContext('2d', { alpha: false })!;
     this.vertTexture = new THREE.CanvasTexture(this.vertCanvas);
+    this.vertTexture.minFilter = THREE.LinearFilter;
+    this.vertTexture.magFilter = THREE.LinearFilter;
+    this.vertTexture.generateMipmaps = false;
+    this.vertTexture.anisotropy = maxAniso;
 
     this.vertMaterial = new THREE.ShaderMaterial({
       uniforms: {
         tDiffuse: { value: this.vertTexture },
         uTime: { value: 0.0 },
-        uCurvature: { value: 0.03 },
-        uScanlineIntensity: { value: 0.16 },
-        uFlicker: { value: 0.015 },
-        uBrightness: { value: 1.25 },
-        uTint: { value: new THREE.Color(0.9, 1.0, 0.92) },
+        uCurvature: { value: 0.0 },
+        uScanlineIntensity: { value: 0.03 },
+        uFlicker: { value: 0.0 },
+        uBrightness: { value: 1.08 },
+        uTint: { value: new THREE.Color(1.0, 1.0, 1.0) },
       },
       vertexShader: CRTShader.vertexShader,
       fragmentShader: CRTShader.fragmentShader,
     });
 
-    // 3. Primary Server 1 Status LCD Screen (256x64)
+    // 3. Primary Server 1 Status LCD Screen (512x128)
     this.serverLcdCanvas = document.createElement('canvas');
-    this.serverLcdCanvas.width = 256;
-    this.serverLcdCanvas.height = 64;
-    this.serverLcdCtx = this.serverLcdCanvas.getContext('2d')!;
+    this.serverLcdCanvas.width = 512;
+    this.serverLcdCanvas.height = 128;
+    this.serverLcdCtx = this.serverLcdCanvas.getContext('2d', { alpha: false })!;
     this.serverLcdTexture = new THREE.CanvasTexture(this.serverLcdCanvas);
+    this.serverLcdTexture.minFilter = THREE.LinearFilter;
+    this.serverLcdTexture.magFilter = THREE.LinearFilter;
 
     // 4. Interactive Whiteboard Canvas (1536x960, 1.6 aspect ratio)
     this.whiteboardCanvas = document.createElement('canvas');
@@ -300,265 +355,792 @@ export class RoomScene {
   }
 
   private updateScreensContent(elapsed: number) {
-    // 1. HORIZONTAL DESKTOP GUI
-    const hc = this.horizCtx;
-    hc.fillStyle = '#090f1d';
-    hc.fillRect(0, 0, 1024, 576);
-
-    // Subtle background cyber grid
-    hc.strokeStyle = 'rgba(56, 189, 248, 0.07)';
-    hc.lineWidth = 1;
-    for (let x = 0; x < 1024; x += 48) {
-      hc.beginPath();
-      hc.moveTo(x, 0);
-      hc.lineTo(x, 576);
-      hc.stroke();
-    }
-    for (let y = 0; y < 576; y += 48) {
-      hc.beginPath();
-      hc.moveTo(0, y);
-      hc.lineTo(1024, y);
-      hc.stroke();
-    }
-
-    // Workstation watermark
-    hc.font = 'bold 34px "Syne", sans-serif';
-    hc.fillStyle = 'rgba(244, 63, 94, 0.2)';
-    hc.textAlign = 'center';
-    hc.fillText('HANAN // WORKSTATION', 512, 260);
-    hc.font = 'bold 15px "JetBrains Mono", monospace';
-    hc.fillStyle = 'rgba(56, 189, 248, 0.35)';
-    hc.fillText('CYBERSPACE RIG · OS v3.8.4', 512, 292);
-    hc.textAlign = 'left';
-
-    // Left App Icons
-    const icons = [
-      { name: 'Projects.exe', tag: 'Core Systems', color: '#38bdf8' },
-      { name: 'About_Me.txt', tag: 'Bio & Engineering', color: '#fb7185' },
-      { name: 'Resume_CV.pdf', tag: 'Curriculum Vitae', color: '#34d399' },
-      { name: 'CTF_Vault.sh', tag: 'Exploit Writeups', color: '#fbbf24' },
-      { name: 'Comms.app', tag: 'Encrypted Mail', color: '#c084fc' },
-    ];
-
-    icons.forEach((ic, i) => {
-      const iy = 50 + i * 86;
-      hc.fillStyle = 'rgba(15, 23, 42, 0.9)';
-      hc.strokeStyle = 'rgba(71, 85, 105, 0.5)';
-      hc.lineWidth = 1.5;
-      hc.beginPath();
-      hc.roundRect(40, iy, 190, 68, 6);
-      hc.fill();
-      hc.stroke();
-
-      hc.fillStyle = ic.color;
-      hc.beginPath();
-      hc.arc(62, iy + 24, 7, 0, Math.PI * 2);
-      hc.fill();
-
-      hc.font = 'bold 14px "JetBrains Mono", monospace';
-      hc.fillStyle = '#f8fafc';
-      hc.fillText(ic.name, 80, iy + 29);
-
-      hc.font = '11px "Plus Jakarta Sans", sans-serif';
-      hc.fillStyle = '#94a3b8';
-      hc.fillText(ic.tag, 60, iy + 52);
-    });
-
-    // Active Window: Projects & Systems Explorer
-    hc.fillStyle = '#0f172a';
-    hc.strokeStyle = '#2563eb';
-    hc.lineWidth = 2;
-    hc.beginPath();
-    hc.roundRect(260, 50, 720, 460, 8);
-    hc.fill();
-    hc.stroke();
-
-    // Window Titlebar
-    hc.fillStyle = '#1e293b';
-    hc.beginPath();
-    hc.roundRect(260, 50, 720, 36, [8, 8, 0, 0]);
-    hc.fill();
-    hc.font = 'bold 13px "JetBrains Mono", monospace';
-    hc.fillStyle = '#93c5fd';
-    hc.fillText('HANAN//OS — Projects & Systems Explorer (v3.8)', 280, 73);
-
-    ['#ef4444', '#eab308', '#22c55e'].forEach((col, idx) => {
-      hc.fillStyle = col;
-      hc.beginPath();
-      hc.arc(935 + idx * 16, 68, 5, 0, Math.PI * 2);
-      hc.fill();
-    });
-
-    // Project Cards
-    const cards = [
-      {
-        title: 'Android Kernel IPC Monitor',
-        tag: 'eBPF · Binder Security · Rust',
-        desc: 'Kernel hook monitor tracing Android Binder IPC calls with zero-drop ringbuffers.',
-        color: '#38bdf8',
-      },
-      {
-        title: 'Sentinel Autonomous CTF Engine',
-        tag: 'Pwn · Symbolics · Python/C',
-        desc: 'Autonomous exploit generator analyzing binary vulnerabilities and stack clobbering.',
-        color: '#fb7185',
-      },
-      {
-        title: 'Post-Quantum PQC Key Exchange',
-        tag: 'Kyber-768 · Dilithium · Go',
-        desc: 'Production hybrid post-quantum TLS cipher proxy with constant-time verification.',
-        color: '#34d399',
-      },
-    ];
-
-    cards.forEach((c, idx) => {
-      const cy = 105 + idx * 105;
-      hc.fillStyle = '#131d33';
-      hc.strokeStyle = c.color;
-      hc.lineWidth = 1.5;
-      hc.beginPath();
-      hc.roundRect(280, cy, 680, 92, 6);
-      hc.fill();
-      hc.stroke();
-
-      hc.font = 'bold 16px "Syne", sans-serif';
-      hc.fillStyle = '#ffffff';
-      hc.fillText(c.title, 300, cy + 28);
-
-      hc.font = 'bold 12px "JetBrains Mono", monospace';
-      hc.fillStyle = c.color;
-      hc.fillText(c.tag, 300, cy + 50);
-
-      hc.font = '12px "Plus Jakarta Sans", sans-serif';
-      hc.fillStyle = '#94a3b8';
-      hc.fillText(c.desc, 300, cy + 74);
-    });
-
-    // Action banner
-    hc.fillStyle = '#0a101d';
-    hc.beginPath();
-    hc.roundRect(280, 428, 680, 68, 6);
-    hc.fill();
-    hc.font = 'bold 13px "JetBrains Mono", monospace';
-    hc.fillStyle = '#38bdf8';
-    hc.fillText('CLICK MONITOR OR PRESS [E] TO INSPECT FULL PROJECTS & CV', 300, 456);
-    hc.font = '11px "JetBrains Mono", monospace';
-    hc.fillStyle = '#94a3b8';
-    hc.fillText('> Access live APK interactive sandbox & verified security certifications', 300, 478);
-
-    // Desktop Taskbar
-    hc.fillStyle = '#060a12';
-    hc.fillRect(0, 536, 1024, 40);
-    hc.strokeStyle = '#1e293b';
-    hc.beginPath();
-    hc.moveTo(0, 536);
-    hc.lineTo(1024, 536);
-    hc.stroke();
-
-    hc.fillStyle = '#2563eb';
-    hc.beginPath();
-    hc.roundRect(12, 542, 90, 28, 4);
-    hc.fill();
-    hc.font = 'bold 12px "JetBrains Mono", monospace';
-    hc.fillStyle = '#ffffff';
-    hc.fillText('START', 36, 561);
-
-    hc.font = '12px "JetBrains Mono", monospace';
-    hc.fillStyle = '#94a3b8';
-    const now = new Date();
-    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} PST`;
-    hc.fillText(`ONLINE · ${timeStr}`, 840, 561);
-
-    this.horizTexture.needsUpdate = true;
-
-    // 2. VERTICAL TERMINAL SCREEN (Live Streaming CLI)
-    const vc = this.vertCtx;
-    vc.fillStyle = '#060f0a';
-    vc.fillRect(0, 0, 512, 1024);
-
-    vc.fillStyle = '#0e2417';
-    vc.fillRect(0, 0, 512, 50);
-    vc.font = 'bold 16px "JetBrains Mono", monospace';
-    vc.fillStyle = '#34d399';
-    vc.fillText('hanan@workstation-os:~ (pty/1)', 24, 32);
-
-    const lines = [
-      'Linux workstation-os 6.9.1-security-ebpf #1 SMP x86_64',
-      'Debian GNU/Linux 12 (bookworm) — Offensive Security Lab',
-      'System Uptime: 48 days, 14 hours, 22 minutes',
-      '',
-      '$ whoami',
-      'hanan :: cybersecurity researcher & systems software engineer',
-      '',
-      '$ nmap -sS -p 22,80,443,8443,9090 127.0.0.1',
-      'PORT     STATE SERVICE',
-      '22/tcp   open  ssh (OpenSSH 9.2)',
-      '80/tcp   open  http (Caddy / HTTP3)',
-      '443/tcp  open  https (TLS 1.3)',
-      '8443/tcp open  hanan-core-daemon',
-      '9090/tcp open  sentinel-jail (CTF)',
-      '',
-      '$ cat /proc/ctf_ranking',
-      'DEFCON Quals: Top 2% Worldwide',
-      'HTB University: 8th Place Global',
-      'Active Exploits: Heap Tcache / Curve25519 Fault',
-      '',
-      '$ ./monitor_ingress.sh',
-      `[eBPF-XDP] ${((elapsed * 50) % 999).toFixed(0)} packets/s | Drops: 0`,
-      `[SELinux] Enforcing mode: verified zero escapes`,
-      `[Kyber-PQC] 768-bit key exchange: 12.4µs latency`,
-      '',
-      'hanan@workstation-os:~$ _',
-    ];
-
-    let lineY = 80;
-    lines.forEach((l) => {
-      if (l.startsWith('$')) {
-        vc.fillStyle = '#6ee7b7';
-        vc.font = 'bold 13px "JetBrains Mono", monospace';
-      } else if (l.includes('open') || l.includes('Top') || l.includes('verified')) {
-        vc.fillStyle = '#34d399';
-        vc.font = '12px "JetBrains Mono", monospace';
-      } else {
-        vc.fillStyle = '#94a3b8';
-        vc.font = '12px "JetBrains Mono", monospace';
-      }
-      vc.fillText(l, 24, lineY);
-      lineY += 24;
-    });
-
-    if (Math.floor(elapsed * 2) % 2 === 0) {
-      vc.fillStyle = '#34d399';
-      vc.fillRect(24 + vc.measureText('hanan@workstation-os:~$ ').width, lineY - 24, 8, 15);
-    }
-
-    vc.fillStyle = '#05190e';
-    vc.fillRect(0, 930, 512, 94);
-    vc.strokeStyle = '#10b981';
-    vc.lineWidth = 1;
-    vc.strokeRect(12, 942, 488, 70);
-    vc.font = 'bold 13px "JetBrains Mono", monospace';
-    vc.fillStyle = '#34d399';
-    vc.fillText('PRESS [E] OR CLICK TO RUN COMMANDS', 28, 970);
-    vc.font = '11px "JetBrains Mono", monospace';
-    vc.fillStyle = '#a7f3d0';
-    vc.fillText('Run help, whoami, cv, projects, ctf, certs...', 28, 995);
-
-    this.vertTexture.needsUpdate = true;
+    this.renderDesktopOnMonitor(elapsed);
+    this.renderTerminalOnLaptop(elapsed);
 
     // 3. SERVER 1 STATUS LCD SCREEN
     const sc = this.serverLcdCtx;
     sc.fillStyle = '#05121f';
-    sc.fillRect(0, 0, 256, 64);
-    sc.font = 'bold 11px "JetBrains Mono", monospace';
+    sc.fillRect(0, 0, 512, 128);
+    sc.font = 'bold 22px "JetBrains Mono", monospace';
     sc.fillStyle = '#38bdf8';
-    sc.fillText('NODE-01 // CORE MAINFRAME', 10, 18);
-    sc.font = '9px "JetBrains Mono", monospace';
+    sc.fillText('NODE-01 // CORE MAINFRAME', 20, 36);
+    sc.font = '18px "JetBrains Mono", monospace';
     sc.fillStyle = '#34d399';
-    sc.fillText(`IP: 10.13.37.1  CPU: ${(36 + Math.sin(elapsed) * 3).toFixed(1)}°C`, 10, 36);
+    sc.fillText(`IP: 10.13.37.1  CPU: ${(36 + Math.sin(elapsed) * 3).toFixed(1)}°C`, 20, 72);
     sc.fillStyle = '#94a3b8';
-    sc.fillText(`LOAD: 0.14  SANDBOXES: 4 ACTIVE`, 10, 52);
+    sc.fillText(`LOAD: 0.14  SANDBOXES: 4 ACTIVE`, 20, 104);
     this.serverLcdTexture.needsUpdate = true;
+  }
+
+  /* ----------------------------------------------------
+     1. HORIZONTAL DESKTOP OS (NullOS - Joan OS / macOS Style Web Desktop)
+  ---------------------------------------------------- */
+  private renderDesktopOnMonitor(elapsed: number) {
+    const hc = this.horizCtx;
+
+    // 1. Draw Custom Planet Wallpaper or Ambient Glow Fallback
+    if (this.desktopWallpaperImg && this.desktopWallpaperImg.complete && this.desktopWallpaperImg.naturalWidth > 0) {
+      hc.drawImage(this.desktopWallpaperImg, 0, 0, 2048, 1152);
+    } else {
+      const bgGrad = hc.createLinearGradient(0, 0, 2048, 1152);
+      bgGrad.addColorStop(0, '#0b0f19');
+      bgGrad.addColorStop(0.35, '#0f172a');
+      bgGrad.addColorStop(0.7, '#1e1b4b');
+      bgGrad.addColorStop(1, '#090d16');
+      hc.fillStyle = bgGrad;
+      hc.fillRect(0, 0, 2048, 1152);
+
+      // Glowing Ambient Cosmic Waves
+      hc.save();
+      hc.filter = 'blur(40px)';
+      
+      const wave1 = hc.createRadialGradient(700, 600, 80, 700, 600, 550);
+      wave1.addColorStop(0, 'rgba(14, 165, 233, 0.22)');
+      wave1.addColorStop(0.6, 'rgba(56, 189, 248, 0.08)');
+      wave1.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      hc.fillStyle = wave1;
+      hc.beginPath();
+      hc.arc(700, 600, 550, 0, Math.PI * 2);
+      hc.fill();
+
+      const wave2 = hc.createRadialGradient(1400, 480, 100, 1400, 480, 600);
+      wave2.addColorStop(0, 'rgba(139, 92, 246, 0.25)');
+      wave2.addColorStop(0.5, 'rgba(168, 85, 247, 0.08)');
+      wave2.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      hc.fillStyle = wave2;
+      hc.beginPath();
+      hc.arc(1400, 480, 600, 0, Math.PI * 2);
+      hc.fill();
+
+      hc.restore();
+    }
+
+    // 2. Top Translucent Menu Bar (y: 0 to 54)
+    hc.fillStyle = 'rgba(15, 23, 42, 0.78)';
+    hc.fillRect(0, 0, 2048, 54);
+    hc.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    hc.lineWidth = 1;
+    hc.beginPath();
+    hc.moveTo(0, 54);
+    hc.lineTo(2048, 54);
+    hc.stroke();
+
+    // Top Bar - Left (Apple/OS Icon + App Name + Menu Items)
+    hc.font = 'bold 20px sans-serif';
+    hc.fillStyle = '#f8fafc';
+    hc.fillText('', 24, 34);
+
+    hc.font = 'bold 18px "Plus Jakarta Sans", sans-serif';
+    hc.fillStyle = '#ffffff';
+    hc.fillText('NullOS', 56, 35);
+
+    const menuItems = ['File', 'Edit', 'View', 'Go', 'Window', 'Help'];
+    menuItems.forEach((item, idx) => {
+      hc.font = '16px "Plus Jakarta Sans", sans-serif';
+      hc.fillStyle = '#cbd5e1';
+      hc.fillText(item, 155 + idx * 82, 35);
+    });
+
+    // Top Bar - Right Status & Clock
+    const now = new Date();
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const dayStr = days[now.getDay()];
+    const monStr = months[now.getMonth()];
+    const timeStr = `${dayStr} ${now.getDate()} ${monStr}  ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    hc.font = '16px "Plus Jakarta Sans", sans-serif';
+    hc.fillStyle = '#e2e8f0';
+    hc.textAlign = 'right';
+    hc.fillText(`100% 🔋   📶   🔍   🎛️   ${timeStr}`, 2020, 35);
+    hc.textAlign = 'left';
+
+    // 3. Desktop Folders & Files (Right Side / Clean Grid)
+    const desktopFiles = [
+      { id: 'about', name: 'About Me', icon: '👤', tag: 'Bio' },
+      { id: 'notes', name: 'Notes', icon: '📝', tag: 'Markdown' },
+      { id: 'resume', name: 'Resume.pdf', icon: '📄', tag: 'PDF' },
+      { id: 'mail', name: 'Mail', icon: '✉️', tag: 'Contact' },
+      { id: 'settings', name: 'Settings', icon: '⚙️', tag: 'Config' },
+      { id: 'photos', name: 'Gallery', icon: '🖼️', tag: 'Photos' },
+      { id: 'trash', name: 'Trash Bin', icon: '🗑️', tag: 'Trash' },
+    ];
+
+    desktopFiles.forEach((file, idx) => {
+      const fx = 1910;
+      const fy = 90 + idx * 135;
+
+      // Icon emoji
+      hc.font = '48px sans-serif';
+      hc.textAlign = 'center';
+      hc.fillText(file.icon, fx, fy + 48);
+
+      // Name with drop shadow
+      hc.font = 'bold 15px "Plus Jakarta Sans", sans-serif';
+      hc.fillStyle = '#ffffff';
+      hc.shadowColor = 'rgba(0, 0, 0, 0.9)';
+      hc.shadowBlur = 8;
+      hc.fillText(file.name, fx, fy + 88);
+      hc.shadowBlur = 0;
+      hc.textAlign = 'left';
+    });
+
+    // 4. Bottom Floating Joan OS Style Dock (y: 1046 to 1134)
+    const dockIcons = [
+      { id: 'about', name: 'About', icon: '👤', bg: '#0284c7' },
+      { id: 'notes', name: 'Notes', icon: '📝', bg: '#eab308' },
+      { id: 'resume', name: 'Resume', icon: '📄', bg: '#2563eb' },
+      { id: 'mail', name: 'Mail', icon: '✉️', bg: '#059669' },
+      { id: 'photos', name: 'Gallery', icon: '🖼️', bg: '#ec4899' },
+      { id: 'settings', name: 'Settings', icon: '⚙️', bg: '#64748b' },
+      { id: 'divider', isDivider: true },
+      { id: 'trash', name: 'Trash', icon: '🗑️', bg: '#334155' },
+    ];
+
+    const dockW = 680;
+    const dockH = 88;
+    const dockX = (2048 - dockW) / 2;
+    const dockY = 1046;
+
+    hc.fillStyle = 'rgba(15, 23, 42, 0.72)';
+    hc.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+    hc.lineWidth = 1.5;
+    hc.beginPath();
+    hc.roundRect(dockX, dockY, dockW, dockH, 24);
+    hc.fill();
+    hc.stroke();
+
+    let currentDockX = dockX + 24;
+    dockIcons.forEach((dItem) => {
+      if (dItem.isDivider) {
+        hc.fillStyle = 'rgba(255, 255, 255, 0.2)';
+        hc.fillRect(currentDockX + 8, dockY + 16, 1.5, 56);
+        currentDockX += 26;
+        return;
+      }
+      const ix = currentDockX;
+      const iy = dockY + 14;
+      const isize = 60;
+
+      hc.fillStyle = dItem.bg || '#1e293b';
+      hc.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+      hc.lineWidth = 1;
+      hc.beginPath();
+      hc.roundRect(ix, iy, isize, isize, 16);
+      hc.fill();
+      hc.stroke();
+
+      hc.font = '32px sans-serif';
+      hc.textAlign = 'center';
+      hc.fillText(dItem.icon || '📱', ix + 30, iy + 42);
+      hc.textAlign = 'left';
+
+      currentDockX += 74;
+    });
+
+    // 5. Active App Window Renderer (Finder, Launchpad, Safari, Notes, Photos, Settings, Projects, CV, CTF, Servers, Trash)
+    if (this.desktopActiveWindow !== 'none') {
+      const wx = 240;
+      const wy = 70;
+      const ww = 1568;
+      const wh = 950;
+
+      // Window Glass Background
+      hc.save();
+      hc.shadowColor = 'rgba(0, 0, 0, 0.6)';
+      hc.shadowBlur = 50;
+      hc.shadowOffsetX = 0;
+      hc.shadowOffsetY = 24;
+
+      hc.fillStyle = 'rgba(15, 23, 42, 0.94)';
+      hc.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+      hc.lineWidth = 1.5;
+      hc.beginPath();
+      hc.roundRect(wx, wy, ww, wh, 18);
+      hc.fill();
+      hc.stroke();
+      hc.restore();
+
+      // Titlebar (Cyber / Terminal Style)
+      hc.fillStyle = 'rgba(15, 23, 42, 0.98)';
+      hc.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+      hc.lineWidth = 1.5;
+      hc.beginPath();
+      hc.roundRect(wx, wy, ww, 58, [18, 18, 0, 0]);
+      hc.fill();
+      hc.stroke();
+
+      // Title Text
+      hc.font = 'bold 20px "Plus Jakarta Sans", sans-serif';
+      hc.fillStyle = '#38bdf8';
+      hc.fillText(`NULL_OS // ${this.desktopActiveWindow.toUpperCase()}`, wx + 28, wy + 36);
+
+      // Normal Windows/Ubuntu Close Button [ X ]
+      const btnX = wx + ww - 52;
+      const btnY = wy + 13;
+      const btnW = 36;
+      const btnH = 32;
+
+      hc.fillStyle = 'rgba(239, 68, 68, 0.2)';
+      hc.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+      hc.lineWidth = 1;
+      hc.beginPath();
+      hc.roundRect(btnX, btnY, btnW, btnH, 6);
+      hc.fill();
+      hc.stroke();
+
+      hc.font = 'bold 16px "Plus Jakarta Sans", sans-serif';
+      hc.fillStyle = '#f87171';
+      hc.textAlign = 'center';
+      hc.fillText('✕', btnX + btnW / 2, btnY + 22);
+      hc.textAlign = 'left';
+
+      // Window Content Area
+      const cx = wx + 36;
+      const cy = wy + 80;
+      const cw = ww - 72;
+
+      if (this.desktopActiveWindow === 'about') {
+        hc.font = 'bold 24px "Plus Jakarta Sans", sans-serif';
+        hc.fillStyle = '#38bdf8';
+        hc.fillText('About Me — Hanan', cx, cy + 28);
+        const aboutLines = [
+          '● Lead Security Systems Architect & Full-Stack Engineer',
+          '● Passionate about low-level Rust, eBPF kernel auditing & post-quantum cryptography',
+          '● Building immersive 3D web applications with Three.js & React',
+          '● Dedicated to clean architecture, performance, and cyber defense research',
+        ];
+        aboutLines.forEach((l, idx) => {
+          hc.font = '18px "Plus Jakarta Sans", sans-serif';
+          hc.fillStyle = '#e2e8f0';
+          hc.fillText(l, cx + 24, cy + 90 + idx * 50);
+        });
+      } else if (this.desktopActiveWindow === 'notes') {
+        hc.font = 'bold 24px "Plus Jakarta Sans", sans-serif';
+        hc.fillStyle = '#eab308';
+        hc.fillText('Notes & Research Scratchpad', cx, cy + 28);
+        hc.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        hc.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+        hc.beginPath();
+        hc.roundRect(cx, cy + 60, cw, 720, 12);
+        hc.fill();
+        hc.stroke();
+
+        hc.font = '18px monospace';
+        hc.fillStyle = '#fde047';
+        this.desktopNotesText.split('\n').forEach((l, idx) => {
+          hc.fillText(l, cx + 24, cy + 105 + idx * 30);
+        });
+      } else if (this.desktopActiveWindow === 'resume') {
+        hc.font = 'bold 24px "Plus Jakarta Sans", sans-serif';
+        hc.fillStyle = '#38bdf8';
+        hc.fillText('Resume.pdf — Curriculum Vitae', cx, cy + 28);
+        const resumeLines = [
+          'Education:',
+          '  B.S. Computer Science — Summa Cum Laude (GPA 3.96)',
+          '',
+          'Experience:',
+          '  Lead Security Architect @ DedSec Research Labs (2024 - Present)',
+          '  - Developed eBPF ringbuf syscall auditing engine',
+          '  - Benchmarked post-quantum KEM (Kyber-768) protocols',
+          '',
+          'Skills:',
+          '  TypeScript, React, Three.js, Rust, Python, Docker, Kubernetes, Linux Kernel',
+        ];
+        resumeLines.forEach((l, idx) => {
+          hc.font = l.startsWith('  -') || l.startsWith('  B.') || l.startsWith('  Lead') ? '16px "Plus Jakarta Sans", sans-serif' : 'bold 18px "Plus Jakarta Sans", sans-serif';
+          hc.fillStyle = l.endsWith(':') ? '#34d399' : '#e2e8f0';
+          hc.fillText(l, cx + 24, cy + 80 + idx * 36);
+        });
+      } else if (this.desktopActiveWindow === 'mail') {
+        hc.font = 'bold 24px "Plus Jakarta Sans", sans-serif';
+        hc.fillStyle = '#10b981';
+        hc.fillText('Mail & Contact Links', cx, cy + 28);
+        const contacts = [
+          { label: '📧 Email:', val: 'testperson952@gmail.com' },
+          { label: '🐙 GitHub:', val: 'github.com/hanan-sec' },
+          { label: '💼 LinkedIn:', val: 'linkedin.com/in/hanan-dev' },
+          { label: '🐦 Twitter / X:', val: '@hanan_sec' },
+        ];
+        contacts.forEach((c, idx) => {
+          const iy = cy + 70 + idx * 90;
+          hc.fillStyle = 'rgba(30, 41, 59, 0.65)';
+          hc.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+          hc.beginPath();
+          hc.roundRect(cx, iy, cw, 75, 10);
+          hc.fill();
+          hc.stroke();
+
+          hc.font = 'bold 18px "Plus Jakarta Sans", sans-serif';
+          hc.fillStyle = '#34d399';
+          hc.fillText(c.label, cx + 24, iy + 45);
+          hc.font = '18px monospace';
+          hc.fillStyle = '#f8fafc';
+          hc.fillText(c.val, cx + 220, iy + 45);
+        });
+      } else if (this.desktopActiveWindow === 'settings') {
+        hc.font = 'bold 24px "Plus Jakarta Sans", sans-serif';
+        hc.fillStyle = '#38bdf8';
+        hc.fillText('Settings — Resources, Inspiration & Special Thanks', cx, cy + 28);
+        
+        const infoBlocks = [
+          { title: '📚 Resources', desc: 'React, Vite, Tailwind CSS, TypeScript, Three.js WebGL & Google AI Studio.' },
+          { title: '💡 Inspiration', desc: 'Cyberpunk workstations, macOS desktop aesthetics, and immersive 3D simulation.' },
+          { title: '✨ Special Thanks', desc: 'Open source contributors, mentors, and the AI Studio developer community.' },
+        ];
+        infoBlocks.forEach((ib, idx) => {
+          const by = cy + 70 + idx * 135;
+          hc.fillStyle = 'rgba(30, 41, 59, 0.65)';
+          hc.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+          hc.beginPath();
+          hc.roundRect(cx, by, cw, 115, 10);
+          hc.fill();
+          hc.stroke();
+
+          hc.font = 'bold 20px "Plus Jakarta Sans", sans-serif';
+          hc.fillStyle = '#fbbf24';
+          hc.fillText(ib.title, cx + 24, by + 38);
+          hc.font = '16px "Plus Jakarta Sans", sans-serif';
+          hc.fillStyle = '#cbd5e1';
+          hc.fillText(ib.desc, cx + 24, by + 78);
+        });
+      } else if (this.desktopActiveWindow === 'photos') {
+        hc.font = 'bold 24px "Plus Jakarta Sans", sans-serif';
+        hc.fillStyle = '#ec4899';
+        hc.fillText('Photos Gallery — Wallpapers & Renders', cx, cy + 28);
+        const photos = [
+          { name: 'Cosmic Planet Wallpaper', tag: 'Wallpaper' },
+          { name: 'Night Bake Room', tag: 'Environment' },
+          { name: 'Three.js Journey Logo', tag: 'Asset' },
+        ];
+        photos.forEach((ph, idx) => {
+          const px = cx + idx * 480;
+          const py = cy + 70;
+          hc.fillStyle = 'rgba(30, 41, 59, 0.7)';
+          hc.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+          hc.beginPath();
+          hc.roundRect(px, py, 450, 310, 14);
+          hc.fill();
+          hc.stroke();
+
+          hc.font = 'bold 20px "Plus Jakarta Sans", sans-serif';
+          hc.fillStyle = '#f8fafc';
+          hc.fillText(ph.name, px + 24, py + 250);
+          hc.font = '14px monospace';
+          hc.fillStyle = '#ec4899';
+          hc.fillText(ph.tag, px + 24, py + 280);
+        });
+      } else if (this.desktopActiveWindow === 'trash') {
+        hc.font = 'bold 24px "Plus Jakarta Sans", sans-serif';
+        hc.fillStyle = '#94a3b8';
+        hc.fillText('Trash Bin (3 items)', cx, cy + 28);
+        ['old_config.json', 'debug_trace.bak', 'tmp_cache.tmp'].forEach((t, idx) => {
+          const ty = cy + 70 + idx * 75;
+          hc.fillStyle = 'rgba(30, 41, 59, 0.5)';
+          hc.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+          hc.beginPath();
+          hc.roundRect(cx, ty, cw, 60, 8);
+          hc.fill();
+          hc.stroke();
+          hc.font = '18px monospace';
+          hc.fillStyle = '#cbd5e1';
+          hc.fillText(`🗑️  ${t}`, cx + 24, ty + 37);
+        });
+      }
+    }
+
+    // 6. Draw Mouse Cursor if hovering on desktop
+    if (this.desktopMousePos) {
+      hc.fillStyle = '#ffffff';
+      hc.strokeStyle = '#000000';
+      hc.lineWidth = 2;
+      hc.beginPath();
+      hc.moveTo(this.desktopMousePos.x, this.desktopMousePos.y);
+      hc.lineTo(this.desktopMousePos.x + 20, this.desktopMousePos.y + 20);
+      hc.lineTo(this.desktopMousePos.x + 8, this.desktopMousePos.y + 20);
+      hc.lineTo(this.desktopMousePos.x + 14, this.desktopMousePos.y + 34);
+      hc.lineTo(this.desktopMousePos.x + 8, this.desktopMousePos.y + 36);
+      hc.lineTo(this.desktopMousePos.x + 2, this.desktopMousePos.y + 22);
+      hc.lineTo(this.desktopMousePos.x, this.desktopMousePos.y + 26);
+      hc.closePath();
+      hc.fill();
+      hc.stroke();
+    }
+
+    this.horizTexture.needsUpdate = true;
+  }
+
+  /* ----------------------------------------------------
+     2. VERTICAL LAPTOP CLI TERMINAL (High-DPI 1024x2048 Direct On Laptop Screen)
+  ---------------------------------------------------- */
+  private renderTerminalOnLaptop(elapsed: number) {
+    const vc = this.vertCtx;
+    const themeColor =
+      this.terminalTheme === 'cyan'
+        ? '#38bdf8'
+        : this.terminalTheme === 'amber'
+        ? '#f59e0b'
+        : this.terminalTheme === 'violet'
+        ? '#c084fc'
+        : '#34d399';
+
+    // 1. Terminal Canvas Background (1024x2048)
+    vc.fillStyle = '#04080f';
+    vc.fillRect(0, 0, 1024, 2048);
+
+    // 2. Optional Matrix Code Rain Mode
+    if (this.terminalMatrixActive) {
+      if (this.terminalMatrixDrops.length === 0) {
+        this.terminalMatrixDrops = Array(this.terminalMatrixCols).fill(1);
+      }
+
+      vc.fillStyle = 'rgba(4, 8, 15, 0.15)';
+      vc.fillRect(0, 0, 1024, 2048);
+
+      vc.fillStyle = themeColor;
+      vc.font = '24px monospace';
+      const chars = '0123456789ABCDEF@#$%&*+-=<>~ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ';
+
+      for (let i = 0; i < this.terminalMatrixDrops.length; i++) {
+        const char = chars[Math.floor(Math.random() * chars.length)];
+        const x = i * 32;
+        const y = this.terminalMatrixDrops[i] * 32;
+
+        vc.fillText(char, x, y);
+
+        if (y > 2048 && Math.random() > 0.975) {
+          this.terminalMatrixDrops[i] = 0;
+        }
+        this.terminalMatrixDrops[i]++;
+      }
+    }
+
+    // 3. Top Translucent Header
+    vc.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    vc.fillRect(0, 0, 1024, 60);
+    vc.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    vc.lineWidth = 1;
+    vc.beginPath();
+    vc.moveTo(0, 60);
+    vc.lineTo(1024, 60);
+    vc.stroke();
+
+    // Terminal Title
+    vc.font = 'bold 40px "Plus Jakarta Sans", sans-serif';
+    vc.fillStyle = '#f8fafc';
+    vc.fillText('Terminal', 72, 76);
+    
+    vc.font = '32px "JetBrains Mono", monospace';
+    vc.fillStyle = '#94a3b8';
+    vc.fillText('hanan@cyberlab: ~', 260, 76);
+
+    // 4. Terminal Output Buffer (Scrolling Lines)
+    let lineY = 220;
+    const maxVisibleLines = 36;
+    const visibleLines = this.terminalLines.slice(-maxVisibleLines);
+
+    visibleLines.forEach((l) => {
+      vc.fillStyle = l.color;
+      vc.font = l.bold ? 'bold 44px "JetBrains Mono", monospace' : '40px "JetBrains Mono", monospace';
+      vc.fillText(l.text, 72, lineY);
+      lineY += 72;
+    });
+
+    // 5. Active Command Prompt & Blinking Cursor
+    vc.font = 'bold 44px "JetBrains Mono", monospace';
+    vc.fillStyle = themeColor;
+    const promptPrefix = 'hanan@cyberlab:~$ ';
+    vc.fillText(promptPrefix, 72, lineY);
+
+    const prefixWidth = vc.measureText(promptPrefix).width;
+    vc.fillStyle = '#ffffff';
+    vc.fillText(this.terminalInput, 72 + prefixWidth, lineY);
+
+    const inputWidth = vc.measureText(this.terminalInput).width;
+    if (Math.floor(elapsed * 2.5) % 2 === 0) {
+      vc.fillStyle = themeColor;
+      vc.fillRect(72 + prefixWidth + inputWidth + 8, lineY - 40, 24, 44);
+    }
+
+    // 6. Minimal Quick Command Helper
+    vc.font = '32px "JetBrains Mono", monospace';
+    vc.fillStyle = '#475569';
+    vc.fillText('Commands: help | whoami | projects | cv | ctf | clear', 72, 3960);
+
+    this.vertTexture.needsUpdate = true;
+  }
+
+  /* ----------------------------------------------------
+     PUBLIC INTERACTIVE COMMAND EXECUTION (TERMINAL & DESKTOP)
+  ---------------------------------------------------- */
+  public executeTerminalCommand(raw: string) {
+    const trimmed = raw.trim();
+    if (!trimmed) return;
+
+    soundEngine.playKeyClick();
+    this.terminalCmdHistory.push(trimmed);
+    this.terminalCmdIndex = -1;
+
+    // Echo input line
+    this.terminalLines.push({
+      text: `hanan@cyberlab:~$ ${trimmed}`,
+      color: '#ffffff',
+      bold: true,
+    });
+
+    const parts = trimmed.split(' ').filter(Boolean);
+    const cmd = parts[0]?.toLowerCase();
+    const args = parts.slice(1);
+
+    switch (cmd) {
+      case 'help':
+      case '?':
+        this.terminalLines.push(
+          { text: 'COMMAND DIRECTORY:', color: '#38bdf8', bold: true },
+          { text: '  whoami       - Identity & cyber research domain', color: '#94a3b8' },
+          { text: '  projects     - List production systems & repos', color: '#94a3b8' },
+          { text: '  project <id> - Detailed specifications of project', color: '#94a3b8' },
+          { text: '  cv           - Curriculum Vitae & Honors', color: '#94a3b8' },
+          { text: '  skills       - Low-level programming matrix', color: '#94a3b8' },
+          { text: '  certs        - Verified security credentials', color: '#94a3b8' },
+          { text: '  ctf          - Offensive security writeups', color: '#94a3b8' },
+          { text: '  nmap <host>  - Simulated SYN stealth scan', color: '#94a3b8' },
+          { text: '  matrix       - Toggle live digital glyph rain', color: '#94a3b8' },
+          { text: '  neofetch     - Hardware & Kernel specs', color: '#94a3b8' },
+          { text: '  top          - Live process list & telemetry', color: '#94a3b8' },
+          { text: '  theme <col>  - emerald | cyan | amber | violet', color: '#94a3b8' },
+          { text: '  clear        - Clear terminal buffer', color: '#94a3b8' }
+        );
+        break;
+
+      case 'clear':
+      case 'cls':
+        this.terminalLines = [
+          { text: 'hanan@cyberlab-workstation:~ [buffer cleared]', color: '#6ee7b7' },
+        ];
+        break;
+
+      case 'whoami':
+        this.terminalLines.push(
+          { text: 'UID: 1000(hanan) GID: 1000(dedsec)', color: '#34d399', bold: true },
+          { text: 'Role: Senior Cybersecurity Research & Systems Architect', color: '#e2e8f0' },
+          { text: 'Specialization: eBPF Telemetry · Binary Exploitation · Post-Quantum TLS', color: '#38bdf8' }
+        );
+        break;
+
+      case 'about':
+      case 'bio':
+        this.terminalLines.push(
+          { text: 'BIO // HANAN:', color: '#38bdf8', bold: true },
+          { text: 'I build and break low-level systems and cryptographic protocols.', color: '#cbd5e1' },
+          { text: 'Specialized in Rust, eBPF, AOSP IPC boundary auditing, and Kyber-768.', color: '#cbd5e1' }
+        );
+        break;
+
+      case 'projects':
+        this.terminalLines.push({ text: `REPOSITORIES (${PROJECTS.length}):`, color: '#38bdf8', bold: true });
+        PROJECTS.forEach((p) => {
+          this.terminalLines.push({
+            text: `[${p.id}] ${p.title} (${p.category})`,
+            color: '#34d399',
+          });
+        });
+        this.terminalLines.push({ text: 'Run: project <id> to inspect details.', color: '#64748b' });
+        break;
+
+      case 'project':
+        if (!args[0]) {
+          this.terminalLines.push({ text: 'Usage: project <project-id>', color: '#f59e0b' });
+        } else {
+          const found = PROJECTS.find((p) => p.id.toLowerCase().includes(args[0].toLowerCase()));
+          if (found) {
+            this.terminalLines.push(
+              { text: `${found.title} [${found.category}]`, color: '#34d399', bold: true },
+              { text: found.description, color: '#e2e8f0' },
+              { text: `Technologies: ${found.technologies.join(', ')}`, color: '#38bdf8' }
+            );
+          } else {
+            this.terminalLines.push({ text: `Project '${args[0]}' not found.`, color: '#f43f5e' });
+          }
+        }
+        break;
+
+      case 'cv':
+      case 'resume':
+        this.terminalLines.push(
+          { text: 'CURRICULUM VITAE — HANAN', color: '#38bdf8', bold: true },
+          { text: '● B.S. in Computer Science (Summa Cum Laude, GPA 3.96)', color: '#34d399' },
+          { text: '● Lead Security Systems Architect @ DedSec Research', color: '#e2e8f0' },
+          { text: '● President, Cyber Defense Collegiate League', color: '#e2e8f0' }
+        );
+        break;
+
+      case 'skills':
+        this.terminalLines.push(
+          { text: 'TECHNICAL PROFICIENCY MATRIX:', color: '#38bdf8', bold: true },
+          { text: `Languages: ${SKILLS_SUMMARY.languages.join(' · ')}`, color: '#34d399' },
+          { text: `Security: ${SKILLS_SUMMARY.offensive.join(' · ')}`, color: '#fbbf24' },
+          { text: `Systems: ${SKILLS_SUMMARY.systems.join(' · ')}`, color: '#c084fc' }
+        );
+        break;
+
+      case 'certs':
+        this.terminalLines.push({ text: 'VERIFIED SECURITY CREDENTIALS:', color: '#38bdf8', bold: true });
+        CERTIFICATIONS.forEach((c) => {
+          this.terminalLines.push({ text: `● [${c.badgeCode}] ${c.name} (${c.issuer})`, color: '#34d399' });
+        });
+        break;
+
+      case 'ctf':
+        this.terminalLines.push({ text: 'CTF EXPLOITATION WRITEUPS (4,450 PTS):', color: '#38bdf8', bold: true });
+        CTF_CHALLENGES.forEach((ch) => {
+          this.terminalLines.push({ text: `● ${ch.title} [${ch.points} pts] - ${ch.vulnerability}`, color: '#fbbf24' });
+        });
+        break;
+
+      case 'matrix':
+        this.terminalMatrixActive = !this.terminalMatrixActive;
+        this.terminalLines.push({
+          text: `[+] Matrix digital glyph stream ${this.terminalMatrixActive ? 'ACTIVATED' : 'HALTED'}.`,
+          color: '#34d399',
+        });
+        break;
+
+      case 'nmap':
+        const target = args[0] || '10.13.37.1';
+        this.terminalLines.push(
+          { text: `Starting Nmap 7.94 against ${target}...`, color: '#38bdf8' },
+          { text: '22/tcp   open  ssh (OpenSSH 9.6p1)', color: '#34d399' },
+          { text: '80/tcp   open  http (nginx/1.24.0)', color: '#34d399' },
+          { text: '443/tcp  open  https (TLS 1.3 / Kyber-768)', color: '#34d399' },
+          { text: '9090/tcp open  ebpf-telemetry-daemon', color: '#34d399' },
+          { text: 'Nmap done: 1 host up, 4 open ports.', color: '#38bdf8' }
+        );
+        break;
+
+      case 'neofetch':
+        this.terminalLines.push(
+          { text: 'OS: NULL//OS Hardened Linux x86_64', color: '#38bdf8', bold: true },
+          { text: 'Host: Cyberlab Workstation Node 01', color: '#cbd5e1' },
+          { text: 'Kernel: 6.8.9-dedsec-ebpf-probes', color: '#cbd5e1' },
+          { text: 'Uptime: 42 days, 7 hours, 14 mins', color: '#cbd5e1' },
+          { text: 'CPU: AMD Ryzen 9 7950X (32) @ 5.7GHz', color: '#cbd5e1' },
+          { text: 'Memory: 12410MiB / 64230MiB (19%)', color: '#34d399' }
+        );
+        break;
+
+      case 'theme':
+        const th = args[0]?.toLowerCase() as any;
+        if (['emerald', 'cyan', 'amber', 'violet'].includes(th)) {
+          this.terminalTheme = th;
+          this.terminalLines.push({ text: `Terminal phosphor theme switched to '${th}'.`, color: '#34d399' });
+        } else {
+          this.terminalLines.push({ text: 'Usage: theme <emerald|cyan|amber|violet>', color: '#f59e0b' });
+        }
+        break;
+
+      default:
+        this.terminalLines.push({
+          text: `zsh: command not found: ${cmd}. Type 'help' for available commands.`,
+          color: '#f43f5e',
+        });
+    }
+
+    this.vertTexture.needsUpdate = true;
+  }
+
+  /* ----------------------------------------------------
+     DESKTOP MOUSE CLICK & HOVER HANDLERS (High-DPI 2048x1152 Raycast)
+  ---------------------------------------------------- */
+  public handleDesktopClick(x: number, y: number) {
+    soundEngine.playKeyClick();
+
+    // 0. Bottom Dock Click Handling (y: 1046..1134)
+    const dockW = 680;
+    const dockH = 88;
+    const dockX = (2048 - dockW) / 2;
+    const dockY = 1046;
+    if (y >= dockY && y <= dockY + dockH && x >= dockX && x <= dockX + dockW) {
+      let curX = dockX + 24;
+      const dockList = ['about', 'notes', 'resume', 'mail', 'photos', 'settings', 'trash'];
+      for (const id of dockList) {
+        if (x >= curX && x <= curX + 60) {
+          if (id === 'resume') {
+            window.open('about:blank', '_blank');
+          } else {
+            this.desktopActiveWindow = id as any;
+            this.desktopStartMenuOpen = false;
+          }
+          return;
+        }
+        curX += 74;
+      }
+    }
+
+    // 1. Taskbar Start Button (x: 24..204, y: 1076..1140)
+    if (x >= 24 && x <= 204 && y >= 1076 && y <= 1140) {
+      this.desktopStartMenuOpen = !this.desktopStartMenuOpen;
+      return;
+    }
+
+    // 2. Start Menu Items (if open)
+    if (this.desktopStartMenuOpen) {
+      this.desktopStartMenuOpen = false;
+      return;
+    }
+
+    // 3. Right Desktop Shortcut Icons (x: 1830..1990, y: 50..1000)
+    if (x >= 1830 && x <= 1990) {
+      const ids = ['about', 'notes', 'resume', 'mail', 'settings', 'photos', 'trash'];
+      ids.forEach((id, idx) => {
+        const fy = 50 + idx * 135;
+        if (y >= fy && y <= fy + 120) {
+          if (id === 'resume') {
+            window.open('about:blank', '_blank');
+          } else {
+            this.desktopActiveWindow = id as any;
+          }
+        }
+      });
+      return;
+    }
+
+    // 4. Window Controls (Titlebar close button at top right of window: btnX = wx + ww - 52)
+    if (this.desktopActiveWindow !== 'none') {
+      const wx = 240;
+      const wy = 70;
+      const ww = 1568;
+
+      // Close Button (Windows/Ubuntu style at wx + ww - 52 .. wx + ww - 16, wy + 13 .. wy + 45)
+      if (x >= wx + ww - 52 && x <= wx + ww - 16 && y >= wy + 13 && y <= wy + 45) {
+        this.desktopActiveWindow = 'none';
+        return;
+      }
+
+      // Inside Settings Window: Theme Selection
+      if (this.desktopActiveWindow === 'settings') {
+        const cx = wx + 24;
+        const cy = wy + 80;
+        const themes: Array<'cyan' | 'emerald' | 'amber' | 'violet'> = ['cyan', 'emerald', 'amber', 'violet'];
+        themes.forEach((th, ti) => {
+          const bx = cx + 36 + ti * 260;
+          if (x >= bx && x <= bx + 240 && y >= cy + 100 && y <= cy + 180) {
+            this.desktopAccentTheme = th;
+            soundEngine.playChirp('success');
+          }
+        });
+      }
+    }
+  }
+
+  public handleDesktopMouseMove(x: number, y: number) {
+    this.desktopMousePos = { x, y };
+  }
+
+  public setDesktopActiveWindow(win: 'about' | 'notes' | 'resume' | 'mail' | 'settings' | 'photos' | 'trash' | 'none') {
+    this.desktopActiveWindow = win;
+    soundEngine.playKeyClick();
   }
 
   /* ----------------------------------------------------
@@ -799,6 +1381,7 @@ export class RoomScene {
         gltf.scene.traverse((child) => {
           if (child instanceof THREE.Mesh) {
             child.material = this.horizMaterial;
+            this.pcScreenMesh = child;
           }
         });
         this.scene.add(gltf.scene);
@@ -812,6 +1395,7 @@ export class RoomScene {
           this.horizMaterial
         );
         fallbackScreen.position.set(0.31, 3.36, -4.59);
+        this.pcScreenMesh = fallbackScreen;
         this.scene.add(fallbackScreen);
         this.registerInteractive(fallbackScreen, 'horizontal_monitor');
       }
@@ -824,6 +1408,7 @@ export class RoomScene {
         gltf.scene.traverse((child) => {
           if (child instanceof THREE.Mesh) {
             child.material = this.vertMaterial;
+            this.macScreenMesh = child;
           }
         });
         this.scene.add(gltf.scene);
@@ -838,6 +1423,7 @@ export class RoomScene {
         );
         fallbackVert.position.set(2.22, 2.62, -4.29);
         fallbackVert.rotation.y = -Math.PI / 10;
+        this.macScreenMesh = fallbackVert;
         this.scene.add(fallbackVert);
         this.registerInteractive(fallbackVert, 'vertical_monitor');
       }
@@ -1832,7 +2418,7 @@ export class RoomScene {
     if (stationId !== 'overview') {
       // Zooming INTO an interactive object / station
       // Save current walk position and look direction so we return right here on zoom out!
-      if (this.activeStation === 'overview') {
+      if (this.isWalkMode || !this.hasSavedWalkState) {
         this.savedWalkPos.copy(this.camera.position);
         this.savedWalkLook.copy(this.currentCameraLook);
         this.savedYaw = this.yaw;
@@ -1851,13 +2437,11 @@ export class RoomScene {
       this.exitPointerLock();
     } else {
       // Zooming OUT back to walk mode!
-      const wasInspectingObject = this.activeStation !== 'overview';
       this.activeStation = 'overview';
       this.isInspecting = false;
-      this.isWalkMode = false;
       this.isTransitioningBack = true;
 
-      if (this.hasSavedWalkState && wasInspectingObject) {
+      if (this.hasSavedWalkState) {
         // Return to EXACT position and look direction the user zoomed in from!
         this.targetCameraPos.copy(this.savedWalkPos);
         this.targetCameraLook.copy(this.savedWalkLook);
@@ -1867,7 +2451,6 @@ export class RoomScene {
         this.targetCameraPos.set(...config.cameraPos);
         this.targetCameraLook.set(...config.cameraTarget);
         this.targetFov = config.fov || 52;
-        this.hasSavedWalkState = false;
       }
     }
 
@@ -1986,6 +2569,21 @@ export class RoomScene {
 
       this.prevMouseX = e.clientX;
       this.prevMouseY = e.clientY;
+    } else if (this.activeStation === 'horizontal_monitor' && this.pcScreenMesh) {
+      // Direct on-screen mouse tracking on horizontal desktop monitor (2048x1152)
+      const rect = this.renderer.domElement.getBoundingClientRect();
+      const mouse = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      );
+      this.raycaster.setFromCamera(mouse, this.camera);
+      const hits = this.raycaster.intersectObject(this.pcScreenMesh, true);
+      if (hits.length > 0 && hits[0].uv) {
+        const uv = hits[0].uv;
+        const cx = uv.x * 2048;
+        const cy = (1 - uv.y) * 1152;
+        this.handleDesktopMouseMove(cx, cy);
+      }
     }
   };
 
@@ -2020,6 +2618,49 @@ export class RoomScene {
     soundEngine.startAmbient();
     soundEngine.playKeyClick();
 
+    // 1. Direct on-screen click on Desktop Horizontal Monitor (2048x1152)
+    if (this.activeStation === 'horizontal_monitor' && this.pcScreenMesh) {
+      const rect = this.renderer.domElement.getBoundingClientRect();
+      const mouse = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      );
+      this.raycaster.setFromCamera(mouse, this.camera);
+      const hits = this.raycaster.intersectObject(this.pcScreenMesh, true);
+      if (hits.length > 0 && hits[0].uv) {
+        const uv = hits[0].uv;
+        const cx = uv.x * 2048;
+        const cy = (1 - uv.y) * 1152;
+        this.handleDesktopClick(cx, cy);
+        return;
+      }
+    }
+
+    // 2. Direct on-screen click on Laptop Terminal Screen (1024x2048)
+    if (this.activeStation === 'vertical_monitor' && this.macScreenMesh) {
+      const rect = this.renderer.domElement.getBoundingClientRect();
+      const mouse = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      );
+      this.raycaster.setFromCamera(mouse, this.camera);
+      const hits = this.raycaster.intersectObject(this.macScreenMesh, true);
+      if (hits.length > 0 && hits[0].uv) {
+        const uv = hits[0].uv;
+        const tx = uv.x * 1024;
+        const ty = (1 - uv.y) * 2048;
+        if (ty >= 1920) {
+          // Clicked bottom quick command chips
+          const quickCmds = ['help', 'whoami', 'projects', 'cv', 'ctf', 'nmap', 'matrix', 'clear'];
+          const chipIdx = Math.floor((tx - 20) / 122);
+          if (chipIdx >= 0 && chipIdx < quickCmds.length) {
+            this.executeTerminalCommand(quickCmds[chipIdx]);
+          }
+        }
+        return;
+      }
+    }
+
     if (this.hoveredStationId) {
       if (
         this.hoveredStationId === 'social_linkedin' ||
@@ -2045,6 +2686,91 @@ export class RoomScene {
   private onKeyDown = (e: KeyboardEvent) => {
     if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
       return;
+    }
+
+    // 1. Direct keyboard typing into Laptop Terminal Screen
+    if (this.activeStation === 'vertical_monitor') {
+      if (e.key === 'Escape') {
+        this.stepBackToWalk();
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        this.executeTerminalCommand(this.terminalInput);
+        this.terminalInput = '';
+        return;
+      }
+
+      if (e.key === 'Backspace') {
+        this.terminalInput = this.terminalInput.slice(0, -1);
+        this.vertTexture.needsUpdate = true;
+        soundEngine.playKeyClick();
+        return;
+      }
+
+      if (e.key === 'ArrowUp') {
+        if (this.terminalCmdHistory.length > 0) {
+          if (this.terminalCmdIndex === -1) {
+            this.terminalCmdIndex = this.terminalCmdHistory.length - 1;
+          } else if (this.terminalCmdIndex > 0) {
+            this.terminalCmdIndex--;
+          }
+          this.terminalInput = this.terminalCmdHistory[this.terminalCmdIndex] || '';
+          this.vertTexture.needsUpdate = true;
+        }
+        return;
+      }
+
+      if (e.key === 'ArrowDown') {
+        if (this.terminalCmdIndex !== -1) {
+          if (this.terminalCmdIndex < this.terminalCmdHistory.length - 1) {
+            this.terminalCmdIndex++;
+            this.terminalInput = this.terminalCmdHistory[this.terminalCmdIndex] || '';
+          } else {
+            this.terminalCmdIndex = -1;
+            this.terminalInput = '';
+          }
+          this.vertTexture.needsUpdate = true;
+        }
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const available = ['help', 'whoami', 'projects', 'project', 'cv', 'skills', 'certs', 'ctf', 'nmap', 'matrix', 'neofetch', 'theme', 'clear'];
+        const match = available.find((cmd) => cmd.startsWith(this.terminalInput.toLowerCase().trim()));
+        if (match) {
+          this.terminalInput = match;
+          this.vertTexture.needsUpdate = true;
+        }
+        return;
+      }
+
+      if ((e.key === 'l' || e.key === 'L') && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        this.executeTerminalCommand('clear');
+        return;
+      }
+
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        this.terminalInput += e.key;
+        this.vertTexture.needsUpdate = true;
+        soundEngine.playKeyClick();
+        return;
+      }
+    }
+
+    // 2. Direct keyboard shortcuts on Desktop Horizontal Monitor
+    if (this.activeStation === 'horizontal_monitor') {
+      if (e.key === 'Escape') {
+        this.stepBackToWalk();
+        return;
+      }
+      if (e.key === '1') { this.setDesktopActiveWindow('about'); return; }
+      if (e.key === '2') { this.setDesktopActiveWindow('notes'); return; }
+      if (e.key === '3') { this.setDesktopActiveWindow('resume'); return; }
+      if (e.key === '4') { this.setDesktopActiveWindow('mail'); return; }
+      if (e.key === '5') { this.setDesktopActiveWindow('settings'); return; }
     }
 
     if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') this.moveForward = true;

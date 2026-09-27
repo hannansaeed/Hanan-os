@@ -10,6 +10,7 @@ import { MiniMap } from './components/hud/MiniMap';
 import { BootScreen } from './components/hud/BootScreen';
 import { RoomScene, RaycastHitInfo } from './scene/RoomScene';
 import { WhiteboardModal } from './components/modals/WhiteboardModal';
+import { ServerRackModal } from './components/modals/ServerRackModal';
 import { StationId } from './types';
 import { soundEngine } from './audio/soundEngine';
 
@@ -157,6 +158,15 @@ export default function App() {
       {activeStation === 'whiteboard' && (
         <WhiteboardModal
           sceneRef={sceneRef}
+          onClose={handleStepBackToWalk}
+        />
+      )}
+
+
+
+      {/* Primary Server Rack Diagnostics Modal */}
+      {activeStation === 'server_rack' && (
+        <ServerRackModal
           onClose={handleStepBackToWalk}
         />
       )}

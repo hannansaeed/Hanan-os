@@ -4,11 +4,11 @@ export const CRTShader = {
   uniforms: {
     tDiffuse: { value: null as THREE.Texture | null },
     uTime: { value: 0.0 },
-    uCurvature: { value: 0.08 },
-    uScanlineIntensity: { value: 0.22 },
-    uFlicker: { value: 0.03 },
-    uBrightness: { value: 1.1 },
-    uTint: { value: new THREE.Color(0.9, 0.96, 1.0) },
+    uCurvature: { value: 0.0 },
+    uScanlineIntensity: { value: 0.04 },
+    uFlicker: { value: 0.0 },
+    uBrightness: { value: 1.05 },
+    uTint: { value: new THREE.Color(1.0, 1.0, 1.0) },
   },
   vertexShader: `
     varying vec2 vUv;
@@ -27,15 +27,8 @@ export const CRTShader = {
     uniform vec3 uTint;
     varying vec2 vUv;
 
-    vec2 curveUV(vec2 uv) {
-      uv = (uv - 0.5) * 2.0;
-      uv *= 1.0 + pow(length(uv) * uCurvature, 2.0);
-      uv = (uv / 2.0) + 0.5;
-      return uv;
-    }
-
     void main() {
-      vec2 uv = curveUV(vUv);
+      vec2 uv = vUv;
       
       // Screen bezel border cutoff
       if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
@@ -43,37 +36,20 @@ export const CRTShader = {
         return;
       }
 
-      // Chromatic aberration at edges
-      vec2 redUv = uv + vec2(0.0018 * (uv.x - 0.5), 0.0);
-      vec2 blueUv = uv - vec2(0.0018 * (uv.x - 0.5), 0.0);
-      
-      float r = texture2D(tDiffuse, redUv).r;
-      float g = texture2D(tDiffuse, uv).g;
-      float b = texture2D(tDiffuse, blueUv).b;
+      vec4 texColor = texture2D(tDiffuse, uv);
+      vec3 color = texColor.rgb;
 
-      // Scanlines
-      float scanline = sin(uv.y * 520.0 + uTime * 2.0) * 0.5 + 0.5;
-      vec3 color = vec3(r, g, b) * (1.0 - uScanlineIntensity + scanline * uScanlineIntensity);
+      // Ultra subtle crisp scanlines for authentic display feel without blurring text
+      if (uScanlineIntensity > 0.0) {
+        float scanline = sin(uv.y * 1080.0 * 3.14159) * 0.5 + 0.5;
+        color = mix(color, color * (0.95 + scanline * 0.05), uScanlineIntensity);
+      }
 
-      // CRT horizontal subtle RGB phosphor pattern
-      float subpixel = mod(gl_FragCoord.x, 3.0);
-      if (subpixel < 1.0) color.r *= 1.08;
-      else if (subpixel < 2.0) color.g *= 1.08;
-      else color.b *= 1.08;
-
-      // Micro flicker
-      float flicker = 1.0 - sin(uTime * 45.0) * uFlicker;
-      color *= flicker;
-
-      // Vignette
-      float vignette = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
-      vignette = clamp(pow(16.0 * vignette, 0.25), 0.0, 1.0);
-      color *= vignette;
-
-      // Apply brightness boost and cool tint
+      // Brightness & Tint
       color *= uBrightness * uTint;
 
-      gl_FragColor = vec4(color, 1.0);
+      gl_FragColor = vec4(color, texColor.a);
     }
   `
 };
+

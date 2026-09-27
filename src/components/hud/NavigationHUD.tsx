@@ -86,7 +86,7 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
               className="text-sm font-bold tracking-tight text-white hover:text-cyan-400 transition-colors font-display flex items-center gap-1.5 shrink-0"
             >
               <span className="text-rose-500 font-extrabold">//</span>
-              <span>HANAN//OS</span>
+              <span>NULL//OS</span>
             </button>
 
             <div className="w-px h-3.5 bg-slate-800 shrink-0" />
