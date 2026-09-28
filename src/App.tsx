@@ -97,8 +97,11 @@ export default function App() {
       setShowEntranceBanner(false);
 
       if (e.key === 'm' || e.key === 'M') {
-        soundEngine.playKeyClick();
-        setIsMapOpen((prev) => !prev);
+        // Prevent opening map when active in terminal station
+        if (activeStation !== 'vertical_monitor') {
+          soundEngine.playKeyClick();
+          setIsMapOpen((prev) => !prev);
+        }
       } else if (e.key === 'Escape') {
         setShowEntranceBanner(false);
         setIsMapOpen(false);

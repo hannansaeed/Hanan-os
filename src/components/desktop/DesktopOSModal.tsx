@@ -745,7 +745,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
               </div>
               <div>
                 <div className="font-bold text-white font-display">HANAN // OPERATOR</div>
-                <div className="text-[11px] text-cyan-400 font-mono">cyberlab-node-01 · Superuser</div>
+                <div className="text-[11px] text-cyan-400 font-mono">xcthine-node-01 · Superuser</div>
               </div>
             </div>
 

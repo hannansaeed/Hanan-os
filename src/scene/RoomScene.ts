@@ -104,7 +104,18 @@ export class RoomScene {
   ---------------------------------------------------- */
   // 1. Interactive Laptop CLI Terminal State
   private terminalInput: string = '';
-  private terminalLines: Array<{ text: string; color: string; bold?: boolean }> = [];
+  private terminalLines: Array<{ text: string; color: string; bold?: boolean }> = [
+    { text: 'hanan@xcthine:~$ help', color: '#34d399' },
+    { text: 'AVAILABLE SHELL COMMANDS:', color: '#38bdf8', bold: true },
+    { text: '  whoami       - Identity & summary', color: '#94a3b8' },
+    { text: '  ls           - List GitHub repositories & local files', color: '#94a3b8' },
+    { text: '  cat <file>   - Detailed specifications of file', color: '#94a3b8' },
+    { text: '  cv           - Curriculum Vitae', color: '#94a3b8' },
+    { text: '  skills       - Low-level programming matrix', color: '#94a3b8' },
+    { text: '  nmap <host>  - Simulated SYN stealth scan', color: '#94a3b8' },
+    { text: '  neofetch     - Hardware & Kernel specs', color: '#94a3b8' },
+    { text: '  clear        - Clear terminal buffer', color: '#94a3b8' }
+  ];
   private terminalCmdHistory: string[] = [];
   private terminalCmdIndex: number = -1;
   private terminalWaitingForPassword: boolean = false;
@@ -820,20 +831,30 @@ export class RoomScene {
     const visibleLines = this.terminalLines.slice(-maxVisibleLines);
 
     visibleLines.forEach((l) => {
-      vc.fillStyle = l.color;
       vc.font = l.bold ? 'bold 36px "JetBrains Mono", monospace' : '32px "JetBrains Mono", monospace';
-      vc.fillText(l.text, 72, lineY);
+      if (l.text.startsWith('hanan@xcthine:~$ ')) {
+        const prompt = 'hanan@xcthine:~$ ';
+        const cmdText = l.text.slice(prompt.length);
+        vc.fillStyle = themeColor;
+        vc.fillText(prompt, 72, lineY);
+        const promptWidth = vc.measureText(prompt).width;
+        vc.fillStyle = '#ffffff';
+        vc.fillText(cmdText, 72 + promptWidth, lineY);
+      } else {
+        vc.fillStyle = l.color;
+        vc.fillText(l.text, 72, lineY);
+      }
       lineY += 50;
     });
 
     // 5. Active Command Prompt & Blinking Cursor
     vc.font = 'bold 36px "JetBrains Mono", monospace';
     vc.fillStyle = themeColor;
-    const promptPrefix = 'hanan@cyberlab:~$ ';
+    const promptPrefix = 'hanan@xcthine:~$ ';
     vc.fillText(promptPrefix, 72, lineY);
 
     const prefixWidth = vc.measureText(promptPrefix).width;
-    vc.fillStyle = '#ffffff';
+    vc.fillStyle = themeColor;
     vc.fillText(this.terminalInput, 72 + prefixWidth, lineY);
 
     const inputWidth = vc.measureText(this.terminalInput).width;
@@ -882,6 +903,8 @@ export class RoomScene {
             boardCtx.fillStyle = '#ffffff';
             boardCtx.fillRect(0, 0, this.whiteboardTexture.image.width, this.whiteboardTexture.image.height);
             this.whiteboardTexture.needsUpdate = true;
+            // Clear storage
+            localStorage.removeItem('hananos_whiteboard_drawing');
           }
         }
       } else {
@@ -896,16 +919,13 @@ export class RoomScene {
       case 'help':
       case '?':
         this.terminalLines.push(
-          { text: '  whoami       - Identity', color: '#94a3b8' },
-          { text: '  ls           - List production systems & repos', color: '#94a3b8' },
+          { text: '  whoami       - Identity & summary', color: '#94a3b8' },
+          { text: '  ls           - List GitHub repositories & files', color: '#94a3b8' },
           { text: '  cat <file>   - Detailed specifications of file', color: '#94a3b8' },
           { text: '  cv           - Curriculum Vitae', color: '#94a3b8' },
           { text: '  skills       - Low-level programming matrix', color: '#94a3b8' },
-          { text: '  ctf          - Offensive security writeups', color: '#94a3b8' },
           { text: '  nmap <host>  - Simulated SYN stealth scan', color: '#94a3b8' },
-          { text: '  matrix       - Toggle live digital glyph rain', color: '#94a3b8' },
           { text: '  neofetch     - Hardware & Kernel specs', color: '#94a3b8' },
-          { text: '  top          - Live process list & telemetry', color: '#94a3b8' },
           { text: '  clear        - Clear terminal buffer', color: '#94a3b8' }
         );
         break;
@@ -933,26 +953,80 @@ export class RoomScene {
         break;
 
       case 'ls':
-        this.terminalLines.push({ text: `REPOSITORIES (${PROJECTS.length}):`, color: '#38bdf8', bold: true });
-        PROJECTS.forEach((p) => {
-          this.terminalLines.push({
-            text: `[${p.id}] ${p.title} (${p.category})`,
-            color: '#34d399',
-          });
-        });
-        this.terminalLines.push({ text: 'Run: cat <id> to inspect details.', color: '#64748b' });
+        this.terminalLines.push({ text: `REPOSITORIES & FILES:`, color: '#38bdf8', bold: true });
+        this.terminalLines.push(
+          { text: '📁 Cyfex', color: '#34d399' },
+          { text: '📁 Hanan-os', color: '#34d399' },
+          { text: '📁 Portfolio', color: '#34d399' },
+          { text: '📁 Sheffer', color: '#34d399' },
+          { text: '📁 Zeel', color: '#34d399' },
+          { text: '📄 about.md', color: '#cbd5e1' },
+          { text: '📄 cv.txt', color: '#cbd5e1' },
+          { text: '📄 skills.json', color: '#cbd5e1' },
+          { text: '📄 notes.txt', color: '#cbd5e1' }
+        );
+        this.terminalLines.push({ text: 'Run: cat <name> to inspect details.', color: '#64748b' });
         break;
 
       case 'cat':
         if (!args[0]) {
-          this.terminalLines.push({ text: 'Usage: cat <project-id>', color: '#f59e0b' });
+          this.terminalLines.push({ text: 'Usage: cat <filename> (e.g. cat Cyfex, cat about.md)', color: '#f59e0b' });
         } else {
-          const found = PROJECTS.find((p) => p.id.toLowerCase().includes(args[0].toLowerCase()));
-          if (found) {
+          const fileToRead = args[0].toLowerCase();
+          if (fileToRead === 'cyfex' || fileToRead === 'cyfex.md') {
             this.terminalLines.push(
-              { text: `${found.title} [${found.category}]`, color: '#34d399', bold: true },
-              { text: found.description, color: '#e2e8f0' },
-              { text: `Technologies: ${found.technologies.join(', ')}`, color: '#38bdf8' }
+              { text: 'Cyfex [Android & Mobile Security]', color: '#34d399', bold: true },
+              { text: 'The best and broadest on-device Android threat monitoring and security platform using Jetpack Compose and privileged system telemetry (Shizuku) for explainable, zero-cloud risk scoring.', color: '#e2e8f0' },
+              { text: 'Tech: Kotlin, Jetpack Compose, Shizuku API, Android Security', color: '#38bdf8' }
+            );
+          } else if (fileToRead === 'hanan-os' || fileToRead === 'hanan-os.md') {
+            this.terminalLines.push(
+              { text: 'Hanan-os [Web & Graphics]', color: '#34d399', bold: true },
+              { text: 'In production 3D portfolio. Procedural rooms, real-time dynamic canvas display textures, CRT post-processing shaders, Web Audio API synthesis.', color: '#e2e8f0' },
+              { text: 'Tech: Three.js, WebGL, GLSL, React, TypeScript', color: '#38bdf8' }
+            );
+          } else if (fileToRead === 'portfolio' || fileToRead === 'portfolio.md') {
+            this.terminalLines.push(
+              { text: 'Portfolio [Web & CLI UI]', color: '#34d399', bold: true },
+              { text: 'A premium, cybersecurity portfolio built with pure HTML/CSS/JS, featuring a glassmorphism terminal UI, Matrix animation, and an interactive Linux-style CLI.', color: '#e2e8f0' },
+              { text: 'Tech: HTML5, CSS3, JavaScript', color: '#38bdf8' }
+            );
+          } else if (fileToRead === 'sheffer' || fileToRead === 'sheffer.md') {
+            this.terminalLines.push(
+              { text: 'Sheffer [Mobile & Real-time Chat]', color: '#34d399', bold: true },
+              { text: 'A real-time, cross-platform shared space and instant messaging application built using Flutter and powered by Firebase backend services.', color: '#e2e8f0' },
+              { text: 'Tech: Flutter, Dart, Firebase Auth, Firestore', color: '#38bdf8' }
+            );
+          } else if (fileToRead === 'zeel' || fileToRead === 'zeel.md') {
+            this.terminalLines.push(
+              { text: 'Zeel [Automation & Tooling]', color: '#34d399', bold: true },
+              { text: 'A modular, extensible Discord bot built with Python and discord.py, utilizing a clean Cogs architecture for easy feature deployment.', color: '#e2e8f0' },
+              { text: 'Tech: Python, discord.py, Cogs Architecture', color: '#38bdf8' }
+            );
+          } else if (fileToRead === 'about.md') {
+            this.terminalLines.push(
+              { text: 'about.md // Biography', color: '#34d399', bold: true },
+              { text: 'Senior Systems & Cybersecurity Research Engineer.', color: '#e2e8f0' },
+              { text: 'Specialized in kernel telemetry probes (eBPF), binary exploitation, glibc heap internals, and post-quantum cryptographic primitives.', color: '#e2e8f0' }
+            );
+          } else if (fileToRead === 'cv.txt') {
+            this.terminalLines.push(
+              { text: 'cv.txt // Curriculum Vitae', color: '#34d399', bold: true },
+              { text: 'Role: Lead Cybersecurity & Systems Engineer', color: '#e2e8f0' },
+              { text: 'Focus: Kernel Internals, eBPF, Binary Exploitation, Post-Quantum Crypto', color: '#e2e8f0' },
+              { text: 'Education: B.S. in Computer Science (Summa Cum Laude)', color: '#e2e8f0' }
+            );
+          } else if (fileToRead === 'skills.json') {
+            this.terminalLines.push(
+              { text: 'skills.json // Skills Matrix', color: '#34d399', bold: true },
+              { text: 'Languages: Rust, C/C++, TypeScript, Python, Go, x86_64 ASM', color: '#e2e8f0' },
+              { text: 'Security: eBPF / XDP, Kernel Debugging, Heap Exploitation, Fuzzing', color: '#e2e8f0' }
+            );
+          } else if (fileToRead === 'notes.txt') {
+            this.terminalLines.push(
+              { text: 'notes.txt // TODO & Research', color: '#34d399', bold: true },
+              { text: '[x] eBPF ringbuf syscall auditing engine.', color: '#e2e8f0' },
+              { text: '[x] Post-quantum Key Encapsulation Mechanism benchmark.', color: '#e2e8f0' }
             );
           } else {
             this.terminalLines.push({ text: `File '${args[0]}' not found.`, color: '#f43f5e' });
@@ -986,21 +1060,6 @@ export class RoomScene {
         });
         break;
 
-      case 'ctf':
-        this.terminalLines.push({ text: 'CTF EXPLOITATION WRITEUPS (4,450 PTS):', color: '#38bdf8', bold: true });
-        CTF_CHALLENGES.forEach((ch) => {
-          this.terminalLines.push({ text: `● ${ch.title} [${ch.points} pts] - ${ch.vulnerability}`, color: '#fbbf24' });
-        });
-        break;
-
-      case 'matrix':
-        this.terminalMatrixActive = !this.terminalMatrixActive;
-        this.terminalLines.push({
-          text: `[+] Matrix digital glyph stream ${this.terminalMatrixActive ? 'ACTIVATED' : 'HALTED'}.`,
-          color: '#34d399',
-        });
-        break;
-
       case 'nmap':
         const target = args[0] || '10.13.37.1';
         this.terminalLines.push(
@@ -1016,7 +1075,7 @@ export class RoomScene {
       case 'neofetch':
         this.terminalLines.push(
           { text: 'OS: NULL//OS Hardened Linux x86_64', color: '#38bdf8', bold: true },
-          { text: 'Host: Cyberlab Workstation Node 01', color: '#cbd5e1' },
+          { text: 'Host: Xcthine Workstation Node 01', color: '#cbd5e1' },
           { text: `TechStack: ${SKILLS_SUMMARY.languages.join(' · ')} · ${SKILLS_SUMMARY.systems.join(' · ')}`, color: '#cbd5e1' },
           { text: 'Kernel: 6.8.9-dedsec-ebpf-probes', color: '#cbd5e1' },
           { text: 'CPU: AMD Ryzen 9 7950X', color: '#cbd5e1' }
@@ -1171,82 +1230,7 @@ export class RoomScene {
   }
 
   private drawDefaultWhiteboardContent() {
-    const ctx = this.whiteboardCtx;
-
-    // Title banner
-    ctx.font = 'bold 30px sans-serif';
-    ctx.fillStyle = '#0f172a';
-    ctx.fillText('HANAN//OS RESEARCH WHITEBOARD', 60, 75);
-
-    ctx.font = '16px monospace';
-    ctx.fillStyle = '#64748b';
-    ctx.fillText('// Press [E] to zoom in & sketch diagrams, notes, or equations', 60, 105);
-
-    // Architecture diagram box 1
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = '#2563eb';
-    ctx.fillStyle = '#eff6ff';
-    ctx.beginPath();
-    ctx.roundRect(60, 150, 230, 110, 12);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.font = 'bold 18px sans-serif';
-    ctx.fillStyle = '#1e3a8a';
-    ctx.fillText('Client Web App', 90, 192);
-    ctx.font = '14px monospace';
-    ctx.fillStyle = '#3b82f6';
-    ctx.fillText('Vite + Three.js', 90, 222);
-
-    // Connecting Arrow
-    ctx.strokeStyle = '#475569';
-    ctx.beginPath();
-    ctx.moveTo(290, 205);
-    ctx.lineTo(390, 205);
-    ctx.stroke();
-
-    ctx.fillStyle = '#475569';
-    ctx.beginPath();
-    ctx.moveTo(390, 205);
-    ctx.lineTo(375, 197);
-    ctx.lineTo(375, 213);
-    ctx.closePath();
-    ctx.fill();
-
-    // Box 2
-    ctx.strokeStyle = '#dc2626';
-    ctx.fillStyle = '#fef2f2';
-    ctx.beginPath();
-    ctx.roundRect(390, 150, 240, 110, 12);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.font = 'bold 18px sans-serif';
-    ctx.fillStyle = '#991b1b';
-    ctx.fillText('eBPF Kernel Agent', 410, 192);
-    ctx.font = '14px monospace';
-    ctx.fillStyle = '#ef4444';
-    ctx.fillText('Syscall Telemetry', 410, 222);
-
-    // Yellow Sticky Note
-    ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
-    ctx.shadowBlur = 10;
-    ctx.shadowOffsetX = 4;
-    ctx.shadowOffsetY = 6;
-
-    ctx.fillStyle = '#fef08a';
-    ctx.fillRect(720, 140, 220, 170);
-
-    ctx.shadowColor = 'transparent';
-    ctx.font = 'bold 16px sans-serif';
-    ctx.fillStyle = '#854d0e';
-    ctx.fillText('VISITOR NOTES:', 740, 175);
-    ctx.font = '14px sans-serif';
-    ctx.fillText('• Press [E] to draw!', 740, 210);
-    ctx.fillText('• Sketches stay saved', 740, 238);
-    ctx.fillText('  in 3D room', 740, 260);
-    ctx.restore();
+    // Whiteboard fully blank
   }
 
   /* ----------------------------------------------------

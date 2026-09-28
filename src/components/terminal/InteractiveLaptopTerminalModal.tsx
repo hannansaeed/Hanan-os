@@ -92,8 +92,26 @@ const VIRTUAL_FS: Record<string, { type: 'file' | 'dir'; content?: string }> = {
     type: 'file',
     content: `TODO & Research Vectors:\n[x] eBPF ringbuf syscall auditing engine.\n[x] Post-quantum Key Encapsulation Mechanism benchmark.\n[/] Android AOSP Binder IPC memory boundary fuzzer.\n[ ] Zero-Knowledge Proof verify node optimization.`,
   },
-  'projects': { type: 'dir' },
-  'ctf': { type: 'dir' },
+  'Cyfex': {
+    type: 'file',
+    content: `Project: Cyfex\n========================================\nDescription: The best and broadest on-device Android threat monitoring and security platform using Jetpack Compose and privileged system telemetry (Shizuku) for explainable, zero-cloud risk scoring.\nTechnologies: Kotlin, Jetpack Compose, Shizuku API, Android Security`,
+  },
+  'Hanan-os': {
+    type: 'file',
+    content: `Project: Hanan-os\n========================================\nDescription: In production 3D portfolio. Features procedural room geometry, real-time dynamic canvas display textures, CRT phosphor scanline shaders, and Web Audio API synthesized feedback.\nTechnologies: Three.js, WebGL 2.0, GLSL, React, TypeScript, Web Audio API`,
+  },
+  'Portfolio': {
+    type: 'file',
+    content: `Project: Portfolio\n========================================\nDescription: A premium, cybersecurity portfolio built with pure HTML/CSS/JS, featuring a glassmorphism terminal UI, Matrix animation, and an interactive Linux-style CLI.\nTechnologies: HTML5, CSS3, JavaScript`,
+  },
+  'Sheffer': {
+    type: 'file',
+    content: `Project: Sheffer\n========================================\nDescription: A real-time, cross-platform shared space and instant messaging application built using Flutter and powered by Firebase backend services.\nTechnologies: Flutter, Dart, Firebase Auth, Firestore, Cloud Functions`,
+  },
+  'Zeel': {
+    type: 'file',
+    content: `Project: Zeel\n========================================\nDescription: A modular, extensible Discord bot built with Python and discord.py, utilizing a clean Cogs architecture for easy feature deployment.\nTechnologies: Python, discord.py, Cogs Architecture`,
+  },
 };
 
 export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalModalProps> = ({
@@ -114,11 +132,74 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
             HANAN//OS Workstation Shell [Version 4.2.0-x86_64-hardened-linux]
           </div>
           <div className="text-slate-400">
-            Host: <span className="text-white font-semibold">cyberlab-node-alpha</span> · Kernel:{' '}
+            Host: <span className="text-white font-semibold">xcthine-node-alpha</span> · Kernel:{' '}
             <span className="text-cyan-300 font-mono">6.8.9-dedsec-ebpf</span> · Uptime: 42 days
           </div>
           <div className="text-xs text-slate-400 pt-1">
             Type <span className="text-cyan-300 font-bold font-mono underline cursor-pointer">'help'</span> to view available commands, or click any quick command chip below.
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'init-2',
+      command: 'help',
+      cwd: '~',
+      timestamp: '00:00:02',
+      output: (
+        <div className="space-y-3 text-xs">
+          <div className="text-cyan-400 font-bold border-b border-slate-800 pb-1 flex items-center gap-2">
+            <span>HANAN//OS SHELL COMMAND DIRECTORY</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
+            <div>
+              <div className="text-white font-semibold mb-1 text-[11px] uppercase tracking-wider text-cyan-300">
+                Portfolio & Biography:
+              </div>
+              <div className="space-y-1 text-slate-300">
+                <div><span className="text-cyan-300 font-mono font-bold">whoami</span> — Identity & summary</div>
+                <div><span className="text-cyan-300 font-mono font-bold">about</span> — Bio & DedSec research</div>
+                <div><span className="text-cyan-300 font-mono font-bold">cv</span> — Full curriculum vitae</div>
+                <div><span className="text-cyan-300 font-mono font-bold">skills</span> — Proficiency matrix</div>
+                <div><span className="text-cyan-300 font-mono font-bold">certs</span> — Security certifications</div>
+              </div>
+            </div>
+            <div>
+              <div className="text-white font-semibold mb-1 text-[11px] uppercase tracking-wider text-emerald-300">
+                Cyber & Diagnostic Tools:
+              </div>
+              <div className="space-y-1 text-slate-300">
+                <div><span className="text-emerald-300 font-mono font-bold">nmap &lt;target&gt;</span> — Simulated TCP SYN scan</div>
+                <div><span className="text-emerald-300 font-mono font-bold">submit &lt;flag&gt;</span> — Validate capture flag</div>
+                <div><span className="text-emerald-300 font-mono font-bold">neofetch</span> — Hardware/OS specs</div>
+                <div><span className="text-emerald-300 font-mono font-bold">ping &lt;host&gt;</span> — ICMP packet test</div>
+              </div>
+            </div>
+            <div>
+              <div className="text-white font-semibold mb-1 text-[11px] uppercase tracking-wider text-amber-300">
+                Filesystem & Utilities:
+              </div>
+              <div className="space-y-1 text-slate-300">
+                <div><span className="text-amber-300 font-mono font-bold">ls</span> — List GitHub repositories & files</div>
+                <div><span className="text-amber-300 font-mono font-bold">cd &lt;dir&gt;</span> — Change directory</div>
+                <div><span className="text-amber-300 font-mono font-bold">pwd</span> — Print current directory</div>
+                <div><span className="text-amber-300 font-mono font-bold">cat &lt;file&gt;</span> — View file or repository details</div>
+                <div><span className="text-amber-300 font-mono font-bold">tree</span> — Hierarchy tree view</div>
+                <div><span className="text-amber-300 font-mono font-bold">calc &lt;expr&gt;</span> — Math calculator</div>
+                <div><span className="text-amber-300 font-mono font-bold">date / uptime</span> — Clock telemetry</div>
+              </div>
+            </div>
+            <div>
+              <div className="text-white font-semibold mb-1 text-[11px] uppercase tracking-wider text-purple-300">
+                Environment Controls:
+              </div>
+              <div className="space-y-1 text-slate-300">
+                <div><span className="text-purple-300 font-mono font-bold">theme &lt;name&gt;</span> — cyan|emerald|amber|violet</div>
+                <div><span className="text-purple-300 font-mono font-bold">sound</span> — Toggle audio clicks</div>
+                <div><span className="text-purple-300 font-mono font-bold">clear</span> (or Ctrl+L) — Clear buffer</div>
+                <div><span className="text-purple-300 font-mono font-bold">exit</span> (or Esc) — Return to 3D room</div>
+              </div>
+            </div>
           </div>
         </div>
       ),
@@ -288,7 +369,7 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
               <div className="text-cyan-400 font-bold">UID: 1000(hanan) GID: 1000(dedsec) GROUPS: 1000(dedsec),4(adm),27(sudo),998(wheel)</div>
               <div>Primary Role: <span className="text-white font-semibold">Senior Cybersecurity Research & Systems Engineer</span></div>
               <div>Specialization: <span className="text-emerald-300">eBPF Telemetry Probes · Binary Exploitation · Post-Quantum Crypto</span></div>
-              <div>Station: <span className="text-cyan-300">cyberlab-workstation-laptop</span></div>
+              <div>Station: <span className="text-cyan-300">xcthine-workstation-laptop</span></div>
             </div>
           );
           break;
@@ -339,92 +420,6 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
           );
           break;
 
-        case 'projects':
-          output = (
-            <div className="space-y-2 text-xs">
-              <div className="text-cyan-400 font-bold">PRODUCTION SYSTEMS & RESEARCH REPOSITORIES ({PROJECTS.length}):</div>
-              <div className="space-y-2">
-                {PROJECTS.map((p) => (
-                  <div
-                    key={p.id}
-                    className="p-2 rounded bg-slate-900/60 border border-slate-800/80 hover:border-cyan-500/40 transition-colors cursor-pointer"
-                    onClick={() => {
-                      executeCommand(`project ${p.id}`);
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="font-bold text-white flex items-center gap-2">
-                        <span className="text-cyan-400 font-mono">[{p.id}]</span>
-                        <span>{p.title}</span>
-                      </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/40">
-                        {p.category}
-                      </span>
-                    </div>
-                    <div className="text-slate-400 text-[11px] mt-1 line-clamp-1">{p.subtitle}</div>
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      {p.technologies.map((tech) => (
-                        <span key={tech} className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300">
-                          {tech}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="text-[11px] text-slate-500">
-                Tip: Run <span className="text-cyan-300 font-mono">project &lt;id&gt;</span> (e.g. <span className="text-cyan-300 font-mono">project android-kernel-ipc</span>) to inspect details.
-              </div>
-            </div>
-          );
-          break;
-
-        case 'project':
-          if (!args[0]) {
-            output = <div className="text-xs text-amber-400">Usage: project &lt;project-id&gt; (e.g. 'project android-kernel-ipc')</div>;
-          } else {
-            const pid = args[0].toLowerCase();
-            const found = PROJECTS.find((p) => p.id.toLowerCase() === pid || p.title.toLowerCase().includes(pid));
-            if (!found) {
-              output = (
-                <div className="text-xs text-red-400">
-                  Project '{args[0]}' not found. Run <span className="text-cyan-300 underline font-mono">projects</span> to list valid IDs.
-                </div>
-              );
-            } else {
-              output = (
-                <div className="space-y-3 text-xs bg-slate-900/80 p-3 rounded-lg border border-cyan-500/30">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                    <div>
-                      <div className="text-sm font-bold text-white font-mono">{found.title}</div>
-                      <div className="text-cyan-300 text-[11px]">{found.subtitle}</div>
-                    </div>
-                    <span className="text-[10px] px-2 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
-                      {found.status} · {found.year}
-                    </span>
-                  </div>
-                  <p className="text-slate-300 leading-relaxed">{found.description}</p>
-                  <div>
-                    <div className="text-white font-semibold text-[11px] mb-1">KEY TECHNICAL HIGHLIGHTS:</div>
-                    <ul className="list-disc list-inside space-y-1 text-slate-400">
-                      {found.architectureNotes.map((h, i) => (
-                        <li key={i}>{h}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {found.technologies.map((tech) => (
-                      <span key={tech} className="px-2 py-0.5 rounded bg-slate-800 text-cyan-300 font-mono text-[10px]">
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              );
-            }
-          }
-          break;
-
         case 'skills':
           output = (
             <div className="space-y-3 text-xs">
@@ -467,39 +462,6 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
                     </div>
                   </div>
                 ))}
-              </div>
-            </div>
-          );
-          break;
-
-        case 'ctf':
-          output = (
-            <div className="space-y-2 text-xs">
-              <div className="text-emerald-400 font-bold border-b border-slate-800 pb-1 flex items-center justify-between">
-                <span>OFFENSIVE CTF EXPLOITATION WRITEUPS</span>
-                <span className="text-xs text-slate-400">Total Points: 4,450 pts</span>
-              </div>
-              <div className="space-y-2">
-                {CTF_CHALLENGES.map((ch) => (
-                  <div key={ch.id} className="p-2.5 rounded bg-slate-900/60 border border-slate-800">
-                    <div className="flex items-center justify-between">
-                      <div className="font-bold text-white flex items-center gap-2">
-                        <span className="text-emerald-400 font-mono">[{ch.category}]</span>
-                        <span>{ch.title}</span>
-                      </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 font-mono">
-                        {ch.points} pts · {ch.difficulty}
-                      </span>
-                    </div>
-                    <p className="text-slate-400 text-[11px] mt-1">{ch.overview}</p>
-                    <div className="text-xs font-mono text-cyan-300 mt-1 bg-black/40 p-1.5 rounded">
-                      Vulnerability: {ch.vulnerability}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="text-[11px] text-slate-500">
-                Run <span className="text-emerald-300 font-mono font-bold">submit flag&#123;...&#125;</span> to test flag verification.
               </div>
             </div>
           );
@@ -554,15 +516,6 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
           setTimeout(() => setIsScanning(false), 600);
           break;
 
-        case 'matrix':
-          setIsMatrixRunning((prev) => !prev);
-          output = (
-            <div className="text-xs text-emerald-400 font-mono">
-              [+] Matrix glyph stream {isMatrixRunning ? 'HALTED' : 'ACTIVATED'}. Click terminal or press Matrix button to toggle.
-            </div>
-          );
-          break;
-
         case 'neofetch':
           output = (
             <div className="font-mono text-xs text-slate-300 flex flex-col sm:flex-row gap-4 py-2">
@@ -573,12 +526,12 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
     / /  \\ \\
    / /    \\ \\
   / /  __  \\ \\
- / /  /  \\  \\ \\
+  / /  /  \\  \\ \\
 / /__/ /\\ \\__\\ \\
 \\____\\/  \\_____/`}
               </pre>
               <div className="space-y-1 text-[11px]">
-                <div className="text-cyan-300 font-bold">hanan@cyberlab-workstation</div>
+                <div className="text-cyan-300 font-bold">hanan@xcthine-workstation</div>
                 <div className="text-slate-500">--------------------------</div>
                 <div><span className="text-cyan-400 font-semibold">OS:</span> HANAN//OS Hardened Linux x86_64</div>
                 <div><span className="text-cyan-400 font-semibold">Host:</span> DedSec Workstation Node 01</div>
@@ -595,72 +548,20 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
           );
           break;
 
-        case 'top':
-        case 'htop':
+        case 'ls':
           output = (
-            <div className="font-mono text-[11px] text-slate-300 space-y-1">
-              <div className="text-cyan-400">Tasks: 184 total, 2 running, 182 sleeping, 0 stopped, 0 zombie</div>
-              <div>%Cpu(s): 3.2 us, 1.1 sy, 0.0 ni, 95.4 id, 0.1 wa, 0.2 hi, 0.0 si</div>
-              <div>MiB Mem : 64230.4 total, 42110.2 free, 12410.5 used, 9709.7 buff/cache</div>
-              <div className="border-t border-slate-800 pt-1 mt-1">
-                <div className="text-cyan-300 font-bold grid grid-cols-5 gap-2">
-                  <span>PID</span>
-                  <span>USER</span>
-                  <span>%CPU</span>
-                  <span>%MEM</span>
-                  <span>COMMAND</span>
-                </div>
-                <div className="grid grid-cols-5 gap-2 text-slate-400">
-                  <span>1042</span><span>hanan</span><span className="text-emerald-400">1.8</span><span>2.4</span><span>ebpf-xdp-daemon</span>
-                </div>
-                <div className="grid grid-cols-5 gap-2 text-slate-400">
-                  <span>1188</span><span>hanan</span><span className="text-emerald-400">1.2</span><span>3.1</span><span>threejs-renderer</span>
-                </div>
-                <div className="grid grid-cols-5 gap-2 text-slate-400">
-                  <span>942</span><span>root</span><span>0.4</span><span>0.8</span><span>sshd: [accepted]</span>
-                </div>
-                <div className="grid grid-cols-5 gap-2 text-slate-400">
-                  <span>2201</span><span>hanan</span><span>0.2</span><span>1.4</span><span>wireguard-node</span>
-                </div>
-              </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+              <span className="text-cyan-400 font-bold">📁 Cyfex/</span>
+              <span className="text-cyan-400 font-bold">📁 Hanan-os/</span>
+              <span className="text-cyan-400 font-bold">📁 Portfolio/</span>
+              <span className="text-cyan-400 font-bold">📁 Sheffer/</span>
+              <span className="text-cyan-400 font-bold">📁 Zeel/</span>
+              <span className="text-slate-300">📄 about.md</span>
+              <span className="text-slate-300">📄 cv.txt</span>
+              <span className="text-slate-300">📄 skills.json</span>
+              <span className="text-slate-300">📄 notes.txt</span>
             </div>
           );
-          break;
-
-        case 'ls':
-          const targetDir = args[0] || currentPath;
-          if (targetDir === 'projects' || targetDir === '~/projects') {
-            output = (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs font-mono">
-                {PROJECTS.map((p) => (
-                  <div key={p.id} className="text-cyan-300 flex items-center gap-1">
-                    <span>📁</span> <span>{p.id}/</span>
-                  </div>
-                ))}
-              </div>
-            );
-          } else if (targetDir === 'ctf' || targetDir === '~/ctf') {
-            output = (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs font-mono">
-                {CTF_CHALLENGES.map((c) => (
-                  <div key={c.id} className="text-emerald-300 flex items-center gap-1">
-                    <span>📄</span> <span>{c.id}.md</span>
-                  </div>
-                ))}
-              </div>
-            );
-          } else {
-            output = (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
-                <span className="text-cyan-400 font-bold">📁 projects/</span>
-                <span className="text-emerald-400 font-bold">📁 ctf/</span>
-                <span className="text-slate-300">📄 about.md</span>
-                <span className="text-slate-300">📄 cv.txt</span>
-                <span className="text-slate-300">📄 skills.json</span>
-                <span className="text-slate-300">📄 notes.txt</span>
-              </div>
-            );
-          }
           break;
 
         case 'pwd':
@@ -672,26 +573,33 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
           if (newDir === '~' || newDir === '/' || newDir === '..') {
             setCurrentPath('~');
             output = <div className="text-xs font-mono text-slate-400">Switched directory to ~</div>;
-          } else if (newDir === 'projects' || newDir === 'ctf') {
-            setCurrentPath(`~/${newDir}`);
-            output = <div className="text-xs font-mono text-slate-400">Switched directory to ~/{newDir}</div>;
           } else {
-            output = <div className="text-xs text-rose-400">cd: no such directory: {newDir}</div>;
+            const normalizedDir = newDir.toLowerCase();
+            const validDirs = ['cyfex', 'hanan-os', 'portfolio', 'sheffer', 'zeel'];
+            if (validDirs.includes(normalizedDir)) {
+              output = <div className="text-xs font-mono text-slate-400">Inspecting repository: {newDir}. Run 'cat {newDir}' to view details.</div>;
+            } else {
+              output = <div className="text-xs text-rose-400">cd: no such directory: {newDir}</div>;
+            }
           }
           break;
 
         case 'cat':
           const fileToRead = args[0];
           if (!fileToRead) {
-            output = <div className="text-xs text-amber-400">Usage: cat &lt;filename&gt; (e.g. 'cat about.md', 'cat cv.txt')</div>;
-          } else if (VIRTUAL_FS[fileToRead] && VIRTUAL_FS[fileToRead].content) {
-            output = (
-              <pre className="text-xs font-mono text-slate-300 whitespace-pre-wrap bg-slate-900/60 p-2.5 rounded border border-slate-800">
-                {VIRTUAL_FS[fileToRead].content}
-              </pre>
-            );
+            output = <div className="text-xs text-amber-400">Usage: cat &lt;filename&gt; (e.g. 'cat about.md', 'cat Cyfex')</div>;
           } else {
-            output = <div className="text-xs text-rose-400">cat: {fileToRead}: No such file or directory</div>;
+            const normalizedFile = fileToRead.toLowerCase();
+            const matchedKey = Object.keys(VIRTUAL_FS).find((k) => k.toLowerCase() === normalizedFile);
+            if (matchedKey && VIRTUAL_FS[matchedKey].content) {
+              output = (
+                <pre className="text-xs font-mono text-slate-300 whitespace-pre-wrap bg-slate-900/60 p-2.5 rounded border border-slate-800">
+                  {VIRTUAL_FS[matchedKey].content}
+                </pre>
+              );
+            } else {
+              output = <div className="text-xs text-rose-400">cat: {fileToRead}: No such file or directory</div>;
+            }
           }
           break;
 
@@ -703,16 +611,11 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
 ├── cv.txt
 ├── skills.json
 ├── notes.txt
-├── projects/
-│   ├── android-kernel-ipc/
-│   ├── sentinel-autonomous-ctf/
-│   ├── post-quantum-pqc/
-│   ├── ebpf-zero-overhead/
-│   └── secure-enclave-vault/
-└── ctf/
-    ├── glibc-tcache-poison.md
-    ├── aosp-binder-hijack.md
-    └── kyber-sidechannel.md`}
+├── Cyfex/
+├── Hanan-os/
+├── Portfolio/
+├── Sheffer/
+└── Zeel/`}
             </pre>
           );
           break;
@@ -824,7 +727,7 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
     } else if (e.key === 'Tab') {
       e.preventDefault();
       // Simple autocompletion
-      const cmds = ['help', 'about', 'whoami', 'cv', 'projects', 'skills', 'certs', 'ctf', 'nmap', 'matrix', 'neofetch', 'top', 'clear', 'ls', 'cat', 'tree', 'theme'];
+      const cmds = ['help', 'about', 'whoami', 'cv', 'skills', 'certs', 'nmap', 'neofetch', 'clear', 'ls', 'cat', 'tree', 'theme', 'sound', 'exit', 'cyfex', 'hanan-os', 'portfolio', 'sheffer', 'zeel'];
       const match = cmds.find((c) => c.startsWith(inputVal.toLowerCase()));
       if (match) {
         setInputVal(match);
@@ -857,7 +760,7 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
             <div key={item.id} className="space-y-1.5">
               {/* Command Prompt Row */}
               <div className="flex items-center gap-3">
-                <span className={`${tStyle.prompt} font-bold`}>hanan@cyberlab</span>
+                <span className={`${tStyle.prompt} font-bold`}>hanan@xcthine</span>
                 <span className="text-slate-500">:</span>
                 <span className="text-blue-400 font-semibold">{item.cwd}</span>
                 <span className="text-slate-500">$</span>
@@ -870,7 +773,7 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
 
           {/* Active Input Row */}
           <div className="flex items-center gap-3 pt-1">
-            <span className={`${tStyle.prompt} font-bold`}>hanan@cyberlab</span>
+            <span className={`${tStyle.prompt} font-bold`}>hanan@xcthine</span>
             <span className="text-slate-500">:</span>
             <span className="text-blue-400 font-semibold">{currentPath}</span>
             <span className="text-slate-500">$</span>
