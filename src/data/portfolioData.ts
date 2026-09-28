@@ -88,8 +88,8 @@ export const RESUME_DATA = {
   name: 'Hanan',
   title: 'Cybersecurity Researcher & Systems Software Developer',
   location: 'San Francisco, CA / Remote',
-  email: 'hanan.cybersec.dev@gmail.com',
-  github: 'https://github.com/hanan',
+  email: 'hanansaeed609@yahoo.com',
+  github: 'https://github.com/hannansaeed',
   summary:
     'Hands-on systems programmer and offensive security specialist with proven experience in glibc heap exploitation, low-overhead eBPF kernel monitors, Android AOSP/Binder internals, and post-quantum cryptographic primitives. Top 2% global CTF contestant with OSCP and PNPT certifications.',
   education: [

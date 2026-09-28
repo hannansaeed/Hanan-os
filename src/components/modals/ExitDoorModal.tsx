@@ -190,7 +190,7 @@ export const ExitDoorModal: React.FC<ExitDoorModalProps> = ({ onClose, onReturnT
                 </h4>
                 <div className="space-y-2">
                   <a
-                    href="mailto:hanan.cybersec.dev@gmail.com"
+                    href="mailto:hanansaeed609@yahoo.com"
                     onClick={() => soundEngine.playKeyClick()}
                     className="flex items-center justify-between p-3 rounded-lg bg-slate-900 border border-slate-800 hover:border-cyan-500 text-xs font-mono text-slate-200 hover:text-cyan-400 transition-colors"
                   >
@@ -202,7 +202,7 @@ export const ExitDoorModal: React.FC<ExitDoorModalProps> = ({ onClose, onReturnT
                   </a>
 
                   <a
-                    href="https://github.com/hanan"
+                    href="https://github.com/hannansaeed"
                     target="_blank"
                     rel="noreferrer"
                     onClick={() => soundEngine.playKeyClick()}
@@ -216,7 +216,7 @@ export const ExitDoorModal: React.FC<ExitDoorModalProps> = ({ onClose, onReturnT
                   </a>
 
                   <a
-                    href="https://linkedin.com/in/hanan-cyber"
+                    href="https://linkedin.com/in/hanan-saeed"
                     target="_blank"
                     rel="noreferrer"
                     onClick={() => soundEngine.playKeyClick()}

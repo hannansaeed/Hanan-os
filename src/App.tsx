@@ -33,9 +33,9 @@ export default function App() {
       stationId === 'social_github' ||
       stationId === 'social_steam'
     ) {
-      let url = 'https://linkedin.com';
-      if (stationId === 'social_github') url = 'https://github.com';
-      if (stationId === 'social_steam') url = 'https://store.steampowered.com';
+      let url = 'https://linkedin.com/in/hanan-saeed';
+      if (stationId === 'social_github') url = 'https://github.com/hannansaeed';
+      if (stationId === 'social_steam') url = 'https://steamcommunity.com/id/xcthine';
 
       try {
         const win = window.open(url, '_blank', 'noopener,noreferrer');

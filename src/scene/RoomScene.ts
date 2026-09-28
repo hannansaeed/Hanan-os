@@ -104,14 +104,10 @@ export class RoomScene {
   ---------------------------------------------------- */
   // 1. Interactive Laptop CLI Terminal State
   private terminalInput: string = '';
-  private terminalLines: Array<{ text: string; color: string; bold?: boolean }> = [
-    { text: 'NULL//OS Workstation Shell [Version 5.0.0-x86_64-hardened]', color: '#34d399', bold: true },
-    { text: 'Host: cyberlab-node-alpha · Kernel: 6.8.9-dedsec-ebpf · Uptime: 42 days', color: '#94a3b8' },
-    { text: 'Type commands directly on keyboard (e.g. help, whoami, projects, nmap, matrix)', color: '#6ee7b7' },
-    { text: '----------------------------------------------------------------', color: '#1e293b' },
-  ];
+  private terminalLines: Array<{ text: string; color: string; bold?: boolean }> = [];
   private terminalCmdHistory: string[] = [];
   private terminalCmdIndex: number = -1;
+  private terminalWaitingForPassword: boolean = false;
   private terminalTheme: 'emerald' | 'cyan' | 'amber' | 'violet' = 'emerald';
   private terminalMatrixActive: boolean = false;
   private terminalMatrixDrops: number[] = [];
@@ -286,10 +282,10 @@ export class RoomScene {
       fragmentShader: CRTShader.fragmentShader,
     });
 
-    // 2. High-DPI Vertical Laptop Terminal Screen (2048x4096)
+    // 2. High-DPI Vertical Laptop Terminal Screen (2048x1152)
     this.vertCanvas = document.createElement('canvas');
     this.vertCanvas.width = 2048;
-    this.vertCanvas.height = 4096;
+    this.vertCanvas.height = 1152;
     this.vertCtx = this.vertCanvas.getContext('2d', { alpha: false })!;
     this.vertTexture = new THREE.CanvasTexture(this.vertCanvas);
     this.vertTexture.minFilter = THREE.LinearFilter;
@@ -658,10 +654,10 @@ export class RoomScene {
         hc.fillStyle = '#10b981';
         hc.fillText('Mail & Contact Links', cx, cy + 28);
         const contacts = [
-          { label: '📧 Email:', val: 'testperson952@gmail.com' },
-          { label: '🐙 GitHub:', val: 'github.com/hanan-sec' },
-          { label: '💼 LinkedIn:', val: 'linkedin.com/in/hanan-dev' },
-          { label: '🐦 Twitter / X:', val: '@hanan_sec' },
+          { label: '📧 Email:', val: 'hanansaeed609@yahoo.com' },
+          { label: '🐙 GitHub:', val: 'github.com/hannansaeed' },
+          { label: '💼 LinkedIn:', val: 'linkedin.com/in/hanan-saeed' },
+          { label: '🐦 Instagram:', val: '__not__batman' },
         ];
         contacts.forEach((c, idx) => {
           const iy = cy + 70 + idx * 90;
@@ -785,9 +781,9 @@ export class RoomScene {
         ? '#c084fc'
         : '#34d399';
 
-    // 1. Terminal Canvas Background (1024x2048)
+    // 1. Terminal Canvas Background (2048x1152)
     vc.fillStyle = '#04080f';
-    vc.fillRect(0, 0, 1024, 2048);
+    vc.fillRect(0, 0, 2048, 1152);
 
     // 2. Optional Matrix Code Rain Mode
     if (this.terminalMatrixActive) {
@@ -796,7 +792,7 @@ export class RoomScene {
       }
 
       vc.fillStyle = 'rgba(4, 8, 15, 0.15)';
-      vc.fillRect(0, 0, 1024, 2048);
+      vc.fillRect(0, 0, 2048, 1152);
 
       vc.fillStyle = themeColor;
       vc.font = '24px monospace';
@@ -816,39 +812,22 @@ export class RoomScene {
       }
     }
 
-    // 3. Top Translucent Header
-    vc.fillStyle = 'rgba(15, 23, 42, 0.85)';
-    vc.fillRect(0, 0, 1024, 60);
-    vc.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-    vc.lineWidth = 1;
-    vc.beginPath();
-    vc.moveTo(0, 60);
-    vc.lineTo(1024, 60);
-    vc.stroke();
-
-    // Terminal Title
-    vc.font = 'bold 40px "Plus Jakarta Sans", sans-serif';
-    vc.fillStyle = '#f8fafc';
-    vc.fillText('Terminal', 72, 76);
-    
-    vc.font = '32px "JetBrains Mono", monospace';
-    vc.fillStyle = '#94a3b8';
-    vc.fillText('hanan@cyberlab: ~', 260, 76);
+    // 3. Top Translucent Header (Removed)
 
     // 4. Terminal Output Buffer (Scrolling Lines)
-    let lineY = 220;
-    const maxVisibleLines = 36;
+    let lineY = 60;
+    const maxVisibleLines = 18;
     const visibleLines = this.terminalLines.slice(-maxVisibleLines);
 
     visibleLines.forEach((l) => {
       vc.fillStyle = l.color;
-      vc.font = l.bold ? 'bold 44px "JetBrains Mono", monospace' : '40px "JetBrains Mono", monospace';
+      vc.font = l.bold ? 'bold 36px "JetBrains Mono", monospace' : '32px "JetBrains Mono", monospace';
       vc.fillText(l.text, 72, lineY);
-      lineY += 72;
+      lineY += 50;
     });
 
     // 5. Active Command Prompt & Blinking Cursor
-    vc.font = 'bold 44px "JetBrains Mono", monospace';
+    vc.font = 'bold 36px "JetBrains Mono", monospace';
     vc.fillStyle = themeColor;
     const promptPrefix = 'hanan@cyberlab:~$ ';
     vc.fillText(promptPrefix, 72, lineY);
@@ -860,13 +839,10 @@ export class RoomScene {
     const inputWidth = vc.measureText(this.terminalInput).width;
     if (Math.floor(elapsed * 2.5) % 2 === 0) {
       vc.fillStyle = themeColor;
-      vc.fillRect(72 + prefixWidth + inputWidth + 8, lineY - 40, 24, 44);
+      vc.fillRect(72 + prefixWidth + inputWidth + 8, lineY - 32, 20, 36);
     }
 
-    // 6. Minimal Quick Command Helper
-    vc.font = '32px "JetBrains Mono", monospace';
-    vc.fillStyle = '#475569';
-    vc.fillText('Commands: help | whoami | projects | cv | ctf | clear', 72, 3960);
+    // 6. Minimal Quick Command Helper (Removed)
 
     this.vertTexture.needsUpdate = true;
   }
@@ -883,48 +859,66 @@ export class RoomScene {
     this.terminalCmdIndex = -1;
 
     // Echo input line
-    this.terminalLines.push({
-      text: `hanan@cyberlab:~$ ${trimmed}`,
-      color: '#ffffff',
-      bold: true,
-    });
+    if (!this.terminalWaitingForPassword) {
+      this.terminalLines.push({
+        text: `hanan@xcthine:~$ ${trimmed}`,
+        color: '#ffffff',
+        bold: true,
+      });
+    }
 
     const parts = trimmed.split(' ').filter(Boolean);
     const cmd = parts[0]?.toLowerCase();
     const args = parts.slice(1);
 
+    if (this.terminalWaitingForPassword) {
+      if (trimmed === '3241010300') {
+        this.terminalLines.push({ text: 'Root access granted. Clearing whiteboard...', color: '#34d399' });
+        this.terminalWaitingForPassword = false;
+        // Logic to clear whiteboard
+        if (this.boardMesh) {
+          const boardCtx = this.whiteboardTexture.image.getContext('2d');
+          if (boardCtx) {
+            boardCtx.fillStyle = '#ffffff';
+            boardCtx.fillRect(0, 0, this.whiteboardTexture.image.width, this.whiteboardTexture.image.height);
+            this.whiteboardTexture.needsUpdate = true;
+          }
+        }
+      } else {
+        this.terminalLines.push({ text: 'Incorrect password.', color: '#f43f5e' });
+        this.terminalWaitingForPassword = false;
+      }
+      this.vertTexture.needsUpdate = true;
+      return;
+    }
+
     switch (cmd) {
       case 'help':
       case '?':
         this.terminalLines.push(
-          { text: 'COMMAND DIRECTORY:', color: '#38bdf8', bold: true },
-          { text: '  whoami       - Identity & cyber research domain', color: '#94a3b8' },
-          { text: '  projects     - List production systems & repos', color: '#94a3b8' },
-          { text: '  project <id> - Detailed specifications of project', color: '#94a3b8' },
-          { text: '  cv           - Curriculum Vitae & Honors', color: '#94a3b8' },
+          { text: '  whoami       - Identity', color: '#94a3b8' },
+          { text: '  ls           - List production systems & repos', color: '#94a3b8' },
+          { text: '  cat <file>   - Detailed specifications of file', color: '#94a3b8' },
+          { text: '  cv           - Curriculum Vitae', color: '#94a3b8' },
           { text: '  skills       - Low-level programming matrix', color: '#94a3b8' },
-          { text: '  certs        - Verified security credentials', color: '#94a3b8' },
           { text: '  ctf          - Offensive security writeups', color: '#94a3b8' },
           { text: '  nmap <host>  - Simulated SYN stealth scan', color: '#94a3b8' },
           { text: '  matrix       - Toggle live digital glyph rain', color: '#94a3b8' },
           { text: '  neofetch     - Hardware & Kernel specs', color: '#94a3b8' },
           { text: '  top          - Live process list & telemetry', color: '#94a3b8' },
-          { text: '  theme <col>  - emerald | cyan | amber | violet', color: '#94a3b8' },
           { text: '  clear        - Clear terminal buffer', color: '#94a3b8' }
         );
         break;
 
       case 'clear':
       case 'cls':
-        this.terminalLines = [
-          { text: 'hanan@cyberlab-workstation:~ [buffer cleared]', color: '#6ee7b7' },
-        ];
+        this.terminalLines = [];
         break;
 
       case 'whoami':
         this.terminalLines.push(
-          { text: 'UID: 1000(hanan) GID: 1000(dedsec)', color: '#34d399', bold: true },
-          { text: 'Role: Senior Cybersecurity Research & Systems Architect', color: '#e2e8f0' },
+          { text: 'UID: 1000(hanan) GID: 1000(Xcthine)', color: '#34d399', bold: true },
+          { text: 'Role: Cybersecurity Research & Systems Architect', color: '#e2e8f0' },
           { text: 'Specialization: eBPF Telemetry · Binary Exploitation · Post-Quantum TLS', color: '#38bdf8' }
         );
         break;
@@ -938,7 +932,7 @@ export class RoomScene {
         );
         break;
 
-      case 'projects':
+      case 'ls':
         this.terminalLines.push({ text: `REPOSITORIES (${PROJECTS.length}):`, color: '#38bdf8', bold: true });
         PROJECTS.forEach((p) => {
           this.terminalLines.push({
@@ -946,12 +940,12 @@ export class RoomScene {
             color: '#34d399',
           });
         });
-        this.terminalLines.push({ text: 'Run: project <id> to inspect details.', color: '#64748b' });
+        this.terminalLines.push({ text: 'Run: cat <id> to inspect details.', color: '#64748b' });
         break;
 
-      case 'project':
+      case 'cat':
         if (!args[0]) {
-          this.terminalLines.push({ text: 'Usage: project <project-id>', color: '#f59e0b' });
+          this.terminalLines.push({ text: 'Usage: cat <project-id>', color: '#f59e0b' });
         } else {
           const found = PROJECTS.find((p) => p.id.toLowerCase().includes(args[0].toLowerCase()));
           if (found) {
@@ -961,7 +955,7 @@ export class RoomScene {
               { text: `Technologies: ${found.technologies.join(', ')}`, color: '#38bdf8' }
             );
           } else {
-            this.terminalLines.push({ text: `Project '${args[0]}' not found.`, color: '#f43f5e' });
+            this.terminalLines.push({ text: `File '${args[0]}' not found.`, color: '#f43f5e' });
           }
         }
         break;
@@ -970,8 +964,8 @@ export class RoomScene {
       case 'resume':
         this.terminalLines.push(
           { text: 'CURRICULUM VITAE — HANAN', color: '#38bdf8', bold: true },
-          { text: '● B.S. in Computer Science (Summa Cum Laude, GPA 3.96)', color: '#34d399' },
-          { text: '● Lead Security Systems Architect @ DedSec Research', color: '#e2e8f0' },
+          { text: '● B.S. in Information Technology', color: '#34d399' },
+          { text: '● Cyber Security Researcher & Developer', color: '#e2e8f0' },
           { text: '● President, Cyber Defense Collegiate League', color: '#e2e8f0' }
         );
         break;
@@ -1023,20 +1017,18 @@ export class RoomScene {
         this.terminalLines.push(
           { text: 'OS: NULL//OS Hardened Linux x86_64', color: '#38bdf8', bold: true },
           { text: 'Host: Cyberlab Workstation Node 01', color: '#cbd5e1' },
+          { text: `TechStack: ${SKILLS_SUMMARY.languages.join(' · ')} · ${SKILLS_SUMMARY.systems.join(' · ')}`, color: '#cbd5e1' },
           { text: 'Kernel: 6.8.9-dedsec-ebpf-probes', color: '#cbd5e1' },
-          { text: 'Uptime: 42 days, 7 hours, 14 mins', color: '#cbd5e1' },
-          { text: 'CPU: AMD Ryzen 9 7950X (32) @ 5.7GHz', color: '#cbd5e1' },
-          { text: 'Memory: 12410MiB / 64230MiB (19%)', color: '#34d399' }
+          { text: 'CPU: AMD Ryzen 9 7950X', color: '#cbd5e1' }
         );
         break;
 
-      case 'theme':
-        const th = args[0]?.toLowerCase() as any;
-        if (['emerald', 'cyan', 'amber', 'violet'].includes(th)) {
-          this.terminalTheme = th;
-          this.terminalLines.push({ text: `Terminal phosphor theme switched to '${th}'.`, color: '#34d399' });
+      case 'sudo':
+        if (args[0] === 'rm' && args[1] === '-rf' && args[2] === '/') {
+          this.terminalLines.push({ text: '[sudo] password for hanan:', color: '#ffffff' });
+          this.terminalWaitingForPassword = true;
         } else {
-          this.terminalLines.push({ text: 'Usage: theme <emerald|cyan|amber|violet>', color: '#f59e0b' });
+          this.terminalLines.push({ text: `Command not found: ${trimmed}`, color: '#f43f5e' });
         }
         break;
 
@@ -2667,9 +2659,9 @@ export class RoomScene {
         this.hoveredStationId === 'social_github' ||
         this.hoveredStationId === 'social_steam'
       ) {
-        let url = 'https://linkedin.com';
-        if (this.hoveredStationId === 'social_github') url = 'https://github.com';
-        if (this.hoveredStationId === 'social_steam') url = 'https://store.steampowered.com';
+        let url = 'https://linkedin.com/in/hanan-saeed';
+        if (this.hoveredStationId === 'social_github') url = 'https://github.com/hannansaeed';
+        if (this.hoveredStationId === 'social_steam') url = 'https://steamcommunity.com/id/xcthine';
 
         this.safeOpenLink(url);
         soundEngine.playChirp('success');
@@ -2784,9 +2776,9 @@ export class RoomScene {
         this.hoveredStationId === 'social_github' ||
         this.hoveredStationId === 'social_steam'
       ) {
-        let url = 'https://linkedin.com';
-        if (this.hoveredStationId === 'social_github') url = 'https://github.com';
-        if (this.hoveredStationId === 'social_steam') url = 'https://store.steampowered.com';
+        let url = 'https://linkedin.com/in/hanan-saeed';
+        if (this.hoveredStationId === 'social_github') url = 'https://github.com/hannansaeed';
+        if (this.hoveredStationId === 'social_steam') url = 'https://steamcommunity.com/id/xcthine';
 
         this.safeOpenLink(url);
         soundEngine.playChirp('success');
