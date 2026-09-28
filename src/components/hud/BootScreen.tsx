@@ -26,7 +26,7 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onEnter, onQuickJump }) 
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-lg bg-[#080d1a]/95 border border-cyan-500/40 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-cyan-950/70 space-y-6 text-center"
+        className="relative w-full max-w-lg bg-[#080d1a]/95 border border-rose-500/40 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-rose-950/70 space-y-6 text-center"
       >
         {/* Close / Skip button */}
         <button
@@ -39,13 +39,13 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onEnter, onQuickJump }) 
 
         {/* Minimal Identity Banner */}
         <div className="space-y-2 pt-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/30 text-[11px] font-mono text-cyan-400">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-950/60 border border-rose-500/30 text-[11px] font-mono text-rose-400">
+            <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
             <span>SYSTEM ONLINE · 3D WORKSTATION</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white font-display">
-            HANAN//OS
+            HANAN
           </h1>
 
           <div className="flex items-center justify-center gap-2 text-xs font-mono text-slate-400">
@@ -77,7 +77,7 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onEnter, onQuickJump }) 
         <div className="space-y-3">
           <button
             onClick={handleStart}
-            className="w-full py-3 px-6 rounded-xl font-mono text-xs font-bold tracking-wider uppercase bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/30 transition-all flex items-center justify-center gap-2 cursor-pointer scale-100 hover:scale-[1.02]"
+            className="w-full py-3 px-6 rounded-xl font-mono text-xs font-bold tracking-wider uppercase bg-rose-500 hover:bg-rose-400 text-slate-950 shadow-lg shadow-rose-500/30 transition-all flex items-center justify-center gap-2 cursor-pointer scale-100 hover:scale-[1.02]"
           >
             <span>Enter Workstation</span>
             <ArrowRight className="w-4 h-4" />
@@ -91,9 +91,9 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onEnter, onQuickJump }) 
                   handleStart();
                   onQuickJump('horizontal_monitor');
                 }}
-                className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-cyan-400 hover:border-cyan-500/50 text-[11px] font-mono flex items-center gap-1.5 transition-colors"
+                className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-rose-400 hover:border-rose-500/50 text-[11px] font-mono flex items-center gap-1.5 transition-colors"
               >
-                <Monitor className="w-3.5 h-3.5 text-cyan-400" />
+                <Monitor className="w-3.5 h-3.5 text-rose-400" />
                 <span>Jump to Projects</span>
               </button>
               <button
@@ -101,7 +101,7 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onEnter, onQuickJump }) 
                   handleStart();
                   onQuickJump('vertical_monitor');
                 }}
-                className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-cyan-400 hover:border-cyan-500/50 text-[11px] font-mono flex items-center gap-1.5 transition-colors"
+                className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-rose-400 hover:border-rose-500/50 text-[11px] font-mono flex items-center gap-1.5 transition-colors"
               >
                 <Shield className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Security Terminal</span>

@@ -115,6 +115,16 @@ export default function App() {
     return () => window.removeEventListener('keydown', onGlobalKeyDown);
   }, [activeStation, handleStepBackToWalk]);
 
+  // Synchronize browser mouse cursor pointer lock when Map is open
+  useEffect(() => {
+    if (sceneRef.current) {
+      sceneRef.current.isPointerLockBlocked = isMapOpen;
+      if (isMapOpen) {
+        sceneRef.current.exitPointerLock();
+      }
+    }
+  }, [isMapOpen]);
+
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#06080e] select-none text-slate-100">
       {/* Three.js 3D Room Canvas */}

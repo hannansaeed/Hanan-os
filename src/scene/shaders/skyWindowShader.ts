@@ -85,10 +85,10 @@ export const SkyWindowShader = {
           float twinkle = sin(uTime * twinkleSpeed * (1.2 + rnd.y * 2.5) + rnd.x * 6.2831) * 0.5 + 0.5;
           twinkle = mix(0.4, 1.0, twinkle);
 
-          // Star color temperature (blue-white, gold-amber, cyan, violet)
+          // Star color temperature (blue-white, gold-amber, rose, violet)
           vec3 starTint = mix(
             vec3(0.85, 0.92, 1.0),   // Cool sapphire diamond
-            mix(vec3(1.0, 0.88, 0.65), vec3(0.75, 0.85, 1.0), rnd.y), // Warm amber or cyan
+            mix(vec3(1.0, 0.88, 0.65), vec3(0.75, 0.85, 1.0), rnd.y), // Warm amber or rose
             step(0.5, rnd.x)
           );
 

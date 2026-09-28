@@ -42,8 +42,27 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
     setIsOptionsExpanded((prev) => !prev);
   };
 
+  // Listen to Escape key globally to close options drawer if expanded
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsOptionsExpanded(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
     <div className="pointer-events-none fixed inset-0 z-30 flex flex-col justify-between p-4 md:p-6">
+      {/* Invisible overlay capturing all outer clicks to automatically close the options drawer */}
+      {isOptionsExpanded && (
+        <div
+          className="pointer-events-auto fixed inset-0 z-[-1] cursor-default bg-transparent"
+          onClick={() => setIsOptionsExpanded(false)}
+        />
+      )}
+
       {/* ========================================================
           TOP BAR:
           - When zoomed into objects: ONLY the [Esc] button!
@@ -57,11 +76,11 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
                 soundEngine.playKeyClick();
                 onSelectStation('overview');
               }}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono font-bold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 hover:border-cyan-500/50 transition-all shadow-md group"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono font-bold rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 hover:border-rose-500/50 transition-all shadow-md group"
               title="Step Back / Exit Zoom (Esc)"
             >
-              <span className="text-slate-400 group-hover:text-cyan-400 transition-colors">← Exit</span>
-              <kbd className="px-1.5 py-0.5 rounded bg-slate-950 text-cyan-400 border border-slate-800 text-[10px] font-bold">
+              <span className="text-slate-400 group-hover:text-rose-400 transition-colors">← Exit</span>
+              <kbd className="px-1.5 py-0.5 rounded bg-slate-950 text-rose-400 border border-slate-800 text-[10px] font-bold">
                 Esc
               </kbd>
             </button>
@@ -71,7 +90,7 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
         <header
           className={`pointer-events-auto transition-all duration-200 rounded-xl bg-slate-950/90 backdrop-blur-md border shadow-2xl overflow-hidden ${
             isOptionsExpanded
-              ? 'w-full max-w-4xl border-cyan-500/40 ring-1 ring-cyan-500/20'
+              ? 'w-full max-w-4xl border-rose-500/40 ring-1 ring-rose-500/20'
               : 'w-fit border-slate-800/90'
           }`}
         >
@@ -83,10 +102,10 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
                 soundEngine.playKeyClick();
                 onSelectStation('overview');
               }}
-              className="text-sm font-bold tracking-tight text-white hover:text-cyan-400 transition-colors font-display flex items-center gap-1.5 shrink-0"
+              className="text-sm font-bold tracking-tight text-white hover:text-rose-400 transition-colors font-display flex items-center gap-1.5 shrink-0"
             >
-              <span className="text-rose-500 font-extrabold">//</span>
-              <span>NULL//OS</span>
+              <span className="text-yellow-400 font-extrabold">//</span>
+              <span>HANAN</span>
             </button>
 
             <div className="w-px h-3.5 bg-slate-800 shrink-0" />
@@ -96,16 +115,16 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
               onClick={handleToggleOptions}
               className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-semibold rounded-lg border transition-all shrink-0 ${
                 isOptionsExpanded
-                  ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-sm'
+                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/50 shadow-sm'
                   : 'bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border-slate-700/80 hover:border-slate-600'
               }`}
               title="Toggle Options & Controls"
               aria-expanded={isOptionsExpanded}
             >
-              <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-400" />
+              <SlidersHorizontal className="w-3.5 h-3.5 text-rose-400" />
               <span>Options</span>
               {isOptionsExpanded ? (
-                <ChevronUp className="w-3 h-3 text-cyan-400" />
+                <ChevronUp className="w-3.5 h-3.5 text-rose-400" />
               ) : (
                 <ChevronDown className="w-3 h-3 text-slate-400" />
               )}
@@ -124,7 +143,7 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
                       onSelectStation('overview');
                       setIsOptionsExpanded(false);
                     }}
-                    className="px-2 py-1 rounded-md transition-colors bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold"
+                    className="px-2 py-1 rounded-md transition-colors bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold"
                   >
                     Overview
                   </button>
@@ -151,26 +170,6 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
                   <button
                     onClick={() => {
                       soundEngine.playKeyClick();
-                      onSelectStation('desk');
-                      setIsOptionsExpanded(false);
-                    }}
-                    className="px-2 py-1 rounded-md transition-colors text-slate-400 hover:text-white hover:bg-slate-900"
-                  >
-                    Desk
-                  </button>
-                  <button
-                    onClick={() => {
-                      soundEngine.playKeyClick();
-                      onSelectStation('server_rack');
-                      setIsOptionsExpanded(false);
-                    }}
-                    className="px-2 py-1 rounded-md transition-colors text-slate-400 hover:text-white hover:bg-slate-900"
-                  >
-                    Dual Servers
-                  </button>
-                  <button
-                    onClick={() => {
-                      soundEngine.playKeyClick();
                       onSelectStation('whiteboard');
                       setIsOptionsExpanded(false);
                     }}
@@ -185,26 +184,13 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
                   <button
                     onClick={() => {
                       soundEngine.playKeyClick();
-                      onOpenTerminal();
-                      setIsOptionsExpanded(false);
-                    }}
-                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono rounded-md bg-slate-900 border border-slate-700/80 text-slate-200 hover:text-cyan-400 hover:border-cyan-500/50 transition-colors"
-                    title="Terminal CLI (T)"
-                  >
-                    <TerminalIcon className="w-3 h-3 text-cyan-400" />
-                    <span>CLI</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      soundEngine.playKeyClick();
                       onOpenMap();
                       setIsOptionsExpanded(false);
                     }}
-                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono rounded-md bg-slate-900 border border-slate-700/80 text-slate-200 hover:text-cyan-400 hover:border-cyan-500/50 transition-colors"
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono rounded-md bg-slate-900 border border-slate-700/80 text-slate-200 hover:text-rose-400 hover:border-rose-500/50 transition-colors"
                     title="Tactical Map (M)"
                   >
-                    <Map className="w-3 h-3 text-cyan-400" />
+                    <Map className="w-3 h-3 text-rose-400" />
                     <span>Map</span>
                   </button>
 
@@ -213,7 +199,7 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
                       soundEngine.playKeyClick();
                       onToggleAudio();
                     }}
-                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono rounded-md bg-slate-900 border border-slate-700/80 text-slate-300 hover:text-cyan-400 transition-colors"
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono rounded-md bg-slate-900 border border-slate-700/80 text-slate-300 hover:text-rose-400 transition-colors"
                     title={isMuted ? 'Unmute' : 'Mute'}
                   >
                     {isMuted ? (
@@ -223,7 +209,7 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
                       </>
                     ) : (
                       <>
-                        <Volume2 className="w-3 h-3 text-cyan-400" />
+                        <Volume2 className="w-3 h-3 text-rose-400" />
                         <span>Audio</span>
                       </>
                     )}
@@ -233,7 +219,7 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
 
               {/* Row 2: Controls folded inside the Options panel */}
               <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800/60 text-[11px] font-mono text-slate-400">
-                <span className="text-cyan-400 flex items-center gap-1 font-semibold">
+                <span className="text-rose-400 flex items-center gap-1 font-semibold">
                   <Info className="w-3 h-3" /> Controls:
                 </span>
                 <span>
@@ -260,14 +246,14 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
       {/* ========================================================
           CENTER SCREEN: Interaction Aim Reticle Dot
           Always present during overview walk mode so user can aim;
-          glows cyan when hovering over an interactive station!
+          glows rose when hovering over an interactive station!
       ======================================================== */}
       {activeStation === 'overview' && isWalkMode && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div
             className={`rounded-full transition-all duration-150 ${
               hoverInfo
-                ? 'w-1.5 h-1.5 bg-cyan-400 shadow-[0_0_8px_#22d3ee] ring-1 ring-cyan-400/80 scale-110'
+                ? 'w-1.5 h-1.5 bg-rose-400 shadow-[0_0_8px_#f43f5e] ring-1 ring-rose-400/80 scale-110'
                 : 'w-1.5 h-1.5 bg-white/35 shadow-[0_0_4px_rgba(255,255,255,0.25)]'
             }`}
           />
@@ -280,10 +266,10 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
       <div className="pointer-events-none flex flex-col items-center justify-end pb-2 md:pb-4">
         {/* Hover Interactivity Badge (ONLY in overview walk mode, positioned at bottom of screen) */}
         {activeStation === 'overview' && hoverInfo && (
-          <div className="pointer-events-auto px-5 py-2.5 rounded-xl bg-[#090e1a]/95 backdrop-blur-md border border-cyan-500/60 shadow-2xl shadow-cyan-950/80 text-center animate-fade-in ring-2 ring-cyan-500/20">
-            <div className="text-xs font-mono text-cyan-400 font-bold uppercase tracking-wider">{hoverInfo.label}</div>
+          <div className="pointer-events-auto px-5 py-2.5 rounded-xl bg-[#090e1a]/95 backdrop-blur-md border border-rose-500/60 shadow-2xl shadow-rose-950/80 text-center animate-fade-in ring-2 ring-rose-500/20">
+            <div className="text-xs font-mono text-rose-400 font-bold uppercase tracking-wider">{hoverInfo.label}</div>
             <div className="text-xs font-mono text-white font-semibold mt-1 flex items-center justify-center gap-1.5">
-              <span className="px-1.5 py-0.5 rounded bg-cyan-500 text-slate-950 font-bold text-[10px]">[E]</span>
+              <span className="px-1.5 py-0.5 rounded bg-rose-500 text-slate-950 font-bold text-[10px]">[E]</span>
               <span>{hoverInfo.hint}</span>
             </div>
           </div>

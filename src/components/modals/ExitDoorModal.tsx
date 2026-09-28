@@ -40,13 +40,13 @@ export const ExitDoorModal: React.FC<ExitDoorModalProps> = ({ onClose, onReturnT
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-[#090e17] border border-cyan-500/30 rounded-2xl shadow-2xl shadow-cyan-950/40 flex flex-col max-h-[90vh] overflow-hidden">
+      <div className="relative w-full max-w-4xl bg-[#090e17] border border-rose-500/30 rounded-2xl shadow-2xl shadow-rose-950/40 flex flex-col max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-[#060a10]">
           <div className="flex items-center gap-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-400 animate-pulse" />
             <div>
-              <div className="text-xs font-mono text-cyan-400 uppercase tracking-wider">
+              <div className="text-xs font-mono text-rose-400 uppercase tracking-wider">
                 EXIT PORTAL · SECURE COMMS DISPATCH
               </div>
               <h2 className="text-lg font-bold text-white font-display">Establish Connection & Dispatch</h2>
@@ -107,7 +107,7 @@ export const ExitDoorModal: React.FC<ExitDoorModalProps> = ({ onClose, onReturnT
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g. Alex Mercer"
-                      className="w-full px-3 py-2 text-xs font-mono bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                      className="w-full px-3 py-2 text-xs font-mono bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
                     />
                   </div>
                   <div>
@@ -118,7 +118,7 @@ export const ExitDoorModal: React.FC<ExitDoorModalProps> = ({ onClose, onReturnT
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="e.g. alex@security-firm.io"
-                      className="w-full px-3 py-2 text-xs font-mono bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                      className="w-full px-3 py-2 text-xs font-mono bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
                     />
                   </div>
                   <div>
@@ -129,13 +129,13 @@ export const ExitDoorModal: React.FC<ExitDoorModalProps> = ({ onClose, onReturnT
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       placeholder="Project inquiries, CTF collabs, vulnerability reports, or systems engineering opportunities..."
-                      className="w-full px-3 py-2 text-xs font-mono bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 resize-none"
+                      className="w-full px-3 py-2 text-xs font-mono bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 resize-none"
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-slate-950 font-mono text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-2.5 rounded-lg bg-rose-500 hover:bg-rose-400 disabled:opacity-50 text-slate-950 font-mono text-xs font-bold transition-colors flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
                       <>
@@ -165,14 +165,14 @@ export const ExitDoorModal: React.FC<ExitDoorModalProps> = ({ onClose, onReturnT
               </div>
 
               <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
-                <div className="flex items-center justify-between text-xs font-mono text-cyan-400">
+                <div className="flex items-center justify-between text-xs font-mono text-rose-400">
                   <span className="flex items-center gap-1.5">
                     <KeyRound className="w-3.5 h-3.5" />
                     <span>RSA 4096 / PGP FINGERPRINT</span>
                   </span>
                   <button
                     onClick={copyPgpKey}
-                    className="text-slate-400 hover:text-cyan-300 transition-colors"
+                    className="text-slate-400 hover:text-rose-300 transition-colors"
                     title="Copy Fingerprint"
                   >
                     {copiedKey ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -192,10 +192,10 @@ export const ExitDoorModal: React.FC<ExitDoorModalProps> = ({ onClose, onReturnT
                   <a
                     href="mailto:hanansaeed609@yahoo.com"
                     onClick={() => soundEngine.playKeyClick()}
-                    className="flex items-center justify-between p-3 rounded-lg bg-slate-900 border border-slate-800 hover:border-cyan-500 text-xs font-mono text-slate-200 hover:text-cyan-400 transition-colors"
+                    className="flex items-center justify-between p-3 rounded-lg bg-slate-900 border border-slate-800 hover:border-rose-500 text-xs font-mono text-slate-200 hover:text-rose-400 transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-cyan-400" />
+                      <Mail className="w-4 h-4 text-rose-400" />
                       <span>hanan.cybersec.dev@gmail.com</span>
                     </div>
                     <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
@@ -206,10 +206,10 @@ export const ExitDoorModal: React.FC<ExitDoorModalProps> = ({ onClose, onReturnT
                     target="_blank"
                     rel="noreferrer"
                     onClick={() => soundEngine.playKeyClick()}
-                    className="flex items-center justify-between p-3 rounded-lg bg-slate-900 border border-slate-800 hover:border-cyan-500 text-xs font-mono text-slate-200 hover:text-cyan-400 transition-colors"
+                    className="flex items-center justify-between p-3 rounded-lg bg-slate-900 border border-slate-800 hover:border-rose-500 text-xs font-mono text-slate-200 hover:text-rose-400 transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      <Github className="w-4 h-4 text-cyan-400" />
+                      <Github className="w-4 h-4 text-rose-400" />
                       <span>github.com/hanan</span>
                     </div>
                     <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
@@ -220,10 +220,10 @@ export const ExitDoorModal: React.FC<ExitDoorModalProps> = ({ onClose, onReturnT
                     target="_blank"
                     rel="noreferrer"
                     onClick={() => soundEngine.playKeyClick()}
-                    className="flex items-center justify-between p-3 rounded-lg bg-slate-900 border border-slate-800 hover:border-cyan-500 text-xs font-mono text-slate-200 hover:text-cyan-400 transition-colors"
+                    className="flex items-center justify-between p-3 rounded-lg bg-slate-900 border border-slate-800 hover:border-rose-500 text-xs font-mono text-slate-200 hover:text-rose-400 transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      <Linkedin className="w-4 h-4 text-cyan-400" />
+                      <Linkedin className="w-4 h-4 text-rose-400" />
                       <span>linkedin.com/in/hanan-cyber</span>
                     </div>
                     <ExternalLink className="w-3.5 h-3.5 text-slate-500" />

@@ -46,7 +46,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
     projects: {
       id: 'projects',
       title: 'Projects & Systems Architecture',
-      icon: <FolderGit2 className="w-4 h-4 text-cyan-400" />,
+      icon: <FolderGit2 className="w-4 h-4 text-rose-400" />,
       isOpen: true,
       isMinimized: false,
       isMaximized: false,
@@ -105,7 +105,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
   const [activeProject, setActiveProject] = useState<ProjectItem>(PROJECTS[0]);
   const [projectCategory, setProjectCategory] = useState<string>('All');
   const [isMuted, setIsMuted] = useState(false);
-  const [accentTheme, setAccentTheme] = useState<'cyan' | 'emerald' | 'amber' | 'violet'>('cyan');
+  const [accentTheme, setAccentTheme] = useState<'rose' | 'emerald' | 'amber' | 'violet'>('rose');
 
   // Interactive notes state
   const [userNotes, setUserNotes] = useState<string>(
@@ -219,7 +219,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md select-none animate-fade-in">
-      <div className="relative w-full max-w-7xl h-[94vh] bg-[#070b14] border border-cyan-500/40 rounded-2xl shadow-2xl shadow-cyan-950/80 flex flex-col overflow-hidden">
+      <div className="relative w-full max-w-7xl h-[94vh] bg-[#070b14] border border-rose-500/40 rounded-2xl shadow-2xl shadow-rose-950/80 flex flex-col overflow-hidden">
         {/* Desktop Screen Area */}
         <div
           className="relative flex-1 bg-gradient-to-br from-[#060913] via-[#091122] to-[#04060c] overflow-hidden p-4"
@@ -236,8 +236,8 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
 
           {/* Desktop Wallpaper Watermark */}
           <div className="absolute right-8 bottom-16 pointer-events-none text-right opacity-15 select-none">
-            <div className="text-6xl font-black font-display tracking-widest text-cyan-400">HANAN//OS</div>
-            <div className="text-sm font-mono text-cyan-200 uppercase tracking-widest mt-1">
+            <div className="text-6xl font-black font-display tracking-widest text-rose-400">HANAN//OS</div>
+            <div className="text-sm font-mono text-rose-200 uppercase tracking-widest mt-1">
               Cybersecurity Research Workstation v4.2
             </div>
           </div>
@@ -246,7 +246,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
           <div className="relative z-10 grid grid-flow-row auto-rows-max gap-4 w-28">
             <DesktopIcon
               label="Projects"
-              icon={<FolderGit2 className="w-8 h-8 text-cyan-400 drop-shadow" />}
+              icon={<FolderGit2 className="w-8 h-8 text-rose-400 drop-shadow" />}
               badge={`${PROJECTS.length}`}
               onClick={() => openWindow('projects')}
             />
@@ -314,7 +314,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
                         }}
                         className={`px-2.5 py-1 rounded text-xs font-mono font-semibold transition-colors ${
                           projectCategory === cat
-                            ? 'bg-cyan-950 text-cyan-300 border border-cyan-700'
+                            ? 'bg-rose-950 text-rose-300 border border-rose-700'
                             : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
                         }`}
                       >
@@ -334,12 +334,12 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
                         }}
                         className={`p-2.5 rounded-xl transition-all cursor-pointer border ${
                           activeProject.id === p.id
-                            ? 'bg-cyan-950/70 border-cyan-500/60 shadow-lg shadow-cyan-950/40 text-white'
+                            ? 'bg-rose-950/70 border-rose-500/60 shadow-lg shadow-rose-950/40 text-white'
                             : 'bg-slate-900/40 border-slate-800/60 hover:bg-slate-900 text-slate-300'
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold font-mono text-cyan-400">{p.id}</span>
+                          <span className="text-xs font-bold font-mono text-rose-400">{p.id}</span>
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
                             {p.year}
                           </span>
@@ -356,13 +356,13 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
                   <div className="flex items-start justify-between border-b border-slate-800 pb-4">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
+                        <span className="text-xs font-mono px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800">
                           {activeProject.category}
                         </span>
                         <span className="text-xs font-mono text-emerald-400">● {activeProject.status}</span>
                       </div>
                       <h3 className="text-xl font-bold font-display text-white mt-1.5">{activeProject.title}</h3>
-                      <p className="text-xs text-cyan-300 font-mono mt-0.5">{activeProject.subtitle}</p>
+                      <p className="text-xs text-rose-300 font-mono mt-0.5">{activeProject.subtitle}</p>
                     </div>
                   </div>
 
@@ -372,7 +372,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
                       System Architecture & Specifications:
                     </h4>
                     <p className="text-xs text-slate-300 leading-relaxed">{activeProject.description}</p>
-                    <p className="text-xs text-cyan-200/80 leading-relaxed font-mono mt-1">{activeProject.impact}</p>
+                    <p className="text-xs text-rose-200/80 leading-relaxed font-mono mt-1">{activeProject.impact}</p>
                   </div>
 
                   {/* Technical Highlights */}
@@ -383,7 +383,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {activeProject.architectureNotes.map((note, i) => (
                         <div key={i} className="p-3 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-slate-300 flex items-start gap-2">
-                          <CheckCircle className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                          <CheckCircle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
                           <span>{note}</span>
                         </div>
                       ))}
@@ -399,7 +399,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
                       {activeProject.technologies.map((tech) => (
                         <span
                           key={tech}
-                          className="px-2.5 py-1 rounded bg-slate-900 border border-cyan-900/50 text-cyan-300 font-mono text-xs"
+                          className="px-2.5 py-1 rounded bg-slate-900 border border-rose-900/50 text-rose-300 font-mono text-xs"
                         >
                           {tech}
                         </span>
@@ -427,7 +427,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-800 pb-5 gap-4">
                   <div>
                     <h2 className="text-2xl font-bold font-display text-white">HANAN</h2>
-                    <p className="text-cyan-400 font-mono text-xs mt-0.5">
+                    <p className="text-rose-400 font-mono text-xs mt-0.5">
                       Lead Cybersecurity & Systems Architecture Engineer
                     </p>
                     <p className="text-slate-400 text-xs mt-1">
@@ -439,7 +439,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
                       soundEngine.playChirp('success');
                       alert('Curriculum Vitae export generated (PDF download simulation).');
                     }}
-                    className="px-3.5 py-2 rounded-xl bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-700 flex items-center gap-2 font-mono font-bold transition-all shadow-lg shadow-cyan-950/50"
+                    className="px-3.5 py-2 rounded-xl bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-700 flex items-center gap-2 font-mono font-bold transition-all shadow-lg shadow-rose-950/50"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>Download CV (PDF)</span>
@@ -449,7 +449,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
                 {/* Core Domains */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
-                    <h3 className="font-bold text-white font-mono text-xs flex items-center gap-2 text-cyan-300">
+                    <h3 className="font-bold text-white font-mono text-xs flex items-center gap-2 text-rose-300">
                       <Code2 className="w-4 h-4" />
                       SYSTEMS & PROGRAMMING
                     </h3>
@@ -478,7 +478,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
                       <div key={cert.verificationId} className="p-3 rounded-xl bg-slate-900/50 border border-slate-800">
                         <div className="font-bold text-white text-xs">{cert.name}</div>
                         <div className="text-slate-400 text-[11px] mt-0.5">{cert.issuer} · {cert.year}</div>
-                        <div className="text-[10px] text-cyan-400 font-mono mt-1">ID: {cert.verificationId} ({cert.badgeCode})</div>
+                        <div className="text-[10px] text-rose-400 font-mono mt-1">ID: {cert.verificationId} ({cert.badgeCode})</div>
                       </div>
                     ))}
                   </div>
@@ -551,12 +551,12 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-[11px]">
-                        <span className="text-cyan-400 font-mono">[{ch.category}]</span>
+                        <span className="text-rose-400 font-mono">[{ch.category}]</span>
                         <span className="text-slate-500">·</span>
                         <span className="text-amber-400 font-mono">{ch.difficulty}</span>
                       </div>
                       <p className="text-slate-400 leading-relaxed text-[11px]">{ch.overview}</p>
-                      <div className="p-2 rounded bg-black/50 font-mono text-[11px] text-cyan-300 border border-slate-800/80">
+                      <div className="p-2 rounded bg-black/50 font-mono text-[11px] text-rose-300 border border-slate-800/80">
                         Vulnerability: {ch.vulnerability}
                       </div>
                     </div>
@@ -582,7 +582,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800">
                     <div className="text-slate-400 text-[10px] font-mono uppercase">CPU Usage</div>
-                    <div className="text-lg font-bold font-mono text-cyan-300 mt-1">4.2% AVG</div>
+                    <div className="text-lg font-bold font-mono text-rose-300 mt-1">4.2% AVG</div>
                   </div>
                   <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800">
                     <div className="text-slate-400 text-[10px] font-mono uppercase">RAM Allocation</div>
@@ -622,7 +622,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
                         </div>
 
                         <div className="flex items-center gap-4">
-                          <span className="text-[11px] font-mono text-cyan-300 hidden sm:inline-block">
+                          <span className="text-[11px] font-mono text-rose-300 hidden sm:inline-block">
                             Load: {srv.load} · Uptime: {srv.uptime}
                           </span>
                           <button
@@ -660,7 +660,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
                 <textarea
                   value={userNotes}
                   onChange={(e) => setUserNotes(e.target.value)}
-                  className="flex-1 w-full bg-black/40 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-500 leading-relaxed resize-none"
+                  className="flex-1 w-full bg-black/40 border border-slate-800 rounded-xl p-3.5 text-xs font-mono text-slate-200 focus:outline-none focus:border-rose-500 leading-relaxed resize-none"
                   placeholder="Write your thoughts, exploit vectors, or notes here..."
                 />
               </div>
@@ -683,7 +683,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
                   <h3 className="text-sm font-bold text-white font-mono mb-2">Desktop Color Theme</h3>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {[
-                      { id: 'cyan', label: 'Cyan Cyber', color: 'bg-cyan-500' },
+                      { id: 'rose', label: 'Cyan Cyber', color: 'bg-rose-500' },
                       { id: 'emerald', label: 'DedSec Emerald', color: 'bg-emerald-500' },
                       { id: 'amber', label: 'Cyberpunk Amber', color: 'bg-amber-500' },
                       { id: 'violet', label: 'Neon Violet', color: 'bg-purple-500' },
@@ -735,17 +735,17 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
         {/* Start Menu Popup */}
         {isStartOpen && (
           <div
-            className="absolute bottom-12 left-2 w-80 bg-[#060a16]/95 border border-cyan-500/40 rounded-2xl shadow-2xl shadow-cyan-950/90 p-4 z-50 backdrop-blur-xl animate-fade-in text-xs space-y-3"
+            className="absolute bottom-12 left-2 w-80 bg-[#060a16]/95 border border-rose-500/40 rounded-2xl shadow-2xl shadow-rose-950/90 p-4 z-50 backdrop-blur-xl animate-fade-in text-xs space-y-3"
             onClick={(e) => e.stopPropagation()}
           >
             {/* User Profile Info */}
             <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-emerald-500 flex items-center justify-center font-bold text-white text-base">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 to-emerald-500 flex items-center justify-center font-bold text-white text-base">
                 H
               </div>
               <div>
                 <div className="font-bold text-white font-display">HANAN // OPERATOR</div>
-                <div className="text-[11px] text-cyan-400 font-mono">xcthine-node-01 · Superuser</div>
+                <div className="text-[11px] text-rose-400 font-mono">xcthine-node-01 · Superuser</div>
               </div>
             </div>
 
@@ -753,7 +753,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
             <div className="space-y-1">
               <StartMenuItem
                 label="Projects & Repositories"
-                icon={<FolderGit2 className="w-4 h-4 text-cyan-400" />}
+                icon={<FolderGit2 className="w-4 h-4 text-rose-400" />}
                 onClick={() => openWindow('projects')}
               />
               <StartMenuItem
@@ -814,8 +814,8 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
               }}
               className={`px-3 py-1.5 rounded-lg flex items-center gap-2 font-bold font-display transition-all ${
                 isStartOpen
-                  ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/30'
-                  : 'bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-800/50'
+                  ? 'bg-rose-500 text-black shadow-lg shadow-rose-500/30'
+                  : 'bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800/50'
               }`}
             >
               <Monitor className="w-4 h-4" />
@@ -837,7 +837,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
                   }}
                   className={`px-3 py-1.5 rounded-lg flex items-center gap-2 border transition-all text-xs shrink-0 ${
                     !w.isMinimized
-                      ? 'bg-slate-800 border-cyan-500/50 text-white font-bold'
+                      ? 'bg-slate-800 border-rose-500/50 text-white font-bold'
                       : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white'
                   }`}
                 >
@@ -858,7 +858,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
               className="p-1 hover:text-white transition-colors"
               title={isMuted ? 'Unmute' : 'Mute'}
             >
-              {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-cyan-400" />}
+              {isMuted ? <VolumeX className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4 text-rose-400" />}
             </button>
 
             {/* Return to 3D Room Button */}
@@ -870,7 +870,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
             </button>
 
             {/* Clock */}
-            <div className="text-right pl-2 border-l border-slate-800 text-[11px] text-cyan-300 font-bold">
+            <div className="text-right pl-2 border-l border-slate-800 text-[11px] text-rose-300 font-bold">
               {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </div>
           </div>
@@ -897,12 +897,12 @@ const DesktopIcon: React.FC<DesktopIconProps> = ({ label, icon, badge, onClick }
         e.stopPropagation();
         onClick();
       }}
-      className="group relative flex flex-col items-center justify-center p-2 rounded-xl hover:bg-white/10 transition-all text-center focus:outline-none focus:ring-1 focus:ring-cyan-400/50"
+      className="group relative flex flex-col items-center justify-center p-2 rounded-xl hover:bg-white/10 transition-all text-center focus:outline-none focus:ring-1 focus:ring-rose-400/50"
     >
       <div className="relative transition-transform group-hover:scale-110">
         {icon}
         {badge && (
-          <span className="absolute -top-1 -right-2 text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-cyan-500 text-black font-bold shadow">
+          <span className="absolute -top-1 -right-2 text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-rose-500 text-black font-bold shadow">
             {badge}
           </span>
         )}
@@ -944,7 +944,7 @@ const DesktopWindowFrame: React.FC<DesktopWindowFrameProps> = ({
         win.isMaximized
           ? 'inset-0 m-0 rounded-none'
           : 'top-6 left-6 right-6 bottom-6 sm:top-8 sm:left-28 sm:right-8 sm:bottom-8 rounded-2xl'
-      } bg-[#080d19] border border-cyan-500/40 shadow-2xl shadow-black/80 flex flex-col overflow-hidden animate-fade-in`}
+      } bg-[#080d19] border border-rose-500/40 shadow-2xl shadow-black/80 flex flex-col overflow-hidden animate-fade-in`}
     >
       {/* Window Titlebar */}
       <div className="h-9 px-4 bg-[#050810] border-b border-slate-800 flex items-center justify-between select-none shrink-0">

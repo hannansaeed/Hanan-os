@@ -125,7 +125,7 @@ export class RoomScene {
   private terminalCmdHistory: string[] = [];
   private terminalCmdIndex: number = -1;
   private terminalWaitingForPassword: boolean = false;
-  private terminalTheme: 'emerald' | 'cyan' | 'amber' | 'violet' = 'emerald';
+  private terminalTheme: 'emerald' | 'rose' | 'amber' | 'violet' = 'emerald';
   private terminalMatrixActive: boolean = false;
   private terminalMatrixDrops: number[] = [];
   private terminalMatrixCols: number = 32;
@@ -139,11 +139,12 @@ export class RoomScene {
   private desktopRestartingService: string | null = null;
   private desktopNotesText: string = `# Research Vectors // DedSec Workstation\n\n- [x] eBPF ringbuf syscall auditing engine.\n- [x] Post-quantum KEM (Kyber-768) benchmark.\n- [/] Android AOSP Binder IPC fuzzer.\n- [ ] Zero-Knowledge Proof verify node.`;
   private desktopMousePos: { x: number; y: number } | null = null;
-  private desktopAccentTheme: 'cyan' | 'emerald' | 'amber' | 'violet' = 'cyan';
+  private desktopAccentTheme: 'rose' | 'emerald' | 'amber' | 'violet' = 'rose';
 
   // Callbacks
   public onStationSelect?: (stationId: StationId) => void;
   public onHoverChange?: (hit: RaycastHitInfo | null) => void;
+  public isPointerLockBlocked: boolean = false;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -590,7 +591,7 @@ export class RoomScene {
       // Title Text
       hc.font = 'bold 20px "Plus Jakarta Sans", sans-serif';
       hc.fillStyle = '#38bdf8';
-      hc.fillText(`NULL_OS // ${this.desktopActiveWindow.toUpperCase()}`, wx + 28, wy + 36);
+      hc.fillText(`HANAN // ${this.desktopActiveWindow.toUpperCase()}`, wx + 28, wy + 36);
 
       // Normal Windows/Ubuntu Close Button [ X ]
       const btnX = wx + ww - 52;
@@ -793,7 +794,7 @@ export class RoomScene {
   private renderTerminalOnLaptop(elapsed: number) {
     const vc = this.vertCtx;
     const themeColor =
-      this.terminalTheme === 'cyan'
+      this.terminalTheme === 'rose'
         ? '#38bdf8'
         : this.terminalTheme === 'amber'
         ? '#f59e0b'
@@ -1110,7 +1111,7 @@ export class RoomScene {
 
       case 'neofetch':
         this.pushTerminalLines(
-          { text: 'OS: NULL//OS Hardened Linux x86_64', color: '#38bdf8', bold: true },
+          { text: 'OS: HANAN Hardened Linux x86_64', color: '#38bdf8', bold: true },
           { text: 'Host: Xcthine Workstation Node 01', color: '#cbd5e1' },
           { text: `TechStack: ${SKILLS_SUMMARY.languages.join(' · ')} · ${SKILLS_SUMMARY.systems.join(' · ')}`, color: '#cbd5e1' },
           { text: 'Kernel: 6.8.9-dedsec-ebpf-probes', color: '#cbd5e1' },
@@ -1209,7 +1210,7 @@ export class RoomScene {
       if (this.desktopActiveWindow === 'settings') {
         const cx = wx + 24;
         const cy = wy + 80;
-        const themes: Array<'cyan' | 'emerald' | 'amber' | 'violet'> = ['cyan', 'emerald', 'amber', 'violet'];
+        const themes: Array<'rose' | 'emerald' | 'amber' | 'violet'> = ['rose', 'emerald', 'amber', 'violet'];
         themes.forEach((th, ti) => {
           const bx = cx + 36 + ti * 260;
           if (x >= bx && x <= bx + 240 && y >= cy + 100 && y <= cy + 180) {
@@ -1301,7 +1302,7 @@ export class RoomScene {
     deskLamp.position.set(0.8, 3.6, -4.0);
     this.scene.add(deskLamp);
 
-    // Cold monitor glows (cyan & emerald)
+    // Cold monitor glows (rose & emerald)
     const blueMonitorGlow = new THREE.PointLight(0x38bdf8, 2.5, 3.5);
     blueMonitorGlow.position.set(0.31, 3.4, -4.2);
     this.scene.add(blueMonitorGlow);
@@ -2120,7 +2121,7 @@ export class RoomScene {
         }
         ctx.stroke();
 
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)'; // cyan wave
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)'; // rose wave
         ctx.lineWidth = 2.5;
         ctx.beginPath();
         for (let x = 70; x < 440; x++) {
@@ -2202,6 +2203,10 @@ export class RoomScene {
 
       const canvasTexture = new THREE.CanvasTexture(canvas);
       canvasTexture.colorSpace = THREE.SRGBColorSpace;
+      const maxAnisotropy = this.renderer.capabilities.getMaxAnisotropy();
+      canvasTexture.anisotropy = maxAnisotropy;
+      canvasTexture.minFilter = THREE.LinearMipmapLinearFilter;
+      canvasTexture.magFilter = THREE.LinearFilter;
       canvasTexture.needsUpdate = true;
 
       const matteMat = new THREE.MeshBasicMaterial({ map: canvasTexture });
@@ -2213,6 +2218,9 @@ export class RoomScene {
           item.imageUrl,
           (tex) => {
             tex.colorSpace = THREE.SRGBColorSpace;
+            tex.anisotropy = maxAnisotropy;
+            tex.minFilter = THREE.LinearMipmapLinearFilter;
+            tex.magFilter = THREE.LinearFilter;
             matteMat.map = tex;
             matteMat.needsUpdate = true;
           },
@@ -2224,6 +2232,9 @@ export class RoomScene {
               pngUrl,
               (texPng) => {
                 texPng.colorSpace = THREE.SRGBColorSpace;
+                texPng.anisotropy = maxAnisotropy;
+                texPng.minFilter = THREE.LinearMipmapLinearFilter;
+                texPng.magFilter = THREE.LinearFilter;
                 matteMat.map = texPng;
                 matteMat.needsUpdate = true;
               },
@@ -2697,6 +2708,7 @@ export class RoomScene {
   }
 
   public requestPointerLock = () => {
+    if (this.isPointerLockBlocked) return;
     if (this.isWalkMode && document.pointerLockElement !== this.renderer.domElement) {
       try {
         const res = this.renderer.domElement.requestPointerLock() as unknown;

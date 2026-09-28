@@ -13,7 +13,7 @@
     color: #e2e8f0;
     overflow: hidden;
     user-select: none;
-    cursor: none !important;
+    cursor: default;
     -webkit-font-smoothing: antialiased;
   }
 

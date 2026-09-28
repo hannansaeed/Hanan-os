@@ -23,7 +23,7 @@ interface CommandOutput {
   timestamp: string;
 }
 
-type TerminalTheme = 'cyan' | 'emerald' | 'amber' | 'violet';
+type TerminalTheme = 'rose' | 'emerald' | 'amber' | 'violet';
 
 const THEME_STYLES: Record<
   TerminalTheme,
@@ -37,14 +37,14 @@ const THEME_STYLES: Record<
     badge: string;
   }
 > = {
-  cyan: {
-    border: 'border-cyan-500/40',
-    text: 'text-cyan-300',
-    prompt: 'text-cyan-400',
-    accent: 'text-cyan-200',
+  rose: {
+    border: 'border-rose-500/40',
+    text: 'text-rose-300',
+    prompt: 'text-rose-400',
+    accent: 'text-rose-200',
     bg: 'bg-[#040810]/95',
-    glow: 'shadow-cyan-950/80',
-    badge: 'bg-cyan-950/50 text-cyan-300 border-cyan-800/50 hover:bg-cyan-900/60',
+    glow: 'shadow-rose-950/80',
+    badge: 'bg-rose-950/50 text-rose-300 border-rose-800/50 hover:bg-rose-900/60',
   },
   emerald: {
     border: 'border-emerald-500/40',
@@ -117,7 +117,7 @@ const VIRTUAL_FS: Record<string, { type: 'file' | 'dir'; content?: string }> = {
 export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalModalProps> = ({
   onClose,
 }) => {
-  const [theme, setTheme] = useState<TerminalTheme>('cyan');
+  const [theme, setTheme] = useState<TerminalTheme>('rose');
   const [currentPath, setCurrentPath] = useState<string>('~');
   const [inputVal, setInputVal] = useState<string>('');
   const [history, setHistory] = useState<CommandOutput[]>([
@@ -128,15 +128,15 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
       timestamp: '00:00:01',
       output: (
         <div className="space-y-1.5 text-xs text-slate-300">
-          <div className="text-cyan-400 font-bold font-mono">
+          <div className="text-rose-400 font-bold font-mono">
             HANAN//OS Workstation Shell [Version 4.2.0-x86_64-hardened-linux]
           </div>
           <div className="text-slate-400">
             Host: <span className="text-white font-semibold">xcthine-node-alpha</span> · Kernel:{' '}
-            <span className="text-cyan-300 font-mono">6.8.9-dedsec-ebpf</span> · Uptime: 42 days
+            <span className="text-rose-300 font-mono">6.8.9-dedsec-ebpf</span> · Uptime: 42 days
           </div>
           <div className="text-xs text-slate-400 pt-1">
-            Type <span className="text-cyan-300 font-bold font-mono underline cursor-pointer">'help'</span> to view available commands, or click any quick command chip below.
+            Type <span className="text-rose-300 font-bold font-mono underline cursor-pointer">'help'</span> to view available commands, or click any quick command chip below.
           </div>
         </div>
       ),
@@ -148,20 +148,20 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
       timestamp: '00:00:02',
       output: (
         <div className="space-y-3 text-xs">
-          <div className="text-cyan-400 font-bold border-b border-slate-800 pb-1 flex items-center gap-2">
+          <div className="text-rose-400 font-bold border-b border-slate-800 pb-1 flex items-center gap-2">
             <span>HANAN//OS SHELL COMMAND DIRECTORY</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
             <div>
-              <div className="text-white font-semibold mb-1 text-[11px] uppercase tracking-wider text-cyan-300">
+              <div className="text-white font-semibold mb-1 text-[11px] uppercase tracking-wider text-rose-300">
                 Portfolio & Biography:
               </div>
               <div className="space-y-1 text-slate-300">
-                <div><span className="text-cyan-300 font-mono font-bold">whoami</span> — Identity & summary</div>
-                <div><span className="text-cyan-300 font-mono font-bold">about</span> — Bio & DedSec research</div>
-                <div><span className="text-cyan-300 font-mono font-bold">cv</span> — Full curriculum vitae</div>
-                <div><span className="text-cyan-300 font-mono font-bold">skills</span> — Proficiency matrix</div>
-                <div><span className="text-cyan-300 font-mono font-bold">certs</span> — Security certifications</div>
+                <div><span className="text-rose-300 font-mono font-bold">whoami</span> — Identity & summary</div>
+                <div><span className="text-rose-300 font-mono font-bold">about</span> — Bio & DedSec research</div>
+                <div><span className="text-rose-300 font-mono font-bold">cv</span> — Full curriculum vitae</div>
+                <div><span className="text-rose-300 font-mono font-bold">skills</span> — Proficiency matrix</div>
+                <div><span className="text-rose-300 font-mono font-bold">certs</span> — Security certifications</div>
               </div>
             </div>
             <div>
@@ -194,7 +194,7 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
                 Environment Controls:
               </div>
               <div className="space-y-1 text-slate-300">
-                <div><span className="text-purple-300 font-mono font-bold">theme &lt;name&gt;</span> — cyan|emerald|amber|violet</div>
+                <div><span className="text-purple-300 font-mono font-bold">theme &lt;name&gt;</span> — rose|emerald|amber|violet</div>
                 <div><span className="text-purple-300 font-mono font-bold">sound</span> — Toggle audio clicks</div>
                 <div><span className="text-purple-300 font-mono font-bold">clear</span> (or Ctrl+L) — Clear buffer</div>
                 <div><span className="text-purple-300 font-mono font-bold">exit</span> (or Esc) — Return to 3D room</div>
@@ -294,23 +294,23 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
         case '?':
           output = (
             <div className="space-y-3 text-xs">
-              <div className="text-cyan-400 font-bold border-b border-slate-800 pb-1 flex items-center gap-2">
+              <div className="text-rose-400 font-bold border-b border-slate-800 pb-1 flex items-center gap-2">
                 <TerminalIcon className="w-3.5 h-3.5" />
                 <span>HANAN//OS SHELL COMMAND DIRECTORY</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
                 <div>
-                  <div className="text-white font-semibold mb-1 text-[11px] uppercase tracking-wider text-cyan-300">
+                  <div className="text-white font-semibold mb-1 text-[11px] uppercase tracking-wider text-rose-300">
                     Portfolio & Biography:
                   </div>
                   <div className="space-y-1 text-slate-300">
-                    <div><span className="text-cyan-300 font-mono font-bold">whoami</span> — Identity & summary</div>
-                    <div><span className="text-cyan-300 font-mono font-bold">about</span> — Bio & DedSec research</div>
-                    <div><span className="text-cyan-300 font-mono font-bold">cv</span> — Full curriculum vitae</div>
-                    <div><span className="text-cyan-300 font-mono font-bold">skills</span> — Proficiency matrix</div>
-                    <div><span className="text-cyan-300 font-mono font-bold">projects</span> — List production systems</div>
-                    <div><span className="text-cyan-300 font-mono font-bold">project &lt;id&gt;</span> — Inspect specific project</div>
-                    <div><span className="text-cyan-300 font-mono font-bold">certs</span> — Security certifications</div>
+                    <div><span className="text-rose-300 font-mono font-bold">whoami</span> — Identity & summary</div>
+                    <div><span className="text-rose-300 font-mono font-bold">about</span> — Bio & DedSec research</div>
+                    <div><span className="text-rose-300 font-mono font-bold">cv</span> — Full curriculum vitae</div>
+                    <div><span className="text-rose-300 font-mono font-bold">skills</span> — Proficiency matrix</div>
+                    <div><span className="text-rose-300 font-mono font-bold">projects</span> — List production systems</div>
+                    <div><span className="text-rose-300 font-mono font-bold">project &lt;id&gt;</span> — Inspect specific project</div>
+                    <div><span className="text-rose-300 font-mono font-bold">certs</span> — Security certifications</div>
                   </div>
                 </div>
                 <div>
@@ -346,7 +346,7 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
                     Environment Controls:
                   </div>
                   <div className="space-y-1 text-slate-300">
-                    <div><span className="text-purple-300 font-mono font-bold">theme &lt;name&gt;</span> — cyan|emerald|amber|violet</div>
+                    <div><span className="text-purple-300 font-mono font-bold">theme &lt;name&gt;</span> — rose|emerald|amber|violet</div>
                     <div><span className="text-purple-300 font-mono font-bold">sound</span> — Toggle audio clicks</div>
                     <div><span className="text-purple-300 font-mono font-bold">clear</span> (or Ctrl+L) — Clear buffer</div>
                     <div><span className="text-purple-300 font-mono font-bold">exit</span> (or Esc) — Return to 3D room</div>
@@ -366,10 +366,10 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
         case 'whoami':
           output = (
             <div className="text-xs space-y-1 text-slate-300">
-              <div className="text-cyan-400 font-bold">UID: 1000(hanan) GID: 1000(dedsec) GROUPS: 1000(dedsec),4(adm),27(sudo),998(wheel)</div>
+              <div className="text-rose-400 font-bold">UID: 1000(hanan) GID: 1000(dedsec) GROUPS: 1000(dedsec),4(adm),27(sudo),998(wheel)</div>
               <div>Primary Role: <span className="text-white font-semibold">Senior Cybersecurity Research & Systems Engineer</span></div>
               <div>Specialization: <span className="text-emerald-300">eBPF Telemetry Probes · Binary Exploitation · Post-Quantum Crypto</span></div>
-              <div>Station: <span className="text-cyan-300">xcthine-workstation-laptop</span></div>
+              <div>Station: <span className="text-rose-300">xcthine-workstation-laptop</span></div>
             </div>
           );
           break;
@@ -382,7 +382,7 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
                 I build and break low-level systems, kernel observability agents, and high-assurance cryptographic protocols. My background bridges deep offensive security (glibc heap internals, binary exploitation, Android AOSP Binder IPC hijacking) with high-performance systems engineering (Rust, eBPF/XDP, WebGL 3D architectures, and post-quantum cryptographic primitives).
               </p>
               <div className="flex flex-wrap gap-2 pt-1">
-                <span className="px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-800/40 text-cyan-300 text-[11px]">Rust</span>
+                <span className="px-2 py-0.5 rounded bg-rose-950/60 border border-rose-800/40 text-rose-300 text-[11px]">Rust</span>
                 <span className="px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-800/40 text-emerald-300 text-[11px]">eBPF / XDP</span>
                 <span className="px-2 py-0.5 rounded bg-indigo-950/60 border border-indigo-800/40 text-indigo-300 text-[11px]">C / C++ / ASM</span>
                 <span className="px-2 py-0.5 rounded bg-amber-950/60 border border-amber-800/40 text-amber-300 text-[11px]">Kyber-768</span>
@@ -396,14 +396,14 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
         case 'resume':
           output = (
             <div className="space-y-3 text-xs text-slate-300">
-              <div className="text-cyan-400 font-bold border-b border-slate-800 pb-1 text-sm">
+              <div className="text-rose-400 font-bold border-b border-slate-800 pb-1 text-sm">
                 CURRICULUM VITAE — HANAN
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <div className="text-white font-semibold">EDUCATION & HONORS</div>
                   <div className="text-slate-400">
-                    <div className="text-cyan-300 font-medium">B.S. in Computer Science</div>
+                    <div className="text-rose-300 font-medium">B.S. in Computer Science</div>
                     <div>Summa Cum Laude · Cyber Defense Club President</div>
                     <div className="text-xs text-slate-500">GPA: 3.96 / 4.0 · Dean's List 8 Consecutive Terms</div>
                   </div>
@@ -423,10 +423,10 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
         case 'skills':
           output = (
             <div className="space-y-3 text-xs">
-              <div className="text-cyan-400 font-bold border-b border-slate-800 pb-1">TECHNICAL PROFICIENCY DOMAINS:</div>
+              <div className="text-rose-400 font-bold border-b border-slate-800 pb-1">TECHNICAL PROFICIENCY DOMAINS:</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="p-3 rounded bg-slate-900/60 border border-slate-800 space-y-1">
-                  <div className="text-cyan-300 font-bold text-[11px]">OFFENSIVE SECURITY</div>
+                  <div className="text-rose-300 font-bold text-[11px]">OFFENSIVE SECURITY</div>
                   <div className="text-slate-300 leading-relaxed">{SKILLS_SUMMARY.offensive.join(' · ')}</div>
                 </div>
                 <div className="p-3 rounded bg-slate-900/60 border border-slate-800 space-y-1">
@@ -450,14 +450,14 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
         case 'certifications':
           output = (
             <div className="space-y-2 text-xs">
-              <div className="text-cyan-400 font-bold border-b border-slate-800 pb-1">VERIFIED SECURITY CREDENTIALS:</div>
+              <div className="text-rose-400 font-bold border-b border-slate-800 pb-1">VERIFIED SECURITY CREDENTIALS:</div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {CERTIFICATIONS.map((cert) => (
                   <div key={cert.verificationId} className="p-2.5 rounded bg-slate-900/60 border border-slate-800 flex items-start gap-2.5">
                     <Shield className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
                     <div>
                       <div className="font-bold text-white text-[11px]">{cert.name}</div>
-                      <div className="text-slate-400 text-[10px]">{cert.issuer} · <span className="text-cyan-300 font-mono">{cert.badgeCode}</span></div>
+                      <div className="text-slate-400 text-[10px]">{cert.issuer} · <span className="text-rose-300 font-mono">{cert.badgeCode}</span></div>
                       <div className="text-[10px] text-emerald-400 font-mono mt-0.5">Status: Verified ({cert.year})</div>
                     </div>
                   </div>
@@ -499,9 +499,9 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
           setIsScanning(true);
           output = (
             <div className="space-y-2 text-xs font-mono">
-              <div className="text-cyan-400">Starting Nmap 7.94 ( https://nmap.org ) at {now} UTC</div>
+              <div className="text-rose-400">Starting Nmap 7.94 ( https://nmap.org ) at {now} UTC</div>
               <div className="text-slate-400">Initiating SYN Stealth Scan against {target} [1000 ports]...</div>
-              <div className="text-slate-300 pl-2 border-l border-cyan-500/40 space-y-1 py-1">
+              <div className="text-slate-300 pl-2 border-l border-rose-500/40 space-y-1 py-1">
                 <div>Discovered open port <span className="text-emerald-400 font-bold">22/tcp</span> on {target} (OpenSSH 9.6p1)</div>
                 <div>Discovered open port <span className="text-emerald-400 font-bold">80/tcp</span> on {target} (nginx/1.24.0)</div>
                 <div>Discovered open port <span className="text-emerald-400 font-bold">443/tcp</span> on {target} (TLS 1.3 / Kyber-768 Hybrid)</div>
@@ -519,7 +519,7 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
         case 'neofetch':
           output = (
             <div className="font-mono text-xs text-slate-300 flex flex-col sm:flex-row gap-4 py-2">
-              <pre className="text-cyan-400 font-bold text-[10px] leading-tight select-none">
+              <pre className="text-rose-400 font-bold text-[10px] leading-tight select-none">
 {`       /\\
       /  \\
      / /\\ \\
@@ -531,18 +531,18 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
 \\____\\/  \\_____/`}
               </pre>
               <div className="space-y-1 text-[11px]">
-                <div className="text-cyan-300 font-bold">hanan@xcthine-workstation</div>
+                <div className="text-rose-300 font-bold">hanan@xcthine-workstation</div>
                 <div className="text-slate-500">--------------------------</div>
-                <div><span className="text-cyan-400 font-semibold">OS:</span> HANAN//OS Hardened Linux x86_64</div>
-                <div><span className="text-cyan-400 font-semibold">Host:</span> DedSec Workstation Node 01</div>
-                <div><span className="text-cyan-400 font-semibold">Kernel:</span> 6.8.9-dedsec-ebpf-probes</div>
-                <div><span className="text-cyan-400 font-semibold">Uptime:</span> 42 days, 7 hours, 14 mins</div>
-                <div><span className="text-cyan-400 font-semibold">Shell:</span> dedsec-zsh 5.9 (x86_64)</div>
-                <div><span className="text-cyan-400 font-semibold">Resolution:</span> 2560x1440 (Horizontal) + 1920x1080 (Laptop)</div>
-                <div><span className="text-cyan-400 font-semibold">DE / WM:</span> HANAN Desktop v4.2</div>
-                <div><span className="text-cyan-400 font-semibold">CPU:</span> AMD Ryzen 9 7950X (32) @ 5.700GHz</div>
-                <div><span className="text-cyan-400 font-semibold">GPU:</span> NVIDIA RTX 4090 24GB [Vulkan / WebGL 2.0]</div>
-                <div><span className="text-cyan-400 font-semibold">Memory:</span> 12410MiB / 64230MiB (19%)</div>
+                <div><span className="text-rose-400 font-semibold">OS:</span> HANAN//OS Hardened Linux x86_64</div>
+                <div><span className="text-rose-400 font-semibold">Host:</span> DedSec Workstation Node 01</div>
+                <div><span className="text-rose-400 font-semibold">Kernel:</span> 6.8.9-dedsec-ebpf-probes</div>
+                <div><span className="text-rose-400 font-semibold">Uptime:</span> 42 days, 7 hours, 14 mins</div>
+                <div><span className="text-rose-400 font-semibold">Shell:</span> dedsec-zsh 5.9 (x86_64)</div>
+                <div><span className="text-rose-400 font-semibold">Resolution:</span> 2560x1440 (Horizontal) + 1920x1080 (Laptop)</div>
+                <div><span className="text-rose-400 font-semibold">DE / WM:</span> HANAN Desktop v4.2</div>
+                <div><span className="text-rose-400 font-semibold">CPU:</span> AMD Ryzen 9 7950X (32) @ 5.700GHz</div>
+                <div><span className="text-rose-400 font-semibold">GPU:</span> NVIDIA RTX 4090 24GB [Vulkan / WebGL 2.0]</div>
+                <div><span className="text-rose-400 font-semibold">Memory:</span> 12410MiB / 64230MiB (19%)</div>
               </div>
             </div>
           );
@@ -551,11 +551,11 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
         case 'ls':
           output = (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
-              <span className="text-cyan-400 font-bold">📁 Cyfex/</span>
-              <span className="text-cyan-400 font-bold">📁 Hanan-os/</span>
-              <span className="text-cyan-400 font-bold">📁 Portfolio/</span>
-              <span className="text-cyan-400 font-bold">📁 Sheffer/</span>
-              <span className="text-cyan-400 font-bold">📁 Zeel/</span>
+              <span className="text-rose-400 font-bold">📁 Cyfex/</span>
+              <span className="text-rose-400 font-bold">📁 Hanan-os/</span>
+              <span className="text-rose-400 font-bold">📁 Portfolio/</span>
+              <span className="text-rose-400 font-bold">📁 Sheffer/</span>
+              <span className="text-rose-400 font-bold">📁 Zeel/</span>
               <span className="text-slate-300">📄 about.md</span>
               <span className="text-slate-300">📄 cv.txt</span>
               <span className="text-slate-300">📄 skills.json</span>
@@ -565,7 +565,7 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
           break;
 
         case 'pwd':
-          output = <div className="text-xs font-mono text-cyan-300">/home/hanan/{currentPath === '~' ? '' : currentPath.replace('~/', '')}</div>;
+          output = <div className="text-xs font-mono text-rose-300">/home/hanan/{currentPath === '~' ? '' : currentPath.replace('~/', '')}</div>;
           break;
 
         case 'cd':
@@ -605,7 +605,7 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
 
         case 'tree':
           output = (
-            <pre className="text-xs font-mono text-cyan-300 leading-relaxed select-none">
+            <pre className="text-xs font-mono text-rose-300 leading-relaxed select-none">
 {`.
 ├── about.md
 ├── cv.txt
@@ -639,7 +639,7 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
           const pingHost = args[0] || '1.1.1.1';
           output = (
             <div className="text-xs font-mono space-y-1 text-slate-300">
-              <div className="text-cyan-400">PING {pingHost} ({pingHost}) 56(84) bytes of data.</div>
+              <div className="text-rose-400">PING {pingHost} ({pingHost}) 56(84) bytes of data.</div>
               <div>64 bytes from {pingHost}: icmp_seq=1 ttl=58 time=12.4 ms</div>
               <div>64 bytes from {pingHost}: icmp_seq=2 ttl=58 time=11.8 ms</div>
               <div>64 bytes from {pingHost}: icmp_seq=3 ttl=58 time=12.1 ms</div>
@@ -649,11 +649,11 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
           break;
 
         case 'date':
-          output = <div className="text-xs font-mono text-cyan-300">{new Date().toUTCString()}</div>;
+          output = <div className="text-xs font-mono text-rose-300">{new Date().toUTCString()}</div>;
           break;
 
         case 'uptime':
-          output = <div className="text-xs font-mono text-cyan-300">up 42 days, 7:14, 2 users, load average: 0.12, 0.08, 0.04</div>;
+          output = <div className="text-xs font-mono text-rose-300">up 42 days, 7:14, 2 users, load average: 0.12, 0.08, 0.04</div>;
           break;
 
         case 'theme':
@@ -662,7 +662,7 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
             setTheme(nextTheme);
             output = <div className="text-xs text-emerald-400 font-mono">Theme switched to '{nextTheme}'.</div>;
           } else {
-            output = <div className="text-xs text-amber-400">Usage: theme &lt;cyan|emerald|amber|violet&gt;</div>;
+            output = <div className="text-xs text-amber-400">Usage: theme &lt;rose|emerald|amber|violet&gt;</div>;
           }
           break;
 
@@ -672,7 +672,7 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
             soundEngine.toggleMute();
             return next;
           });
-          output = <div className="text-xs text-cyan-300 font-mono">Audio clicks {isMuted ? 'ENABLED' : 'MUTED'}.</div>;
+          output = <div className="text-xs text-rose-300 font-mono">Audio clicks {isMuted ? 'ENABLED' : 'MUTED'}.</div>;
           break;
 
         case 'exit':
@@ -683,7 +683,7 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
         default:
           output = (
             <div className="text-xs text-rose-400">
-              zsh: command not found: {cmd}. Type <span className="text-cyan-300 underline font-mono cursor-pointer" onClick={() => executeCommand('help')}>'help'</span> for available commands.
+              zsh: command not found: {cmd}. Type <span className="text-rose-300 underline font-mono cursor-pointer" onClick={() => executeCommand('help')}>'help'</span> for available commands.
             </div>
           );
       }

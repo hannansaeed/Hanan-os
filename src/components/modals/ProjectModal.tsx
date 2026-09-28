@@ -101,11 +101,11 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center p-3 sm:p-6 pointer-events-none select-none animate-fade-in">
-      <div className="pointer-events-auto relative w-full max-w-5xl bg-[#090e1a]/95 border border-cyan-500/40 rounded-2xl shadow-2xl shadow-cyan-950/80 flex flex-col max-h-[90vh] overflow-hidden">
+      <div className="pointer-events-auto relative w-full max-w-5xl bg-[#090e1a]/95 border border-rose-500/40 rounded-2xl shadow-2xl shadow-rose-950/80 flex flex-col max-h-[90vh] overflow-hidden">
         {/* Top OS Window Title Bar */}
         <div className="flex items-center justify-between px-6 py-3.5 border-b border-slate-800 bg-[#050912]">
           <div className="flex items-center gap-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-400 animate-pulse" />
             <div className="text-xs font-mono font-bold text-slate-200">
               HANAN//OS v3.8 — [HORIZONTAL WORKSTATION DESKTOP]
             </div>
@@ -134,11 +134,11 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
             }}
             className={`px-3 py-1.5 rounded-lg text-xs font-mono whitespace-nowrap transition-colors flex items-center gap-2 ${
               activeApp === 'projects'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 font-bold'
+                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/50 font-bold'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <FolderGit2 className="w-3.5 h-3.5 text-cyan-400" />
+            <FolderGit2 className="w-3.5 h-3.5 text-rose-400" />
             <span>Projects &amp; Systems</span>
           </button>
 
@@ -149,7 +149,7 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
             }}
             className={`px-3 py-1.5 rounded-lg text-xs font-mono whitespace-nowrap transition-colors flex items-center gap-2 ${
               activeApp === 'about'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 font-bold'
+                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/50 font-bold'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -164,7 +164,7 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
             }}
             className={`px-3 py-1.5 rounded-lg text-xs font-mono whitespace-nowrap transition-colors flex items-center gap-2 ${
               activeApp === 'cv'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 font-bold'
+                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/50 font-bold'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -179,7 +179,7 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
             }}
             className={`px-3 py-1.5 rounded-lg text-xs font-mono whitespace-nowrap transition-colors flex items-center gap-2 ${
               activeApp === 'skills'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 font-bold'
+                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/50 font-bold'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -210,7 +210,7 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
                       }}
                       className={`px-3 py-1.5 rounded-lg text-xs font-mono whitespace-nowrap transition-colors flex items-center gap-2 ${
                         isSel
-                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-semibold'
+                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 font-semibold'
                           : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent'
                       }`}
                     >
@@ -224,7 +224,7 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
               {/* Project Title & Metadata Bar */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800/60">
                 <div>
-                  <div className="flex items-center gap-2 text-xs font-mono text-cyan-400 mb-1">
+                  <div className="flex items-center gap-2 text-xs font-mono text-rose-400 mb-1">
                     <span>{currentProject.category}</span>
                     <span>·</span>
                     <span>{currentProject.year}</span>
@@ -245,7 +245,7 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
                       target="_blank"
                       rel="noreferrer"
                       onClick={() => soundEngine.playKeyClick()}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500 text-xs font-mono text-slate-200 hover:text-cyan-400 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 border border-slate-700 hover:border-rose-500 text-xs font-mono text-slate-200 hover:text-rose-400 transition-colors"
                     >
                       <Github className="w-4 h-4" />
                       <span>Source Code</span>
@@ -257,7 +257,7 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
                         setActiveTab('simulator');
                         runSimulation();
                       }}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-mono text-xs font-semibold transition-colors shadow-lg shadow-cyan-500/20"
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-rose-500 hover:bg-rose-400 text-slate-950 font-mono text-xs font-semibold transition-colors shadow-lg shadow-rose-500/20"
                     >
                       <Play className="w-4 h-4 fill-slate-950" />
                       <span>Run Live Demo</span>
@@ -275,7 +275,7 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
                   }}
                   className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     activeTab === 'overview'
-                      ? 'bg-cyan-500/20 text-cyan-300 font-semibold shadow-sm'
+                      ? 'bg-rose-500/20 text-rose-300 font-semibold shadow-sm'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -288,7 +288,7 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
                   }}
                   className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     activeTab === 'architecture'
-                      ? 'bg-cyan-500/20 text-cyan-300 font-semibold shadow-sm'
+                      ? 'bg-rose-500/20 text-rose-300 font-semibold shadow-sm'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -301,7 +301,7 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
                   }}
                   className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     activeTab === 'simulator'
-                      ? 'bg-cyan-500/20 text-cyan-300 font-semibold shadow-sm'
+                      ? 'bg-rose-500/20 text-rose-300 font-semibold shadow-sm'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -314,7 +314,7 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
                   }}
                   className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     activeTab === 'metrics'
-                      ? 'bg-cyan-500/20 text-cyan-300 font-semibold shadow-sm'
+                      ? 'bg-rose-500/20 text-rose-300 font-semibold shadow-sm'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -333,7 +333,7 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
                   </div>
 
                   <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-                    <div className="text-xs font-mono text-cyan-400 uppercase tracking-wider mb-1">Impact &amp; Finding</div>
+                    <div className="text-xs font-mono text-rose-400 uppercase tracking-wider mb-1">Impact &amp; Finding</div>
                     <div className="text-sm font-medium text-slate-100">{currentProject.impact}</div>
                   </div>
 
@@ -361,7 +361,7 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {currentProject.architectureNotes.map((note, idx) => (
                       <div key={idx} className="p-4 rounded-xl bg-slate-900/50 border border-slate-800 flex gap-3">
-                        <span className="text-cyan-400 font-mono text-sm font-bold">0{idx + 1}.</span>
+                        <span className="text-rose-400 font-mono text-sm font-bold">0{idx + 1}.</span>
                         <p className="text-xs font-mono text-slate-300 leading-relaxed">{note}</p>
                       </div>
                     ))}
@@ -384,7 +384,7 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
                     <button
                       disabled={simRunning}
                       onClick={runSimulation}
-                      className="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-slate-950 font-mono text-xs font-semibold transition-colors flex items-center gap-2"
+                      className="px-4 py-2 rounded-lg bg-rose-500 hover:bg-rose-400 disabled:opacity-50 text-slate-950 font-mono text-xs font-semibold transition-colors flex items-center gap-2"
                     >
                       <Activity className={`w-4 h-4 ${simRunning ? 'animate-spin' : ''}`} />
                       <span>{simRunning ? 'Simulating...' : 'Execute Suite'}</span>
@@ -402,7 +402,7 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
                           line.includes('OK')
                             ? 'text-emerald-400'
                             : line.includes('zero')
-                            ? 'text-cyan-300 font-semibold'
+                            ? 'text-rose-300 font-semibold'
                             : 'text-slate-300'
                         }
                       >
@@ -410,8 +410,8 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
                       </div>
                     ))}
                     {simRunning && (
-                      <div className="flex items-center gap-2 text-cyan-400">
-                        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                      <div className="flex items-center gap-2 text-rose-400">
+                        <span className="w-2 h-2 rounded-full bg-rose-400 animate-ping" />
                         <span>Processing syscall stream...</span>
                       </div>
                     )}
@@ -429,7 +429,7 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
                     {currentProject.metrics.map((m, idx) => (
                       <div key={idx} className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between">
                         <span className="text-xs font-mono text-slate-400">{m.label}</span>
-                        <span className="text-2xl font-bold font-mono text-cyan-400 mt-2">{m.value}</span>
+                        <span className="text-2xl font-bold font-mono text-rose-400 mt-2">{m.value}</span>
                       </div>
                     ))}
                   </div>
@@ -444,14 +444,14 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
           {activeApp === 'about' && (
             <div className="space-y-6">
               <div className="flex flex-col md:flex-row gap-6 items-start">
-                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-rose-500 to-cyan-500 p-1 shrink-0">
+                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-rose-500 to-rose-500 p-1 shrink-0">
                   <div className="w-full h-full rounded-[14px] bg-[#090e1a] flex items-center justify-center text-white font-bold font-display text-3xl">
                     H//
                   </div>
                 </div>
                 <div className="space-y-2">
                   <h2 className="text-2xl font-bold text-white font-display">Hanan</h2>
-                  <div className="text-xs font-mono text-cyan-400">
+                  <div className="text-xs font-mono text-rose-400">
                     CYBERSECURITY RESEARCHER &amp; SYSTEMS SOFTWARE DEVELOPER
                   </div>
                   <p className="text-sm text-slate-300 leading-relaxed max-w-2xl">
@@ -469,7 +469,7 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
                 </div>
 
                 <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
-                  <div className="text-xs font-mono text-cyan-400 font-bold uppercase">Current Research Trajectory</div>
+                  <div className="text-xs font-mono text-rose-400 font-bold uppercase">Current Research Trajectory</div>
                   <p className="text-xs text-slate-300 leading-relaxed">
                     Investigating kernel-level zero-trust auditing using eBPF on modern Linux 6.x kernels, hardware-accelerated lattice cryptography for post-quantum defense, and real-time interactive 3D spatial workstations in the browser.
                   </p>
@@ -517,21 +517,21 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
 
               {/* Experience */}
               <div className="space-y-3">
-                <div className="flex items-center gap-2 text-xs font-mono text-cyan-400 uppercase font-bold">
+                <div className="flex items-center gap-2 text-xs font-mono text-rose-400 uppercase font-bold">
                   <Briefcase className="w-4 h-4" />
                   <span>Professional &amp; Research Experience</span>
                 </div>
                 {RESUME_DATA.experience.map((exp, idx) => (
                   <div key={idx} className="p-4 rounded-xl bg-slate-900/50 border border-slate-800 space-y-2">
                     <div className="flex justify-between items-center text-xs font-mono text-slate-400">
-                      <span className="text-cyan-400 font-bold">{exp.company}</span>
+                      <span className="text-rose-400 font-bold">{exp.company}</span>
                       <span>{exp.period}</span>
                     </div>
                     <h4 className="text-sm font-bold text-white">{exp.role}</h4>
                     <ul className="space-y-1.5 pt-1">
                       {exp.points.map((pt, i) => (
                         <li key={i} className="text-xs text-slate-300 flex items-start gap-2">
-                          <span className="text-cyan-400 mt-1">•</span>
+                          <span className="text-rose-400 mt-1">•</span>
                           <span>{pt}</span>
                         </li>
                       ))}
@@ -583,7 +583,7 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
-                  <div className="text-xs font-mono text-cyan-400 font-bold uppercase">Systems &amp; Languages</div>
+                  <div className="text-xs font-mono text-rose-400 font-bold uppercase">Systems &amp; Languages</div>
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {SKILLS_SUMMARY.languages.map((l) => (
                       <span key={l} className="px-2.5 py-1 rounded bg-slate-800 text-xs font-mono text-slate-200">

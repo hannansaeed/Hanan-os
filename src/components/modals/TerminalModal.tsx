@@ -20,8 +20,8 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
       command: 'init',
       output: (
         <div className="space-y-1 text-slate-300">
-          <div className="text-cyan-400 font-bold">HANAN//OS Workstation Shell [Version 3.8.4-x86_64]</div>
-          <div>Type <span className="text-cyan-300 font-semibold">'help'</span> for a list of available diagnostic commands.</div>
+          <div className="text-rose-400 font-bold">HANAN//OS Workstation Shell [Version 3.8.4-x86_64]</div>
+          <div>Type <span className="text-rose-300 font-semibold">'help'</span> for a list of available diagnostic commands.</div>
           <div className="text-xs text-slate-500">Security Invariants: Enforced · eBPF audit active.</div>
         </div>
       ),
@@ -58,19 +58,19 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
       case 'help':
         output = (
           <div className="space-y-1.5 text-xs text-slate-300">
-            <div className="text-cyan-400 font-bold mb-1">AVAILABLE SYSTEM COMMANDS:</div>
+            <div className="text-rose-400 font-bold mb-1">AVAILABLE SYSTEM COMMANDS:</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
-              <div><span className="text-cyan-300 font-semibold">whoami</span> — Identity & operator summary</div>
-              <div><span className="text-cyan-300 font-semibold">about</span> — Bio & DedSec engineering background</div>
-              <div><span className="text-cyan-300 font-semibold">cv</span> — Display full Curriculum Vitae</div>
-              <div><span className="text-cyan-300 font-semibold">projects</span> — List production systems & research</div>
-              <div><span className="text-cyan-300 font-semibold">project &lt;id&gt;</span> — Inspect specific project</div>
-              <div><span className="text-cyan-300 font-semibold">ctf</span> — High-impact CTF writeups & exploits</div>
-              <div><span className="text-cyan-300 font-semibold">skills</span> — Technical proficiency tree</div>
-              <div><span className="text-cyan-300 font-semibold">certs</span> — Verified security certifications</div>
-              <div><span className="text-cyan-300 font-semibold">nmap &lt;target&gt;</span> — Simulated TCP SYN stealth scan</div>
-              <div><span className="text-cyan-300 font-semibold">clear</span> — Clear console buffer</div>
-              <div><span className="text-cyan-300 font-semibold">exit</span> — Terminate shell session</div>
+              <div><span className="text-rose-300 font-semibold">whoami</span> — Identity & operator summary</div>
+              <div><span className="text-rose-300 font-semibold">about</span> — Bio & DedSec engineering background</div>
+              <div><span className="text-rose-300 font-semibold">cv</span> — Display full Curriculum Vitae</div>
+              <div><span className="text-rose-300 font-semibold">projects</span> — List production systems & research</div>
+              <div><span className="text-rose-300 font-semibold">project &lt;id&gt;</span> — Inspect specific project</div>
+              <div><span className="text-rose-300 font-semibold">ctf</span> — High-impact CTF writeups & exploits</div>
+              <div><span className="text-rose-300 font-semibold">skills</span> — Technical proficiency tree</div>
+              <div><span className="text-rose-300 font-semibold">certs</span> — Verified security certifications</div>
+              <div><span className="text-rose-300 font-semibold">nmap &lt;target&gt;</span> — Simulated TCP SYN stealth scan</div>
+              <div><span className="text-rose-300 font-semibold">clear</span> — Clear console buffer</div>
+              <div><span className="text-rose-300 font-semibold">exit</span> — Terminate shell session</div>
             </div>
           </div>
         );
@@ -91,7 +91,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
       case 'resume':
         output = (
           <div className="space-y-3 text-xs text-slate-300">
-            <div className="text-cyan-400 font-bold border-b border-slate-800 pb-1">
+            <div className="text-rose-400 font-bold border-b border-slate-800 pb-1">
               CURRICULUM VITAE — HANAN
             </div>
             <div>
@@ -122,7 +122,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
             <p className="text-slate-400 leading-relaxed">
               Specialized in low-level systems, offensive security (binary exploitation, glibc heap internals, Android Binder IPC security), and real-time 3D spatial WebGL systems.
             </p>
-            <div className="text-cyan-400">
+            <div className="text-rose-400">
               Focus: Zero-Trust Telemetry · eBPF Kernel Probes · Post-Quantum Cryptography · 3D Workstations
             </div>
           </div>
@@ -132,18 +132,18 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
       case 'projects':
         output = (
           <div className="space-y-2 text-xs">
-            <div className="text-cyan-400 font-bold">PRODUCTION PROJECTS & RESEARCH:</div>
+            <div className="text-rose-400 font-bold">PRODUCTION PROJECTS & RESEARCH:</div>
             {PROJECTS.map((p, i) => (
               <div key={p.id} className="flex flex-col sm:flex-row sm:items-center justify-between text-slate-300 py-1 border-b border-slate-800/40">
                 <div>
-                  <span className="text-cyan-300 font-semibold">[{i + 1}] {p.title}</span>
+                  <span className="text-rose-300 font-semibold">[{i + 1}] {p.title}</span>
                   <span className="text-slate-500 ml-2">({p.category})</span>
                 </div>
                 <button
                   onClick={() => {
                     if (onOpenProject) onOpenProject(p.id);
                   }}
-                  className="text-cyan-400 hover:underline text-left sm:text-right mt-0.5 sm:mt-0"
+                  className="text-rose-400 hover:underline text-left sm:text-right mt-0.5 sm:mt-0"
                 >
                   open project {p.id}
                 </button>
@@ -161,7 +161,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
           if (found) {
             output = (
               <div className="space-y-1 text-xs text-slate-300">
-                <div className="text-cyan-400 font-bold">{found.title} [{found.year}]</div>
+                <div className="text-rose-400 font-bold">{found.title} [{found.year}]</div>
                 <div>{found.description}</div>
                 <div className="text-emerald-400">Status: {found.status} · Impact: {found.impact}</div>
               </div>
@@ -176,7 +176,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
       case 'ctf':
         output = (
           <div className="space-y-2 text-xs">
-            <div className="text-cyan-400 font-bold">NOTABLE CTF WRITEUPS & SOLVES:</div>
+            <div className="text-rose-400 font-bold">NOTABLE CTF WRITEUPS & SOLVES:</div>
             {CTF_CHALLENGES.map((c) => (
               <div key={c.id} className="text-slate-300 py-1 border-b border-slate-800/40">
                 <span className="text-emerald-400 font-semibold">[{c.category}]</span>{' '}
@@ -193,19 +193,19 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
         output = (
           <div className="space-y-2 text-xs text-slate-300">
             <div>
-              <span className="text-cyan-400 font-bold">Languages:</span>{' '}
+              <span className="text-rose-400 font-bold">Languages:</span>{' '}
               {SKILLS_SUMMARY.languages.join(' · ')}
             </div>
             <div>
-              <span className="text-cyan-400 font-bold">Offensive Cyber:</span>{' '}
+              <span className="text-rose-400 font-bold">Offensive Cyber:</span>{' '}
               {SKILLS_SUMMARY.offensive.join(' · ')}
             </div>
             <div>
-              <span className="text-cyan-400 font-bold">Systems & Infra:</span>{' '}
+              <span className="text-rose-400 font-bold">Systems & Infra:</span>{' '}
               {SKILLS_SUMMARY.systems.join(' · ')}
             </div>
             <div>
-              <span className="text-cyan-400 font-bold">Defense & Verification:</span>{' '}
+              <span className="text-rose-400 font-bold">Defense & Verification:</span>{' '}
               {SKILLS_SUMMARY.defense.join(' · ')}
             </div>
           </div>
@@ -215,7 +215,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
       case 'certs':
         output = (
           <div className="space-y-1.5 text-xs text-slate-300">
-            <div className="text-cyan-400 font-bold">ACCREDITATIONS:</div>
+            <div className="text-rose-400 font-bold">ACCREDITATIONS:</div>
             {CERTIFICATIONS.map((cert) => (
               <div key={cert.name} className="flex justify-between border-b border-slate-800/40 py-1">
                 <span>{cert.name} ({cert.issuer})</span>
@@ -230,7 +230,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
         const targetHost = arg || '127.0.0.1';
         output = (
           <div className="space-y-1 text-xs font-mono text-slate-300">
-            <div className="text-cyan-400">Starting Nmap 7.94 ( https://nmap.org ) at 2026-09-26 01:05</div>
+            <div className="text-rose-400">Starting Nmap 7.94 ( https://nmap.org ) at 2026-09-26 01:05</div>
             <div>Nmap scan report for {targetHost}</div>
             <div>Host is up (0.00042s latency).</div>
             <div className="text-slate-400 py-1">
@@ -241,7 +241,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
               <div className="text-emerald-400">8443/tcp open  grpc-tls      hanan-core-daemon v3.8</div>
               <div className="text-emerald-400">9090/tcp open  sentinel-jail Docker Ephemeral CTF</div>
             </div>
-            <div className="text-cyan-400">Nmap done: 1 IP address (1 host up) scanned in 0.28 seconds</div>
+            <div className="text-rose-400">Nmap done: 1 IP address (1 host up) scanned in 0.28 seconds</div>
           </div>
         );
         break;
@@ -301,11 +301,11 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center p-3 sm:p-6 pointer-events-none select-none animate-fade-in">
-      <div className="pointer-events-auto relative w-full max-w-4xl bg-[#060a12]/95 border border-cyan-500/40 rounded-2xl shadow-2xl shadow-cyan-950/80 flex flex-col h-[80vh] overflow-hidden">
+      <div className="pointer-events-auto relative w-full max-w-4xl bg-[#060a12]/95 border border-rose-500/40 rounded-2xl shadow-2xl shadow-rose-950/80 flex flex-col h-[80vh] overflow-hidden">
         {/* Titlebar */}
         <div className="flex items-center justify-between px-6 py-3.5 border-b border-slate-800 bg-[#090e1a]">
           <div className="flex items-center gap-3">
-            <TerminalIcon className="w-4 h-4 text-cyan-400" />
+            <TerminalIcon className="w-4 h-4 text-rose-400" />
             <span className="text-xs font-mono font-bold text-slate-200">hanan@workstation-os:~ (tty1)</span>
           </div>
           <button
@@ -324,7 +324,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
         <div className="flex-1 overflow-y-auto p-6 font-mono text-xs space-y-4">
           {history.map((item, idx) => (
             <div key={idx} className="space-y-1.5">
-              <div className="flex items-center gap-2 text-cyan-400">
+              <div className="flex items-center gap-2 text-rose-400">
                 <span className="text-slate-500">hanan@workstation-os:~$</span>
                 <span className="text-white font-semibold">{item.command}</span>
               </div>
@@ -336,7 +336,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
 
         {/* Command Input Prompt */}
         <div className="flex items-center gap-3 px-6 py-3 border-t border-slate-800 bg-[#04070e]">
-          <span className="text-xs font-mono text-cyan-400">hanan@workstation-os:~$</span>
+          <span className="text-xs font-mono text-rose-400">hanan@workstation-os:~$</span>
           <input
             ref={inputRef}
             type="text"
@@ -348,7 +348,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
           />
           <button
             onClick={() => handleCommand(inputVal)}
-            className="p-1.5 rounded text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/40"
+            className="p-1.5 rounded text-rose-400 hover:text-rose-300 hover:bg-rose-950/40"
             title="Execute (Enter)"
           >
             <CornerDownLeft className="w-4 h-4" />

@@ -66,7 +66,7 @@ export const WorkstationCanvas: React.FC<WorkstationCanvasProps> = ({
           </p>
           <button
             onClick={handleReload}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-mono text-xs font-bold transition-colors shadow-lg mt-2"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-rose-500 hover:bg-rose-400 text-slate-950 font-mono text-xs font-bold transition-colors shadow-lg mt-2"
           >
             <RefreshCw className="w-4 h-4" />
             <span>Restore 3D Viewport</span>
