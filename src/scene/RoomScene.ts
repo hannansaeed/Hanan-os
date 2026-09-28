@@ -199,6 +199,7 @@ export class RoomScene {
       }
     }
     this.renderer = globalRenderer;
+    this.renderer.debug.checkShaderErrors = false;
 
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -767,8 +768,8 @@ export class RoomScene {
       }
     }
 
-    // 6. Draw Mouse Cursor if hovering on desktop
-    if (this.desktopMousePos) {
+    // 6. Draw Mouse Cursor if hovering on desktop (ONLY in overview/distance mode to avoid twin cursor in zoomed-in 2D mode)
+    if (this.desktopMousePos && this.activeStation === 'overview') {
       hc.fillStyle = '#ffffff';
       hc.strokeStyle = '#000000';
       hc.lineWidth = 2;
@@ -1073,11 +1074,13 @@ export class RoomScene {
 
       case 'cv':
       case 'resume':
+        this.safeOpenLink('https://hannansaeed.github.io/portfolio');
         this.pushTerminalLines(
-          { text: 'CURRICULUM VITAE — HANAN', color: '#38bdf8', bold: true },
-          { text: '● B.S. in Information Technology', color: '#34d399' },
-          { text: '● Cyber Security Researcher & Developer', color: '#e2e8f0' },
-          { text: '● President, Cyber Defense Collegiate League', color: '#e2e8f0' }
+          { text: 'CURRICULUM VITAE — HANAN SAEED', color: '#38bdf8', bold: true },
+          { text: '● B.S. in Information Technology (BZU, 2023 - Present)', color: '#34d399' },
+          { text: '● Cyber Security Researcher & Python Developer', color: '#e2e8f0' },
+          { text: '● Projects: Network Vuln Scanner, Web Pentest Toolkit, Log Alert Bot', color: '#e2e8f0' },
+          { text: '[Command success: Warping browser to PDF portfolio!]', color: '#10b981' }
         );
         break;
 

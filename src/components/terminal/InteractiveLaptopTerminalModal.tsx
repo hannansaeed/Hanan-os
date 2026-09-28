@@ -78,11 +78,11 @@ const THEME_STYLES: Record<
 const VIRTUAL_FS: Record<string, { type: 'file' | 'dir'; content?: string }> = {
   'about.md': {
     type: 'file',
-    content: `# Hanan // Senior Systems & Cybersecurity Research Engineer\n\nSpecialized in kernel telemetry probes (eBPF), binary exploitation, glibc heap internals, and post-quantum cryptographic primitives. Dedicated to constructing high-performance systems with rigorous security invariants.`,
+    content: `# Hanan Saeed // Cyber Security Researcher & Python Developer\n\nCyber security researcher and Python developer with a strong interest in offensive and defensive security, vulnerability assessment, and AI-powered automation. Passionate about ethical hacking, secure software development, and emerging AI-driven security systems.`,
   },
   'cv.txt': {
     type: 'file',
-    content: `CURRICULUM VITAE — HANAN\n========================================\nRole: Lead Cybersecurity & Systems Engineer\nFocus: Kernel Internals, eBPF, Binary Exploitation, Post-Quantum Crypto\nEducation: B.S. in Computer Science (Summa Cum Laude)\nKey Languages: Rust, C/C++, TypeScript, Python, x86_64 ASM\nCertifications: OSCP, CISSP, eWPTX, CKAD`,
+    content: `CURRICULUM VITAE — HANAN SAEED\n========================================\nRole: Cyber Security Researcher & Python Developer\nEmail: hanansaeed609@yahoo.com\nPhone: +92 3700626055\nLocation: Multan, Pakistan\nEducation: B.S. in Information Technology (BZU, 10/2023 - Present)\nSkills: Penetration Testing, Nmap, Wireshark, OWASP Top 10, Python, C/C++, Kotlin`,
   },
   'skills.json': {
     type: 'file',
@@ -394,25 +394,30 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
 
         case 'cv':
         case 'resume':
+          try {
+            window.open('https://hannansaeed.github.io/portfolio', '_blank', 'noopener,noreferrer');
+          } catch {
+            // Fallback
+          }
           output = (
             <div className="space-y-3 text-xs text-slate-300">
               <div className="text-rose-400 font-bold border-b border-slate-800 pb-1 text-sm">
-                CURRICULUM VITAE — HANAN
+                CURRICULUM VITAE — HANAN SAEED
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <div className="text-white font-semibold">EDUCATION & HONORS</div>
+                  <div className="text-white font-semibold">EDUCATION</div>
                   <div className="text-slate-400">
-                    <div className="text-rose-300 font-medium">B.S. in Computer Science</div>
-                    <div>Summa Cum Laude · Cyber Defense Club President</div>
-                    <div className="text-xs text-slate-500">GPA: 3.96 / 4.0 · Dean's List 8 Consecutive Terms</div>
+                    <div className="text-rose-300 font-medium">B.S. in Information Technology</div>
+                    <div>Bahauddin Zakariya University (BZU)</div>
+                    <div className="text-xs text-slate-500">10/2023 – Present · Multan, Pakistan</div>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <div className="text-white font-semibold">LEAD RESEARCH & ROLES</div>
+                  <div className="text-white font-semibold">KEY FOCUS & PROJECTS</div>
                   <div className="text-slate-400">
-                    <div className="text-emerald-300 font-medium">Lead Security Systems Architect · DedSec Research</div>
-                    <div className="text-xs">Engineered production eBPF kernel telemetry agents processing &gt;1.2M events/sec with &lt;1.8% CPU overhead.</div>
+                    <div className="text-emerald-300 font-medium">Cyber Security Researcher</div>
+                    <div className="text-xs">Built automated Python Nmap scanners, OWASP Top 10 pentesting tools, secure Firebase Android apps, and custom Discord logging bots.</div>
                   </div>
                 </div>
               </div>

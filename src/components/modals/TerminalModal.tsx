@@ -79,9 +79,9 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
       case 'about':
         output = (
           <div className="space-y-2 text-xs text-slate-300">
-            <div className="text-white font-semibold">Hanan :: DedSec Underground Cybersecurity Engineer</div>
+            <div className="text-white font-semibold">Hanan Saeed :: Cyber Security Researcher & Python Developer</div>
             <p className="text-slate-400 leading-relaxed">
-              I analyze and construct low-level systems, kernel telemetry probes, and analyze complex software vulnerabilities. My background bridges hands-on offensive security (glibc heap internals, binary exploitation, Android AOSP Binder IPC hijacking) with high-performance systems engineering (Rust, eBPF, WebGL 3D shaders, and post-quantum cryptographic primitives).
+              Cyber security researcher and Python developer with a strong interest in offensive and defensive security, vulnerability assessment, and AI-powered automation. Experienced in building security tooling, working with APIs and databases, and applying practical penetration testing techniques. Passionate about ethical hacking, secure software development, and emerging AI-driven security systems.
             </p>
           </div>
         );
@@ -89,27 +89,44 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
 
       case 'cv':
       case 'resume':
+        // Trigger opening their actual portfolio/CV PDF link in a new tab!
+        try {
+          window.open('https://hannansaeed.github.io/portfolio', '_blank', 'noopener,noreferrer');
+        } catch {
+          // Fallback for isolated sandbox environments
+        }
         output = (
           <div className="space-y-3 text-xs text-slate-300">
             <div className="text-rose-400 font-bold border-b border-slate-800 pb-1">
-              CURRICULUM VITAE — HANAN
+              CURRICULUM VITAE — HANAN SAEED
             </div>
             <div>
-              <span className="text-white font-bold">Education:</span> B.S. in Computer Science (Summa Cum Laude, President of Cyber Club)
+              <span className="text-white font-bold">Profile:</span> Cybersecurity Researcher & Python Developer
             </div>
             <div>
-              <span className="text-white font-bold">Key Experience:</span>
-              <div className="pl-3 text-slate-400 space-y-1 mt-1">
-                <div>• Cybersecurity Systems Engineer (eBPF Android Binder Monitor, &lt;1.4% overhead)</div>
-                <div>• Offensive Security Researcher (Sentinel CTF Automated Orchestration for 1,200+ hackers)</div>
-                <div>• Discovered 3 zero-permission intent hijack vulnerabilities in vendor system services</div>
+              <span className="text-white font-bold">Contact:</span> hanansaeed609@yahoo.com · +92 3700626055 · Pakistan
+            </div>
+            <div>
+              <span className="text-white font-bold">Education:</span>
+              <div className="pl-3 text-slate-400 space-y-0.5 mt-1">
+                <div>• B.S. in Information Technology — Bahauddin Zakariya University (10/2023 - Present)</div>
+                <div>• Govt. Graduate College of Science — Pre-Engineering / ICS (09/2021 - 09/2023)</div>
               </div>
             </div>
             <div>
-              <span className="text-emerald-400 font-bold">Accreditations:</span> OSCP (PEN-200 Active) · PNPT · CompTIA Security+ · BSCP
+              <span className="text-white font-bold">Key Projects:</span>
+              <div className="pl-3 text-slate-400 space-y-1 mt-1">
+                <div>• Network Vulnerability Scanner (Python, Nmap, CVE databases auto-mapper)</div>
+                <div>• Web Application Pentesting Toolkit (Forms crawling, OWASP Top 10 auditing)</div>
+                <div>• Security Automation & Incident Bot (Linux syslog parsing & Discord alerts)</div>
+                <div>• Secure Mobile Application (Hardened Android MVVM with SQLCipher cache)</div>
+              </div>
             </div>
             <div>
-              <span className="text-purple-400 font-bold">CTF Rank:</span> DEFCON Quals Top 2% Worldwide · HackTheBox Global 8th
+              <span className="text-emerald-400 font-bold">Accreditations:</span> BZU Vulnerability Assessment Specialist · Independent Web Pentesting
+            </div>
+            <div>
+              <span className="text-purple-400 font-bold">Links:</span> github.com/hannansaeed · linkedin.com/in/hanan-saeed · [Warped to Portfolio!]
             </div>
           </div>
         );

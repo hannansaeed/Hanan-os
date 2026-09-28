@@ -426,18 +426,18 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
                 {/* Header Profile */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-800 pb-5 gap-4">
                   <div>
-                    <h2 className="text-2xl font-bold font-display text-white">HANAN</h2>
+                    <h2 className="text-2xl font-bold font-display text-white">HANAN SAEED</h2>
                     <p className="text-rose-400 font-mono text-xs mt-0.5">
-                      Lead Cybersecurity & Systems Architecture Engineer
+                      Cyber Security Researcher & Python Developer
                     </p>
                     <p className="text-slate-400 text-xs mt-1">
-                      Cyberlab Node · Specializing in Kernel Invariants, eBPF & Post-Quantum Cryptography
+                      Bahauddin Zakariya University (BZU) · Multan, Pakistan
                     </p>
                   </div>
                   <button
                     onClick={() => {
                       soundEngine.playChirp('success');
-                      alert('Curriculum Vitae export generated (PDF download simulation).');
+                      window.open('https://hannansaeed.github.io/portfolio', '_blank', 'noopener,noreferrer');
                     }}
                     className="px-3.5 py-2 rounded-xl bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-700 flex items-center gap-2 font-mono font-bold transition-all shadow-lg shadow-rose-950/50"
                   >
@@ -446,24 +446,34 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
                   </button>
                 </div>
 
+                {/* Profile Summary */}
+                <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800 space-y-2">
+                  <h3 className="font-bold text-white font-mono text-xs text-rose-300">
+                    PROFESSIONAL PROFILE
+                  </h3>
+                  <p className="text-slate-300 leading-relaxed font-sans">
+                    Cyber security researcher and Python developer with a strong interest in offensive and defensive security, vulnerability assessment, and AI-powered automation. Experienced in building security tooling, working with APIs and databases, and applying practical penetration testing techniques. Passionate about ethical hacking, secure software development, and emerging AI-driven security systems.
+                  </p>
+                </div>
+
                 {/* Core Domains */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
                     <h3 className="font-bold text-white font-mono text-xs flex items-center gap-2 text-rose-300">
                       <Code2 className="w-4 h-4" />
-                      SYSTEMS & PROGRAMMING
+                      DEVELOPMENT SKILLS
                     </h3>
-                    <p className="text-slate-400 leading-relaxed">
-                      {SKILLS_SUMMARY.languages.join(', ')}
+                    <p className="text-slate-400 leading-relaxed font-mono">
+                      {SKILLS_SUMMARY.languages.join(' · ')}
                     </p>
                   </div>
                   <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
                     <h3 className="font-bold text-white font-mono text-xs flex items-center gap-2 text-emerald-300">
                       <Shield className="w-4 h-4" />
-                      OFFENSIVE SECURITY & DEFENSE
+                      SECURITY EXPERIENCE
                     </h3>
-                    <p className="text-slate-400 leading-relaxed">
-                      {SKILLS_SUMMARY.offensive.join(', ')}
+                    <p className="text-slate-400 leading-relaxed font-mono">
+                      {SKILLS_SUMMARY.offensive.join(' · ')}
                     </p>
                   </div>
                 </div>
@@ -471,7 +481,7 @@ export const DesktopOSModal: React.FC<DesktopOSModalProps> = ({ onClose, onOpenT
                 {/* Verified Certifications */}
                 <div className="space-y-3">
                   <h3 className="font-bold text-white font-mono text-sm border-b border-slate-800 pb-2">
-                    VERIFIED CERTIFICATIONS
+                    ACCREDITATIONS & CERTIFICATIONS
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {CERTIFICATIONS.map((cert) => (

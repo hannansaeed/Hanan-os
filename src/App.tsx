@@ -15,7 +15,7 @@ import { StationId } from './types';
 import { soundEngine } from './audio/soundEngine';
 
 export default function App() {
-  const [showEntranceBanner, setShowEntranceBanner] = useState(false);
+  const [showEntranceBanner, setShowEntranceBanner] = useState(true);
   const [activeStation, setActiveStation] = useState<StationId>('overview');
   const [hoverInfo, setHoverInfo] = useState<RaycastHitInfo | null>(null);
   const [isWalkMode, setIsWalkMode] = useState(true);
