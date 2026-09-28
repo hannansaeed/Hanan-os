@@ -8,12 +8,18 @@ import { DustParticleShader } from './shaders/serverLedShader';
 import { CoffeeSteamShader } from './shaders/coffeeSteamShader';
 import { SkyWindowShader } from './shaders/skyWindowShader';
 import { soundEngine } from '../audio/soundEngine';
+import customWallpaper from '../assets/images/nullos_wallpaper_1790517912301.jpg';
+import customArt1 from '../assets/images/custom_art1.jpg';
+import customArt2 from '../assets/images/custom_art2.jpg';
+import customArt3 from '../assets/images/custom_art3.jpg';
 
 export interface RaycastHitInfo {
   stationId: StationId;
   label: string;
   hint: string;
 }
+
+let globalRenderer: THREE.WebGLRenderer | null = null;
 
 export class RoomScene {
   private container: HTMLElement;
@@ -169,26 +175,29 @@ export class RoomScene {
     this.savedWalkPos.copy(this.camera.position);
     this.savedWalkLook.copy(this.currentCameraLook);
 
-    // High quality WebGL Renderer with graceful context fallback
-    try {
-      this.renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        powerPreference: 'high-performance',
-        stencil: false,
-        depth: true,
-        failIfMajorPerformanceCaveat: false,
-      });
-    } catch {
+    // High quality WebGL Renderer with graceful context fallback and global context preservation
+    if (!globalRenderer) {
       try {
-        this.renderer = new THREE.WebGLRenderer({
-          antialias: false,
-          powerPreference: 'default',
+        globalRenderer = new THREE.WebGLRenderer({
+          antialias: true,
+          powerPreference: 'high-performance',
+          stencil: false,
+          depth: true,
+          failIfMajorPerformanceCaveat: false,
         });
-      } catch (err) {
-        console.error('WebGL Renderer Error:', err);
-        throw new Error('WebGL is not supported or context lost in this browser environment.');
+      } catch {
+        try {
+          globalRenderer = new THREE.WebGLRenderer({
+            antialias: false,
+            powerPreference: 'default',
+          });
+        } catch (err) {
+          console.error('WebGL Renderer Error:', err);
+          throw new Error('WebGL is not supported or context lost in this browser environment.');
+        }
       }
     }
+    this.renderer = globalRenderer;
 
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -272,7 +281,7 @@ export class RoomScene {
     // Load custom NullOS wallpaper
     this.desktopWallpaperImg = new Image();
     this.desktopWallpaperImg.crossOrigin = 'anonymous';
-    this.desktopWallpaperImg.src = '/assets/nullos_wallpaper.jpg';
+    this.desktopWallpaperImg.src = customWallpaper;
     this.desktopWallpaperImg.onload = () => {
       if (this.horizTexture) {
         this.horizTexture.needsUpdate = true;
@@ -871,6 +880,33 @@ export class RoomScene {
   /* ----------------------------------------------------
      PUBLIC INTERACTIVE COMMAND EXECUTION (TERMINAL & DESKTOP)
   ---------------------------------------------------- */
+  private pushTerminalLines(...lines: Array<{ text: string; color: string; bold?: boolean }>) {
+    const maxChars = 85;
+    for (const l of lines) {
+      if (l.text.length <= maxChars || l.text.startsWith('hanan@xcthine:~$ ')) {
+        this.terminalLines.push(l);
+        continue;
+      }
+
+      const words = l.text.split(' ');
+      let currentLine = '';
+
+      for (const word of words) {
+        if ((currentLine + word).length > maxChars) {
+          if (currentLine) {
+            this.terminalLines.push({ text: currentLine.trimEnd(), color: l.color, bold: l.bold });
+          }
+          currentLine = word + ' ';
+        } else {
+          currentLine += word + ' ';
+        }
+      }
+      if (currentLine) {
+        this.terminalLines.push({ text: currentLine.trimEnd(), color: l.color, bold: l.bold });
+      }
+    }
+  }
+
   public executeTerminalCommand(raw: string) {
     const trimmed = raw.trim();
     if (!trimmed) return;
@@ -881,7 +917,7 @@ export class RoomScene {
 
     // Echo input line
     if (!this.terminalWaitingForPassword) {
-      this.terminalLines.push({
+      this.pushTerminalLines({
         text: `hanan@xcthine:~$ ${trimmed}`,
         color: '#ffffff',
         bold: true,
@@ -894,7 +930,7 @@ export class RoomScene {
 
     if (this.terminalWaitingForPassword) {
       if (trimmed === '3241010300') {
-        this.terminalLines.push({ text: 'Root access granted. Clearing whiteboard...', color: '#34d399' });
+        this.pushTerminalLines({ text: 'Root access granted. Clearing whiteboard...', color: '#34d399' });
         this.terminalWaitingForPassword = false;
         // Logic to clear whiteboard
         if (this.boardMesh) {
@@ -908,7 +944,7 @@ export class RoomScene {
           }
         }
       } else {
-        this.terminalLines.push({ text: 'Incorrect password.', color: '#f43f5e' });
+        this.pushTerminalLines({ text: 'Incorrect password.', color: '#f43f5e' });
         this.terminalWaitingForPassword = false;
       }
       this.vertTexture.needsUpdate = true;
@@ -918,7 +954,7 @@ export class RoomScene {
     switch (cmd) {
       case 'help':
       case '?':
-        this.terminalLines.push(
+        this.pushTerminalLines(
           { text: '  whoami       - Identity & summary', color: '#94a3b8' },
           { text: '  ls           - List GitHub repositories & files', color: '#94a3b8' },
           { text: '  cat <file>   - Detailed specifications of file', color: '#94a3b8' },
@@ -936,7 +972,7 @@ export class RoomScene {
         break;
 
       case 'whoami':
-        this.terminalLines.push(
+        this.pushTerminalLines(
           { text: 'UID: 1000(hanan) GID: 1000(Xcthine)', color: '#34d399', bold: true },
           { text: 'Role: Cybersecurity Research & Systems Architect', color: '#e2e8f0' },
           { text: 'Specialization: eBPF Telemetry · Binary Exploitation · Post-Quantum TLS', color: '#38bdf8' }
@@ -945,7 +981,7 @@ export class RoomScene {
 
       case 'about':
       case 'bio':
-        this.terminalLines.push(
+        this.pushTerminalLines(
           { text: 'BIO // HANAN:', color: '#38bdf8', bold: true },
           { text: 'I build and break low-level systems and cryptographic protocols.', color: '#cbd5e1' },
           { text: 'Specialized in Rust, eBPF, AOSP IPC boundary auditing, and Kyber-768.', color: '#cbd5e1' }
@@ -953,8 +989,8 @@ export class RoomScene {
         break;
 
       case 'ls':
-        this.terminalLines.push({ text: `REPOSITORIES & FILES:`, color: '#38bdf8', bold: true });
-        this.terminalLines.push(
+        this.pushTerminalLines({ text: `REPOSITORIES & FILES:`, color: '#38bdf8', bold: true });
+        this.pushTerminalLines(
           { text: '📁 Cyfex', color: '#34d399' },
           { text: '📁 Hanan-os', color: '#34d399' },
           { text: '📁 Portfolio', color: '#34d399' },
@@ -965,78 +1001,78 @@ export class RoomScene {
           { text: '📄 skills.json', color: '#cbd5e1' },
           { text: '📄 notes.txt', color: '#cbd5e1' }
         );
-        this.terminalLines.push({ text: 'Run: cat <name> to inspect details.', color: '#64748b' });
+        this.pushTerminalLines({ text: 'Run: cat <name> to inspect details.', color: '#64748b' });
         break;
 
       case 'cat':
         if (!args[0]) {
-          this.terminalLines.push({ text: 'Usage: cat <filename> (e.g. cat Cyfex, cat about.md)', color: '#f59e0b' });
+          this.pushTerminalLines({ text: 'Usage: cat <filename> (e.g. cat Cyfex, cat about.md)', color: '#f59e0b' });
         } else {
           const fileToRead = args[0].toLowerCase();
           if (fileToRead === 'cyfex' || fileToRead === 'cyfex.md') {
-            this.terminalLines.push(
+            this.pushTerminalLines(
               { text: 'Cyfex [Android & Mobile Security]', color: '#34d399', bold: true },
               { text: 'The best and broadest on-device Android threat monitoring and security platform using Jetpack Compose and privileged system telemetry (Shizuku) for explainable, zero-cloud risk scoring.', color: '#e2e8f0' },
               { text: 'Tech: Kotlin, Jetpack Compose, Shizuku API, Android Security', color: '#38bdf8' }
             );
           } else if (fileToRead === 'hanan-os' || fileToRead === 'hanan-os.md') {
-            this.terminalLines.push(
+            this.pushTerminalLines(
               { text: 'Hanan-os [Web & Graphics]', color: '#34d399', bold: true },
               { text: 'In production 3D portfolio. Procedural rooms, real-time dynamic canvas display textures, CRT post-processing shaders, Web Audio API synthesis.', color: '#e2e8f0' },
               { text: 'Tech: Three.js, WebGL, GLSL, React, TypeScript', color: '#38bdf8' }
             );
           } else if (fileToRead === 'portfolio' || fileToRead === 'portfolio.md') {
-            this.terminalLines.push(
+            this.pushTerminalLines(
               { text: 'Portfolio [Web & CLI UI]', color: '#34d399', bold: true },
               { text: 'A premium, cybersecurity portfolio built with pure HTML/CSS/JS, featuring a glassmorphism terminal UI, Matrix animation, and an interactive Linux-style CLI.', color: '#e2e8f0' },
               { text: 'Tech: HTML5, CSS3, JavaScript', color: '#38bdf8' }
             );
           } else if (fileToRead === 'sheffer' || fileToRead === 'sheffer.md') {
-            this.terminalLines.push(
+            this.pushTerminalLines(
               { text: 'Sheffer [Mobile & Real-time Chat]', color: '#34d399', bold: true },
               { text: 'A real-time, cross-platform shared space and instant messaging application built using Flutter and powered by Firebase backend services.', color: '#e2e8f0' },
               { text: 'Tech: Flutter, Dart, Firebase Auth, Firestore', color: '#38bdf8' }
             );
           } else if (fileToRead === 'zeel' || fileToRead === 'zeel.md') {
-            this.terminalLines.push(
+            this.pushTerminalLines(
               { text: 'Zeel [Automation & Tooling]', color: '#34d399', bold: true },
               { text: 'A modular, extensible Discord bot built with Python and discord.py, utilizing a clean Cogs architecture for easy feature deployment.', color: '#e2e8f0' },
               { text: 'Tech: Python, discord.py, Cogs Architecture', color: '#38bdf8' }
             );
           } else if (fileToRead === 'about.md') {
-            this.terminalLines.push(
+            this.pushTerminalLines(
               { text: 'about.md // Biography', color: '#34d399', bold: true },
               { text: 'Senior Systems & Cybersecurity Research Engineer.', color: '#e2e8f0' },
               { text: 'Specialized in kernel telemetry probes (eBPF), binary exploitation, glibc heap internals, and post-quantum cryptographic primitives.', color: '#e2e8f0' }
             );
           } else if (fileToRead === 'cv.txt') {
-            this.terminalLines.push(
+            this.pushTerminalLines(
               { text: 'cv.txt // Curriculum Vitae', color: '#34d399', bold: true },
               { text: 'Role: Lead Cybersecurity & Systems Engineer', color: '#e2e8f0' },
               { text: 'Focus: Kernel Internals, eBPF, Binary Exploitation, Post-Quantum Crypto', color: '#e2e8f0' },
               { text: 'Education: B.S. in Computer Science (Summa Cum Laude)', color: '#e2e8f0' }
             );
           } else if (fileToRead === 'skills.json') {
-            this.terminalLines.push(
+            this.pushTerminalLines(
               { text: 'skills.json // Skills Matrix', color: '#34d399', bold: true },
               { text: 'Languages: Rust, C/C++, TypeScript, Python, Go, x86_64 ASM', color: '#e2e8f0' },
               { text: 'Security: eBPF / XDP, Kernel Debugging, Heap Exploitation, Fuzzing', color: '#e2e8f0' }
             );
           } else if (fileToRead === 'notes.txt') {
-            this.terminalLines.push(
+            this.pushTerminalLines(
               { text: 'notes.txt // TODO & Research', color: '#34d399', bold: true },
               { text: '[x] eBPF ringbuf syscall auditing engine.', color: '#e2e8f0' },
               { text: '[x] Post-quantum Key Encapsulation Mechanism benchmark.', color: '#e2e8f0' }
             );
           } else {
-            this.terminalLines.push({ text: `File '${args[0]}' not found.`, color: '#f43f5e' });
+            this.pushTerminalLines({ text: `File '${args[0]}' not found.`, color: '#f43f5e' });
           }
         }
         break;
 
       case 'cv':
       case 'resume':
-        this.terminalLines.push(
+        this.pushTerminalLines(
           { text: 'CURRICULUM VITAE — HANAN', color: '#38bdf8', bold: true },
           { text: '● B.S. in Information Technology', color: '#34d399' },
           { text: '● Cyber Security Researcher & Developer', color: '#e2e8f0' },
@@ -1045,7 +1081,7 @@ export class RoomScene {
         break;
 
       case 'skills':
-        this.terminalLines.push(
+        this.pushTerminalLines(
           { text: 'TECHNICAL PROFICIENCY MATRIX:', color: '#38bdf8', bold: true },
           { text: `Languages: ${SKILLS_SUMMARY.languages.join(' · ')}`, color: '#34d399' },
           { text: `Security: ${SKILLS_SUMMARY.offensive.join(' · ')}`, color: '#fbbf24' },
@@ -1054,15 +1090,15 @@ export class RoomScene {
         break;
 
       case 'certs':
-        this.terminalLines.push({ text: 'VERIFIED SECURITY CREDENTIALS:', color: '#38bdf8', bold: true });
+        this.pushTerminalLines({ text: 'VERIFIED SECURITY CREDENTIALS:', color: '#38bdf8', bold: true });
         CERTIFICATIONS.forEach((c) => {
-          this.terminalLines.push({ text: `● [${c.badgeCode}] ${c.name} (${c.issuer})`, color: '#34d399' });
+          this.pushTerminalLines({ text: `● [${c.badgeCode}] ${c.name} (${c.issuer})`, color: '#34d399' });
         });
         break;
 
       case 'nmap':
         const target = args[0] || '10.13.37.1';
-        this.terminalLines.push(
+        this.pushTerminalLines(
           { text: `Starting Nmap 7.94 against ${target}...`, color: '#38bdf8' },
           { text: '22/tcp   open  ssh (OpenSSH 9.6p1)', color: '#34d399' },
           { text: '80/tcp   open  http (nginx/1.24.0)', color: '#34d399' },
@@ -1073,7 +1109,7 @@ export class RoomScene {
         break;
 
       case 'neofetch':
-        this.terminalLines.push(
+        this.pushTerminalLines(
           { text: 'OS: NULL//OS Hardened Linux x86_64', color: '#38bdf8', bold: true },
           { text: 'Host: Xcthine Workstation Node 01', color: '#cbd5e1' },
           { text: `TechStack: ${SKILLS_SUMMARY.languages.join(' · ')} · ${SKILLS_SUMMARY.systems.join(' · ')}`, color: '#cbd5e1' },
@@ -1084,15 +1120,15 @@ export class RoomScene {
 
       case 'sudo':
         if (args[0] === 'rm' && args[1] === '-rf' && args[2] === '/') {
-          this.terminalLines.push({ text: '[sudo] password for hanan:', color: '#ffffff' });
+          this.pushTerminalLines({ text: '[sudo] password for hanan:', color: '#ffffff' });
           this.terminalWaitingForPassword = true;
         } else {
-          this.terminalLines.push({ text: `Command not found: ${trimmed}`, color: '#f43f5e' });
+          this.pushTerminalLines({ text: `Command not found: ${trimmed}`, color: '#f43f5e' });
         }
         break;
 
       default:
-        this.terminalLines.push({
+        this.pushTerminalLines({
           text: `zsh: command not found: ${cmd}. Type 'help' for available commands.`,
           color: '#f43f5e',
         });
@@ -1284,12 +1320,93 @@ export class RoomScene {
     this.scene.add(ceilingWarm2);
 
     const ceilingWest = new THREE.PointLight(0xffecd6, 1.8, 10.0);
-    ceilingWest.position.set(-6.0, 5.0, 0.5);
+    ceilingWest.position.set(-4.2, 5.0, 0.5);
     this.scene.add(ceilingWest);
 
     const ceilingEast = new THREE.PointLight(0xffecd6, 1.8, 10.0);
-    ceilingEast.position.set(6.0, 5.0, 0.5);
+    ceilingEast.position.set(4.2, 5.0, 0.5);
     this.scene.add(ceilingEast);
+
+    // Realistic architectural wall-wash SpotLight on the Burgundy West Wall (Exactly one super warm light with visible light ray shape)
+    const westSpot = new THREE.SpotLight(0xff8a26, 48.0, 14.0, Math.PI / 2.8, 0.4, 1.0); // Penumbra 0.4 for clear, distinct light ray shape
+    westSpot.position.set(-3.1, 5.8, 0.8); // Shifted further to 0.8 Z to move the light more to the left relative to the wall
+    const target = new THREE.Object3D();
+    target.position.set(-4.96, 2.7, 0.8); // Target position
+    this.scene.add(target);
+    westSpot.target = target;
+    this.scene.add(westSpot);
+
+    // Helper to generate physical, highly-detailed spotlight fixtures pointing at their targets
+    const createPhysicalSpotlightFixture = (srcX: number, srcY: number, srcZ: number, tgtX: number, tgtY: number, tgtZ: number) => {
+      // 1. Ceiling plate
+      const plateGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.03, 16);
+      const plateMat = new THREE.MeshStandardMaterial({
+        color: 0x1e293b,
+        metalness: 0.7,
+        roughness: 0.3,
+        emissive: 0xff8a26,
+        emissiveIntensity: 0.005 // Barely visible heat glow
+      });
+      const plate = new THREE.Mesh(plateGeo, plateMat);
+      plate.position.set(srcX, 6.38, srcZ);
+      this.scene.add(plate);
+
+      // 2. Hanging/swivel metal rod
+      const rodGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.35, 8);
+      const rodMat = new THREE.MeshStandardMaterial({
+        color: 0x0f172a,
+        metalness: 0.8,
+        emissive: 0xff8a26,
+        emissiveIntensity: 0.005
+      });
+      const rod = new THREE.Mesh(rodGeo, rodMat);
+      rod.position.set(srcX, 6.18, srcZ);
+      this.scene.add(rod);
+
+      // 3. Swivel joint ball
+      const jointGeo = new THREE.SphereGeometry(0.04, 8, 8);
+      const joint = new THREE.Mesh(jointGeo, plateMat);
+      joint.position.set(srcX, 5.99, srcZ);
+      this.scene.add(joint);
+
+      // 4. Spotlight head assembly
+      const headGroup = new THREE.Group();
+      headGroup.position.set(srcX, 5.9, srcZ);
+
+      // Main lamp cylinder
+      const bodyGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.22, 16);
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: 0x1e293b,
+        metalness: 0.8,
+        roughness: 0.2,
+        emissive: 0xff8a26,
+        emissiveIntensity: 0.04 // Extremely subtle, natural metallic warmth (10-20% of previous 0.22)
+      });
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      body.rotation.x = -Math.PI / 2; // Lie along local Z axis (top cap pointing forward along +Z)
+      headGroup.add(body);
+
+      // Glowing lens/bulb on the pointing face - matching the rich warm golden light color
+      const bulbGeo = new THREE.CircleGeometry(0.065, 16);
+      const bulbMat = new THREE.MeshBasicMaterial({ color: 0xffa352 });
+      const bulb = new THREE.Mesh(bulbGeo, bulbMat);
+      bulb.position.z = 0.111; // pointing forward on +Z cap
+      headGroup.add(bulb);
+
+      // Direct the head assembly towards the exact spot target
+      const targetPos = new THREE.Vector3(tgtX, tgtY, tgtZ);
+      headGroup.lookAt(targetPos);
+
+      this.scene.add(headGroup);
+
+      // 5. Extremely soft, subtle local spill light to lift any solid black shadows on the metal casing
+      const spillLight = new THREE.PointLight(0xff8a26, 0.45, 1.2); // Scaled down to ~12% intensity (0.45 instead of 3.5)
+      spillLight.position.set(srcX, 5.75, srcZ);
+      this.scene.add(spillLight);
+    };
+
+    // Spawn physical fixture for our single west wall spot (Shifted further to 0.8 Z to match the light)
+    createPhysicalSpotlightFixture(-3.1, 5.8, 0.8, -4.96, 2.7, 0.8);
   }
 
   /* ----------------------------------------------------
@@ -1868,9 +1985,13 @@ export class RoomScene {
   ---------------------------------------------------- */
   private buildSocialFrames() {
     const socialLinks = [
-      { id: 'social_linkedin' as StationId, type: 'linkedin', z: 2.2, y: 4.5 },
-      { id: 'social_github' as StationId, type: 'github', z: 1.2, y: 3.6 },
-      { id: 'social_steam' as StationId, type: 'steam', z: 2.2, y: 2.7 },
+      { id: 'social_linkedin' as StationId, type: 'linkedin', z: 2.2, y: 4.5, isInteractive: true, imageUrl: '' },
+      { id: 'social_github' as StationId, type: 'github', z: 1.2, y: 3.6, isInteractive: true, imageUrl: '' },
+      { id: 'social_steam' as StationId, type: 'steam', z: 2.2, y: 2.7, isInteractive: true, imageUrl: '' },
+      // Three new custom non-interactive frames pointing to swap-ready user assets with graceful fallbacks
+      { id: 'custom_art1' as any, type: 'custom1', z: 0.2, y: 3.6, isInteractive: false, imageUrl: customArt1 },
+      { id: 'custom_art2' as any, type: 'custom2', z: -0.8, y: 4.5, isInteractive: false, imageUrl: customArt2 },
+      { id: 'custom_art3' as any, type: 'custom3', z: -0.8, y: 2.7, isInteractive: false, imageUrl: customArt3 },
     ];
 
     socialLinks.forEach((item) => {
@@ -1983,6 +2104,100 @@ export class RoomScene {
           'M256 120c-75.1 0-136 60.9-136 136 0 62.1 41.5 114.5 98.4 131l24.6-35.5c-5.4-2.1-10.2-5.4-14-9.6l-32 13.1c-1.5.6-3.1.9-4.8.9-7.1 0-12.8-5.7-12.8-12.8 0-5.4 3.4-10.1 8.1-11.9l33.1-13.6c2.3-13.2 12.2-23.5 25.1-25.9l18.4-44.7c-17.5-6.7-26.1-26.3-19.4-43.8 6.7-17.5 26.3-26.1 43.8-19.4 17.5 6.7 26.1 26.3 19.4 43.8-5.1 13.4-18.3 22.2-32.6 22.2h-1.7l-17.9 43.5c.8.1 1.7.1 2.5.1 15.1 0 27.4-12.3 27.4-27.4 0-1.5-.1-2.9-.4-4.3l36.6 15.1c7.9 3.3 11.7 12.4 8.5 20.3-3.3 7.9-12.4 11.7-20.3 8.5l-35.8-14.7c-6.1 7-15 11.1-24.6 11.1-6.7 0-13.1-2-18.6-5.7l-25.7 37.1c24.7 7.1 50.7 6.6 75.1-1.4C354.7 354.7 392 308.8 392 256c0-75.1-60.9-136-136-136zm50.4 108.4c-8.8 0-15.8-7.1-15.8-15.8 0-8.8 7.1-15.8 15.8-15.8s15.8 7.1 15.8 15.8c0 8.7-7.1 15.8-15.8 15.8z'
         );
         ctx.fill(steamPath);
+      } else if (item.type === 'custom1') {
+        // Custom Art 1: Minimalist glowing wave spectrum / peaks (Procedural fallback)
+        ctx.restore();
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(60, 60, 392, 392);
+        
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.7)'; // amber wave
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        for (let x = 70; x < 440; x++) {
+          const y = 256 + Math.sin(x * 0.02) * 80 + Math.cos(x * 0.05) * 30;
+          if (x === 70) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)'; // cyan wave
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        for (let x = 70; x < 440; x++) {
+          const y = 256 + Math.cos(x * 0.015) * 60 + Math.sin(x * 0.04) * 40;
+          if (x === 70) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      } else if (item.type === 'custom2') {
+        // Custom Art 2: Abstract cyber nodes network map (Procedural fallback)
+        ctx.restore();
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(60, 60, 392, 392);
+
+        const nodes = [
+          { x: 150, y: 180, r: 24, c: '#34d399' },
+          { x: 342, y: 160, r: 30, c: '#38bdf8' },
+          { x: 236, y: 340, r: 20, c: '#a78bfa' },
+          { x: 360, y: 340, r: 16, c: '#f43f5e' }
+        ];
+
+        // Draw connections
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(nodes[0].x, nodes[0].y);
+        ctx.lineTo(nodes[1].x, nodes[1].y);
+        ctx.lineTo(nodes[2].x, nodes[2].y);
+        ctx.lineTo(nodes[0].x, nodes[0].y);
+        ctx.lineTo(nodes[2].x, nodes[2].y);
+        ctx.lineTo(nodes[3].x, nodes[3].y);
+        ctx.stroke();
+
+        // Draw node circles
+        nodes.forEach(n => {
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+          ctx.fillStyle = '#1e293b';
+          ctx.fill();
+          ctx.strokeStyle = n.c;
+          ctx.stroke();
+          
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, 6, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffffff';
+          ctx.fill();
+        });
+      } else if (item.type === 'custom3') {
+        // Custom Art 3: Tech matrix glyph cluster (Procedural fallback)
+        ctx.restore();
+        ctx.fillStyle = '#0b0f19';
+        ctx.fillRect(60, 60, 392, 392);
+
+        ctx.font = 'bold 30px "JetBrains Mono", monospace';
+        ctx.fillStyle = 'rgba(71, 85, 105, 0.4)';
+        ctx.fillText('0 1 0 0 1', 130, 180);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText('1 1 0 1 0', 130, 240);
+        ctx.fillStyle = '#f43f5e';
+        ctx.fillText('0 0 1 1 0', 130, 300);
+        ctx.fillStyle = '#10b981';
+        ctx.fillText('X C T H N', 130, 360);
+
+        // Draw clean bounding corner brackets
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(100, 140);
+        ctx.lineTo(100, 100);
+        ctx.lineTo(140, 100);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(412, 360);
+        ctx.lineTo(412, 400);
+        ctx.lineTo(372, 400);
+        ctx.stroke();
       }
 
       const canvasTexture = new THREE.CanvasTexture(canvas);
@@ -1990,6 +2205,37 @@ export class RoomScene {
       canvasTexture.needsUpdate = true;
 
       const matteMat = new THREE.MeshBasicMaterial({ map: canvasTexture });
+
+      // Dynamically load user's JPG/PNG images if placed in assets/ folder, falling back to procedural canvas
+      if (item.type.startsWith('custom')) {
+        const loader = new THREE.TextureLoader();
+        loader.load(
+          item.imageUrl,
+          (tex) => {
+            tex.colorSpace = THREE.SRGBColorSpace;
+            matteMat.map = tex;
+            matteMat.needsUpdate = true;
+          },
+          undefined,
+          () => {
+            // Fallback to loading a PNG image with the same base name
+            const pngUrl = item.imageUrl.replace('.jpg', '.png');
+            loader.load(
+              pngUrl,
+              (texPng) => {
+                texPng.colorSpace = THREE.SRGBColorSpace;
+                matteMat.map = texPng;
+                matteMat.needsUpdate = true;
+              },
+              undefined,
+              () => {
+                // Keep procedural canvas art if both files are absent
+              }
+            );
+          }
+        );
+      }
+
       const matteGeo = new THREE.PlaneGeometry(0.72, 0.72);
       const matteMesh = new THREE.Mesh(matteGeo, matteMat);
       matteMesh.position.set(0, 0, 0.032);
@@ -2000,7 +2246,10 @@ export class RoomScene {
       group.rotation.y = Math.PI / 2;
 
       this.scene.add(group);
-      this.registerInteractive(group, item.id);
+
+      if (item.isInteractive) {
+        this.registerInteractive(group, item.id);
+      }
     });
   }
 
@@ -3034,8 +3283,6 @@ export class RoomScene {
     }
 
     if (this.renderer) {
-      this.renderer.forceContextLoss();
-      this.renderer.dispose();
       if (dom && this.container.contains(dom)) {
         this.container.removeChild(dom);
       }
