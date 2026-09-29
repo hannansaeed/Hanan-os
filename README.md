@@ -25,7 +25,7 @@
   - **About Me**: Verified background, B.S. in Information Technology and cyber defense focus.
   - **Notes Scratchpad**: Interactive text editor for security research logs.
   - **Curriculum Vitae (CV)**: Verified career credentials with one-click direct PDF opener for `/assets/cv.pdf`.
-  - **Contacts & Channels**: Clickable vector brand cards for **Email**, **GitHub**, **LinkedIn**, **Discord** (`ID: 1079258412317163700`), **Instagram** (`@__not__batman`), and **PDF CV**.
+  - **Contacts & Channels**: Clickable vector brand cards for **Email**, **GitHub**, **LinkedIn**, **Discord** (`ID: 1079258412317163700`), **Instagram** (`@__not__batman__`), and **PDF CV**.
   - **Photo Gallery**: High-resolution environment renders and custom wallpaper previews.
   - **Settings & Credits**: Acknowledgments and inspirations.
 
@@ -163,7 +163,7 @@
 - **GitHub**: [@hannansaeed](https://github.com/hannansaeed)
 - **LinkedIn**: [in/hanan-saeed](https://linkedin.com/in/hanan-saeed)
 - **Discord**: User ID `1079258412317163700` ([Direct Link](https://discord.com/users/1079258412317163700))
-- **Instagram**: [@\_\_not\_\_batman](https://instagram.com/__not__batman)
+- **Instagram**: [@\_\_not\_\_batman\_\_](https://www.instagram.com/__not__batman__/)
 - **Email**: [hanansaeed609@yahoo.com](mailto:hanansaeed609@yahoo.com)
 
 ---

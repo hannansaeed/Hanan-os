@@ -821,7 +821,7 @@ export class RoomScene {
           {
             id: 'instagram',
             name: 'Instagram',
-            handle: '@__not__batman',
+            handle: '@__not__batman__',
             action: 'Visit Profile ↗',
             color: '#f472b6',
           },
@@ -1835,7 +1835,7 @@ export class RoomScene {
           'https://github.com/hannansaeed',
           'https://linkedin.com/in/hanan-saeed',
           'https://discord.com/users/1079258412317163700',
-          'https://instagram.com/__not__batman',
+          'https://www.instagram.com/__not__batman__/',
           '/assets/cv.pdf',
         ];
 
