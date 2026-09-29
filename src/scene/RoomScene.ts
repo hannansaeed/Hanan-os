@@ -655,25 +655,93 @@ export class RoomScene {
           hc.fillText(l, cx + 24, cy + 105 + idx * 30);
         });
       } else if (this.desktopActiveWindow === 'resume') {
-        hc.font = 'bold 24px "Plus Jakarta Sans", sans-serif';
+        hc.font = 'bold 26px "Plus Jakarta Sans", sans-serif';
         hc.fillStyle = '#38bdf8';
-        hc.fillText('Resume.pdf — Curriculum Vitae', cx, cy + 28);
-        const resumeLines = [
-          'Education:',
-          '  B.S. Computer Science — Summa Cum Laude (GPA 3.96)',
-          '',
-          'Experience:',
-          '  Lead Security Architect @ DedSec Research Labs (2024 - Present)',
-          '  - Developed eBPF ringbuf syscall auditing engine',
-          '  - Benchmarked post-quantum KEM (Kyber-768) protocols',
-          '',
-          'Skills:',
-          '  TypeScript, React, Three.js, Rust, Python, Docker, Kubernetes, Linux Kernel',
+        hc.fillText('Hanan Saeed — Curriculum Vitae (CV)', cx, cy + 28);
+
+        hc.font = '16px "Plus Jakarta Sans", sans-serif';
+        hc.fillStyle = '#94a3b8';
+        hc.fillText('Cyber Security Researcher & Python Developer | B.S. Information Technology (BZU)', cx, cy + 58);
+
+        // Open live CV Button (Interactive button at top right)
+        const openBtnX = cx + cw - 260;
+        const openBtnY = cy + 12;
+        hc.fillStyle = 'rgba(14, 165, 233, 0.25)';
+        hc.strokeStyle = '#38bdf8';
+        hc.lineWidth = 1.5;
+        hc.beginPath();
+        hc.roundRect(openBtnX, openBtnY, 250, 44, 10);
+        hc.fill();
+        hc.stroke();
+
+        hc.font = 'bold 15px "Plus Jakarta Sans", sans-serif';
+        hc.fillStyle = '#ffffff';
+        hc.textAlign = 'center';
+        hc.fillText('📄 Open CV (PDF) ↗', openBtnX + 125, openBtnY + 28);
+        hc.textAlign = 'left';
+
+        // Content cards
+        const resumeSections = [
+          {
+            title: '🎓 Education',
+            color: '#34d399',
+            items: [
+              '• B.S. in Information Technology — Bahauddin Zakariya University (BZU) [10/2023 – Present]',
+              '  Specialization: Offensive cyber vectors, automated vulnerability testing, security architecture',
+              '• Pre-Engineering / ICS — Govt. Graduate College of Science [09/2021 – 09/2023]',
+            ],
+          },
+          {
+            title: '🛡️ Core Security Research & Tooling Experience',
+            color: '#38bdf8',
+            items: [
+              '• Network Vulnerability Scanner: Python async engine utilizing Nmap bindings & live CVE database mapper',
+              '• Web App Pentesting Toolkit: Modular SQLi/XSS/CSRF testing framework aligned with OWASP Top 10',
+              '• Security Alert & Incident Bot: Real-time Linux syslog telemetry parser & Discord security dispatcher',
+              '• Hardened Android Application: Kotlin + Firebase real-time datastore with SQLCipher encryption',
+            ],
+          },
+          {
+            title: '⚡ Technical Skills & Certifications',
+            color: '#fbbf24',
+            items: [
+              '• Languages: Python, Kotlin, C/C++, TypeScript, Bash, SQL, Dart',
+              '• Security: Vulnerability Assessment, Web App Security, OWASP Top 10, Network Reconnaissance, Cryptography',
+              '• Certifications: Certified Ethical Hacker Training, BZU Offensive Cyber Research & Tooling',
+            ],
+          },
+          {
+            title: '🌐 Verified CV Documents & Links',
+            color: '#a78bfa',
+            items: [
+              '• Direct Hosted PDF: /assets/cv.pdf',
+              '• Live Web Portfolio: https://hannansaeed.github.io/portfolio',
+              '• GitHub: https://github.com/hannansaeed  |  LinkedIn: https://linkedin.com/in/hanan-saeed',
+            ],
+          },
         ];
-        resumeLines.forEach((l, idx) => {
-          hc.font = l.startsWith('  -') || l.startsWith('  B.') || l.startsWith('  Lead') ? '16px "Plus Jakarta Sans", sans-serif' : 'bold 18px "Plus Jakarta Sans", sans-serif';
-          hc.fillStyle = l.endsWith(':') ? '#34d399' : '#e2e8f0';
-          hc.fillText(l, cx + 24, cy + 80 + idx * 36);
+
+        let curY = cy + 90;
+        resumeSections.forEach((sec) => {
+          const cardH = 34 + sec.items.length * 28;
+          hc.fillStyle = 'rgba(15, 23, 42, 0.7)';
+          hc.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+          hc.beginPath();
+          hc.roundRect(cx, curY, cw, cardH, 12);
+          hc.fill();
+          hc.stroke();
+
+          hc.font = 'bold 18px "Plus Jakarta Sans", sans-serif';
+          hc.fillStyle = sec.color;
+          hc.fillText(sec.title, cx + 20, curY + 28);
+
+          sec.items.forEach((it, iIdx) => {
+            hc.font = it.startsWith('•') ? 'bold 15px "Plus Jakarta Sans", sans-serif' : '14px monospace';
+            hc.fillStyle = it.includes('https://') ? '#38bdf8' : '#e2e8f0';
+            hc.fillText(it, cx + 24, curY + 58 + iIdx * 28);
+          });
+
+          curY += cardH + 16;
         });
       } else if (this.desktopActiveWindow === 'mail') {
         hc.font = 'bold 24px "Plus Jakarta Sans", sans-serif';
@@ -1045,12 +1113,17 @@ export class RoomScene {
               { text: 'Senior Systems & Cybersecurity Research Engineer.', color: '#e2e8f0' },
               { text: 'Specialized in kernel telemetry probes (eBPF), binary exploitation, glibc heap internals, and post-quantum cryptographic primitives.', color: '#e2e8f0' }
             );
-          } else if (fileToRead === 'cv.txt') {
+          } else if (fileToRead === 'cv.txt' || fileToRead === 'cv.md' || fileToRead === 'cv' || fileToRead === 'resume') {
+            this.safeOpenLink('/assets/cv.pdf');
             this.pushTerminalLines(
-              { text: 'cv.txt // Curriculum Vitae', color: '#34d399', bold: true },
-              { text: 'Role: Lead Cybersecurity & Systems Engineer', color: '#e2e8f0' },
-              { text: 'Focus: Kernel Internals, eBPF, Binary Exploitation, Post-Quantum Crypto', color: '#e2e8f0' },
-              { text: 'Education: B.S. in Computer Science (Summa Cum Laude)', color: '#e2e8f0' }
+              { text: 'cv.txt // Curriculum Vitae — Hanan Saeed', color: '#38bdf8', bold: true },
+              { text: 'Role: Cyber Security Researcher & Python Developer', color: '#34d399' },
+              { text: 'Education: B.S. in Information Technology (BZU, 2023 - Present)', color: '#e2e8f0' },
+              { text: 'Specialization: Vulnerability Assessment, Offensive Security Tooling, Python Automation', color: '#e2e8f0' },
+              { text: 'Key Projects: Network Vuln Scanner · Web Pentest Toolkit · Incident Bot · Secure Mobile App', color: '#e2e8f0' },
+              { text: 'PDF Document: /assets/cv.pdf (also at /cv.pdf)', color: '#a78bfa' },
+              { text: 'Live Web Portfolio: https://hannansaeed.github.io/portfolio', color: '#38bdf8' },
+              { text: '[Opened /assets/cv.pdf in browser tab]', color: '#10b981' }
             );
           } else if (fileToRead === 'skills.json') {
             this.pushTerminalLines(
@@ -1072,13 +1145,16 @@ export class RoomScene {
 
       case 'cv':
       case 'resume':
-        this.safeOpenLink('https://hannansaeed.github.io/portfolio');
+        this.safeOpenLink('/assets/cv.pdf');
         this.pushTerminalLines(
           { text: 'CURRICULUM VITAE — HANAN SAEED', color: '#38bdf8', bold: true },
-          { text: '● B.S. in Information Technology (BZU, 2023 - Present)', color: '#34d399' },
-          { text: '● Cyber Security Researcher & Python Developer', color: '#e2e8f0' },
-          { text: '● Projects: Network Vuln Scanner, Web Pentest Toolkit, Log Alert Bot', color: '#e2e8f0' },
-          { text: '[Command success: Warping browser to PDF portfolio!]', color: '#10b981' }
+          { text: '● Title: Cyber Security Researcher & Python Developer', color: '#34d399' },
+          { text: '● Education: B.S. in Information Technology (BZU, 2023 - Present)', color: '#e2e8f0' },
+          { text: '● Core Focus: Vulnerability Assessment, OWASP Testing, Python Security Tooling', color: '#e2e8f0' },
+          { text: '● Hosted PDF CV: /assets/cv.pdf (or /cv.pdf)', color: '#a78bfa' },
+          { text: '● Live Web Portfolio: https://hannansaeed.github.io/portfolio', color: '#38bdf8' },
+          { text: '● GitHub: https://github.com/hannansaeed  |  LinkedIn: https://linkedin.com/in/hanan-saeed', color: '#cbd5e1' },
+          { text: '[Warping browser to /assets/cv.pdf ↗]', color: '#10b981', bold: true }
         );
         break;
 
@@ -1166,7 +1242,10 @@ export class RoomScene {
       for (const id of dockList) {
         if (x >= curX && x <= curX + 60) {
           if (id === 'resume') {
-            window.open('about:blank', '_blank');
+            this.desktopActiveWindow = 'resume';
+            this.desktopStartMenuOpen = false;
+            this.safeOpenLink('/assets/cv.pdf');
+            soundEngine.playChirp('success');
           } else {
             this.desktopActiveWindow = id as any;
             this.desktopStartMenuOpen = false;
@@ -1196,7 +1275,9 @@ export class RoomScene {
         const fy = 50 + idx * 135;
         if (y >= fy && y <= fy + 120) {
           if (id === 'resume') {
-            window.open('about:blank', '_blank');
+            this.desktopActiveWindow = 'resume';
+            this.safeOpenLink('/assets/cv.pdf');
+            soundEngine.playChirp('success');
           } else {
             this.desktopActiveWindow = id as any;
           }
@@ -1215,6 +1296,20 @@ export class RoomScene {
       if (x >= wx + ww - 52 && x <= wx + ww - 16 && y >= wy + 13 && y <= wy + 45) {
         this.desktopActiveWindow = 'none';
         return;
+      }
+
+      // Inside Resume Window: Open Live CV Button
+      if (this.desktopActiveWindow === 'resume') {
+        const cx = wx + 36;
+        const cy = wy + 80;
+        const cw = ww - 72;
+        const openBtnX = cx + cw - 260;
+        const openBtnY = cy + 12;
+        if (x >= openBtnX && x <= openBtnX + 250 && y >= openBtnY && y <= openBtnY + 44) {
+          soundEngine.playChirp('success');
+          this.safeOpenLink('/assets/cv.pdf');
+          return;
+        }
       }
 
       // Inside Settings Window: Theme Selection

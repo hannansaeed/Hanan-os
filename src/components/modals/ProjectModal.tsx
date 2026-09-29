@@ -483,18 +483,30 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
           ========================================================= */}
           {activeApp === 'cv' && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800">
                 <div>
                   <h2 className="text-xl font-bold text-white font-display">Curriculum Vitae</h2>
                   <p className="text-xs text-slate-400 mt-0.5">Verified Career History, Credentials &amp; Education</p>
                 </div>
-                <button
-                  onClick={copyResumeToClipboard}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-mono font-semibold hover:bg-emerald-500/30 transition-colors"
-                >
-                  {copiedResume ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedResume ? 'Copied Full CV Text' : 'Copy Plaintext CV'}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={RESUME_DATA.cvPdfUrl || '/assets/cv.pdf'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => soundEngine.playChirp('success')}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-rose-500 hover:bg-rose-400 text-slate-950 text-xs font-mono font-bold transition-all shadow-md"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Open PDF CV ↗</span>
+                  </a>
+                  <button
+                    onClick={copyResumeToClipboard}
+                    className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-mono font-semibold hover:bg-emerald-500/30 transition-colors"
+                  >
+                    {copiedResume ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedResume ? 'Copied' : 'Copy Plaintext'}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Education */}

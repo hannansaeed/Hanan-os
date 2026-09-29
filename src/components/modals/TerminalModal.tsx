@@ -89,9 +89,9 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
 
       case 'cv':
       case 'resume':
-        // Trigger opening their actual portfolio/CV PDF link in a new tab!
+        // Trigger opening their actual PDF CV link in a new tab!
         try {
-          window.open('https://hannansaeed.github.io/portfolio', '_blank', 'noopener,noreferrer');
+          window.open('/assets/cv.pdf', '_blank', 'noopener,noreferrer');
         } catch {
           // Fallback for isolated sandbox environments
         }
@@ -126,7 +126,7 @@ export const TerminalModal: React.FC<TerminalModalProps> = ({ onClose, onOpenPro
               <span className="text-emerald-400 font-bold">Accreditations:</span> BZU Vulnerability Assessment Specialist · Independent Web Pentesting
             </div>
             <div>
-              <span className="text-purple-400 font-bold">Links:</span> github.com/hannansaeed · linkedin.com/in/hanan-saeed · [Warped to Portfolio!]
+              <span className="text-purple-400 font-bold">Links:</span> <a href="/assets/cv.pdf" target="_blank" rel="noopener noreferrer" className="text-rose-400 underline">/assets/cv.pdf</a> · <a href="https://hannansaeed.github.io/portfolio" target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline">Web Portfolio</a> · <a href="https://github.com/hannansaeed" target="_blank" rel="noopener noreferrer" className="text-slate-300 underline">GitHub</a> · <a href="https://linkedin.com/in/hanan-saeed" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">LinkedIn</a>
             </div>
           </div>
         );

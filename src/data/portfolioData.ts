@@ -93,6 +93,7 @@ export const RESUME_DATA = {
   github: 'https://github.com/hannansaeed',
   linkedin: 'https://linkedin.com/in/hanan-saeed',
   portfolio: 'https://hannansaeed.github.io/portfolio',
+  cvPdfUrl: '/assets/cv.pdf',
   summary:
     'Cyber security researcher and Python developer with a strong interest in offensive and defensive security, vulnerability assessment, and AI-powered automation. Experienced in building security tooling, working with APIs and databases, and applying practical penetration testing techniques learned through academic coursework and certifications. Passionate about ethical hacking, secure software development, and emerging AI-driven security systems.',
   education: [
