@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient for Tab Clarity -->
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e1b4b" />
+    </linearGradient>
+
+    <!-- Hat & Hair Indigo Gradient -->
+    <linearGradient id="hairGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#312e81" />
+      <stop offset="50%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+
+    <!-- Gold Accent Gradient -->
+    <linearGradient id="goldGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="50%" stop-color="#eab308" />
+      <stop offset="100%" stop-color="#ca8a04" />
+    </linearGradient>
+
+    <!-- Eye Cyan Glow Gradient -->
+    <linearGradient id="eyeGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="70%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#0369a1" />
+    </linearGradient>
+
+    <!-- Hat Veil / Ring Accent -->
+    <linearGradient id="tealGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2dd4bf" />
+      <stop offset="100%" stop-color="#0f766e" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Circle (Ensures crisp contrast on light and dark browser themes) -->
+  <circle cx="64" cy="64" r="62" fill="url(#bgGrad)" stroke="#6366f1" stroke-width="2.5" />
+
+  <!-- Hat Back Ribbons / Veil -->
+  <path d="M42 28 C26 44 24 74 30 92 C34 92 38 78 40 68 Z" fill="#1e1b4b" opacity="0.9" />
+  <path d="M86 28 C102 44 104 74 98 92 C94 92 90 78 88 68 Z" fill="#1e1b4b" opacity="0.9" />
+
+  <!-- Cat Ears -->
+  <!-- Left Ear -->
+  <path d="M32 44 L18 16 C28 20 40 28 44 38 Z" fill="url(#hairGrad)" stroke="#1e1b4b" stroke-width="2" />
+  <path d="M30 38 L22 22 C28 25 36 30 38 36 Z" fill="#f472b6" opacity="0.85" />
+  
+  <!-- Right Ear -->
+  <path d="M96 44 L110 16 C100 20 88 28 84 38 Z" fill="url(#hairGrad)" stroke="#1e1b4b" stroke-width="2" />
+  <path d="M98 38 L106 22 C100 25 92 30 90 36 Z" fill="#f472b6" opacity="0.85" />
+
+  <!-- White Cat Face / Head -->
+  <ellipse cx="64" cy="74" rx="42" ry="36" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2" />
+  
+  <!-- Soft Pink Cat Cheeks -->
+  <ellipse cx="36" cy="80" rx="7" ry="4" fill="#fda4af" opacity="0.6" />
+  <ellipse cx="92" cy="80" rx="7" ry="4" fill="#fda4af" opacity="0.6" />
+
+  <!-- Scaramouche Signature Indigo Hair Bangs & Front Tufts -->
+  <!-- Left Hair Tuft -->
+  <path d="M26 62 C22 72 26 84 32 86 C30 78 32 68 36 60 Z" fill="url(#hairGrad)" />
+  <!-- Right Hair Tuft -->
+  <path d="M102 62 C106 72 102 84 96 86 C98 78 96 68 92 60 Z" fill="url(#hairGrad)" />
+
+  <!-- Center Bangs -->
+  <path d="M34 52 C42 62 48 68 52 70 C50 62 52 54 50 48 Z" fill="url(#hairGrad)" />
+  <path d="M50 48 C56 64 62 70 64 72 C66 64 70 56 68 48 Z" fill="url(#hairGrad)" />
+  <path d="M68 48 C72 58 78 66 86 68 C82 60 84 52 82 48 Z" fill="url(#hairGrad)" />
+  <!-- Top Hair Dome -->
+  <path d="M36 50 C44 36 84 36 92 50 C80 44 48 44 36 50 Z" fill="url(#hairGrad)" />
+
+  <!-- Iconic Scaramouche Red/Magenta Eyeliner -->
+  <path d="M37 68 C41 63 51 63 55 69" stroke="#e11d48" stroke-width="3" stroke-linecap="round" fill="none" />
+  <path d="M55 69 L58 66" stroke="#e11d48" stroke-width="2.5" stroke-linecap="round" />
+
+  <path d="M91 68 C87 63 77 63 73 69" stroke="#e11d48" stroke-width="3" stroke-linecap="round" fill="none" />
+  <path d="M73 69 L70 66" stroke="#e11d48" stroke-width="2.5" stroke-linecap="round" />
+
+  <!-- Cat Eyes (Large expressive cyan eyes) -->
+  <!-- Left Eye -->
+  <ellipse cx="46" cy="74" rx="7.5" ry="9" fill="url(#eyeGrad)" stroke="#0c4a6e" stroke-width="1.5" />
+  <ellipse cx="46" cy="74" rx="3.5" ry="6" fill="#082f49" />
+  <circle cx="43.5" cy="70.5" r="2.8" fill="#ffffff" />
+  <circle cx="48" cy="77" r="1.2" fill="#ffffff" />
+
+  <!-- Right Eye -->
+  <ellipse cx="82" cy="74" rx="7.5" ry="9" fill="url(#eyeGrad)" stroke="#0c4a6e" stroke-width="1.5" />
+  <ellipse cx="82" cy="74" rx="3.5" ry="6" fill="#082f49" />
+  <circle cx="79.5" cy="70.5" r="2.8" fill="#ffffff" />
+  <circle cx="84" cy="77" r="1.2" fill="#ffffff" />
+
+  <!-- Cat Nose & Cute Smug Cat Mouth (w / :3) -->
+  <path d="M64 79 L62 82 L66 82 Z" fill="#f43f5e" />
+  <path d="M57 84 C60 88 64 88 64 84 C64 88 68 88 71 84" stroke="#475569" stroke-width="2" stroke-linecap="round" fill="none" />
+
+  <!-- Scaramouche's Iconic Conical Traveler Hat (Jingasa) on Top -->
+  <!-- Hat Brim -->
+  <path d="M12 36 C36 18 92 18 116 36 C96 30 32 30 12 36 Z" fill="#1e1b4b" stroke="#312e81" stroke-width="1.5" />
+  <!-- Hat Top Cone -->
+  <path d="M32 30 Q64 8 96 30 Q64 24 32 30 Z" fill="#1e1b4b" />
+  <!-- Hat Gold Rim Ring & Center Emblem -->
+  <path d="M16 34 C40 26 88 26 112 34" stroke="url(#goldGrad)" stroke-width="2.5" fill="none" />
+  <circle cx="64" cy="24" r="6.5" fill="url(#goldGrad)" stroke="#78350f" stroke-width="1" />
+  <circle cx="64" cy="24" r="3" fill="url(#tealGrad)" />
+
+  <!-- Dangling Hat Gold Ring Ornaments -->
+  <circle cx="28" cy="38" r="3.5" fill="url(#goldGrad)" />
+  <circle cx="100" cy="38" r="3.5" fill="url(#goldGrad)" />
+</svg>
