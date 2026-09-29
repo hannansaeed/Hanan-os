@@ -624,19 +624,55 @@ export class RoomScene {
       const cw = ww - 72;
 
       if (this.desktopActiveWindow === 'about') {
-        hc.font = 'bold 24px "Plus Jakarta Sans", sans-serif';
+        hc.font = 'bold 26px "Plus Jakarta Sans", sans-serif';
         hc.fillStyle = '#38bdf8';
-        hc.fillText('About Me — Hanan', cx, cy + 28);
-        const aboutLines = [
-          '● Lead Security Systems Architect & Full-Stack Engineer',
-          '● Passionate about low-level Rust, eBPF kernel auditing & post-quantum cryptography',
-          '● Building immersive 3D web applications with Three.js & React',
-          '● Dedicated to clean architecture, performance, and cyber defense research',
+        hc.fillText('About Me — Hanan Saeed', cx, cy + 28);
+
+        hc.font = '16px "Plus Jakarta Sans", sans-serif';
+        hc.fillStyle = '#94a3b8';
+        hc.fillText('Cyber Security Researcher & Python Developer | B.S. Information Technology (BZU)', cx, cy + 58);
+
+        const aboutCards = [
+          {
+            title: '👤 Identity & Background',
+            color: '#38bdf8',
+            desc: 'Cyber security researcher and Python developer with a focus on offensive cyber operations, vulnerability assessment, automated testing tooling, and secure full-stack software architecture.',
+          },
+          {
+            title: '🎓 Education & Academic Focus',
+            color: '#34d399',
+            desc: 'Pursuing B.S. in Information Technology at Bahauddin Zakariya University (BZU) [10/2023 – Present]. Specialized in penetration testing, network reconnaissance, and secure system design.',
+          },
+          {
+            title: '⚡ Python Security Tooling & Automation',
+            color: '#fbbf24',
+            desc: 'Engineered high-impact tools including asynchronous Network Vulnerability Scanner (Nmap + CVE mapping), Web App Pentesting Toolkit (OWASP Top 10), and Linux syslog Discord alert daemons.',
+          },
+          {
+            title: '🌐 Interactive 3D Environments & Systems',
+            color: '#a78bfa',
+            desc: 'Passionate about Three.js/WebGL 3D graphics, procedural shader rendering, and building rich spatial hacker workstation simulations in the browser.',
+          },
         ];
-        aboutLines.forEach((l, idx) => {
-          hc.font = '18px "Plus Jakarta Sans", sans-serif';
-          hc.fillStyle = '#e2e8f0';
-          hc.fillText(l, cx + 24, cy + 90 + idx * 50);
+
+        let curY = cy + 90;
+        aboutCards.forEach((c) => {
+          hc.fillStyle = 'rgba(15, 23, 42, 0.7)';
+          hc.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+          hc.beginPath();
+          hc.roundRect(cx, curY, cw, 105, 12);
+          hc.fill();
+          hc.stroke();
+
+          hc.font = 'bold 18px "Plus Jakarta Sans", sans-serif';
+          hc.fillStyle = c.color;
+          hc.fillText(c.title, cx + 24, curY + 34);
+
+          hc.font = '15px "Plus Jakarta Sans", sans-serif';
+          hc.fillStyle = '#cbd5e1';
+          hc.fillText(c.desc, cx + 24, curY + 70);
+
+          curY += 122;
         });
       } else if (this.desktopActiveWindow === 'notes') {
         hc.font = 'bold 24px "Plus Jakarta Sans", sans-serif';
@@ -744,40 +780,233 @@ export class RoomScene {
           curY += cardH + 16;
         });
       } else if (this.desktopActiveWindow === 'mail') {
-        hc.font = 'bold 24px "Plus Jakarta Sans", sans-serif';
+        hc.font = 'bold 26px "Plus Jakarta Sans", sans-serif';
         hc.fillStyle = '#10b981';
-        hc.fillText('Mail & Contact Links', cx, cy + 28);
+        hc.fillText('Contact & Social Channels — Hanan Saeed', cx, cy + 28);
+
+        hc.font = '16px "Plus Jakarta Sans", sans-serif';
+        hc.fillStyle = '#94a3b8';
+        hc.fillText('Click any channel card below to open direct profile / messaging link.', cx, cy + 58);
+
         const contacts = [
-          { label: '📧 Email:', val: 'hanansaeed609@yahoo.com' },
-          { label: '🐙 GitHub:', val: 'github.com/hannansaeed' },
-          { label: '💼 LinkedIn:', val: 'linkedin.com/in/hanan-saeed' },
-          { label: '🐦 Instagram:', val: '__not__batman' },
+          {
+            id: 'email',
+            name: 'Direct Email',
+            handle: 'hanansaeed609@yahoo.com',
+            action: 'Send Email ↗',
+            color: '#38bdf8',
+          },
+          {
+            id: 'github',
+            name: 'GitHub',
+            handle: 'github.com/hannansaeed',
+            action: 'View Profile ↗',
+            color: '#c084fc',
+          },
+          {
+            id: 'linkedin',
+            name: 'LinkedIn',
+            handle: 'linkedin.com/in/hanan-saeed',
+            action: 'Connect ↗',
+            color: '#60a5fa',
+          },
+          {
+            id: 'discord',
+            name: 'Discord',
+            handle: 'User ID: 1079258412317163700',
+            action: 'Open Discord ↗',
+            color: '#818cf8',
+          },
+          {
+            id: 'instagram',
+            name: 'Instagram',
+            handle: '@__not__batman',
+            action: 'Visit Profile ↗',
+            color: '#f472b6',
+          },
+          {
+            id: 'cv',
+            name: 'Curriculum Vitae (PDF)',
+            handle: '/assets/cv.pdf',
+            action: 'Open PDF ↗',
+            color: '#34d399',
+          },
         ];
+
+        const cardW = (cw - 24) / 2;
+        const cardH = 104;
+
         contacts.forEach((c, idx) => {
-          const iy = cy + 70 + idx * 90;
-          hc.fillStyle = 'rgba(30, 41, 59, 0.65)';
-          hc.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+          const col = idx % 2;
+          const row = Math.floor(idx / 2);
+          const cardX = cx + col * (cardW + 24);
+          const cardY = cy + 85 + row * (cardH + 18);
+          const bx = cardX + 16;
+          const by = cardY + 18;
+
+          // Card glass background
+          hc.fillStyle = 'rgba(15, 23, 42, 0.75)';
+          hc.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+          hc.lineWidth = 1.5;
           hc.beginPath();
-          hc.roundRect(cx, iy, cw, 75, 10);
+          hc.roundRect(cardX, cardY, cardW, cardH, 14);
           hc.fill();
           hc.stroke();
 
+          // Draw Platform Vector Logos
+          if (c.id === 'email') {
+            hc.fillStyle = '#0284c7';
+            hc.beginPath();
+            hc.roundRect(bx, by, 68, 68, 14);
+            hc.fill();
+
+            hc.strokeStyle = '#ffffff';
+            hc.lineWidth = 3.5;
+            hc.beginPath();
+            hc.roundRect(bx + 16, by + 21, 36, 26, 4);
+            hc.stroke();
+
+            hc.beginPath();
+            hc.moveTo(bx + 18, by + 23);
+            hc.lineTo(bx + 34, by + 36);
+            hc.lineTo(bx + 50, by + 23);
+            hc.stroke();
+          } else if (c.id === 'github') {
+            hc.fillStyle = '#181717';
+            hc.beginPath();
+            hc.roundRect(bx, by, 68, 68, 14);
+            hc.fill();
+
+            hc.save();
+            hc.translate(bx + 14, by + 14);
+            hc.scale(40 / 24, 40 / 24);
+            const ghPath = new Path2D(
+              'M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z'
+            );
+            hc.fillStyle = '#ffffff';
+            hc.fill(ghPath);
+            hc.restore();
+          } else if (c.id === 'linkedin') {
+            hc.fillStyle = '#0a66c2';
+            hc.beginPath();
+            hc.roundRect(bx, by, 68, 68, 14);
+            hc.fill();
+
+            hc.font = 'bold 42px "Plus Jakarta Sans", sans-serif';
+            hc.fillStyle = '#ffffff';
+            hc.textAlign = 'center';
+            hc.fillText('in', bx + 34, by + 48);
+            hc.textAlign = 'left';
+          } else if (c.id === 'discord') {
+            hc.fillStyle = '#5865F2';
+            hc.beginPath();
+            hc.roundRect(bx, by, 68, 68, 14);
+            hc.fill();
+
+            hc.save();
+            hc.translate(bx + 14, by + 15);
+            hc.scale(40 / 24, 40 / 24);
+            const dcPath = new Path2D(
+              'M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z'
+            );
+            hc.fillStyle = '#ffffff';
+            hc.fill(dcPath);
+            hc.restore();
+          } else if (c.id === 'instagram') {
+            const igGrad = hc.createLinearGradient(bx, by + 68, bx + 68, by);
+            igGrad.addColorStop(0, '#feda75');
+            igGrad.addColorStop(0.25, '#fa7e1e');
+            igGrad.addColorStop(0.5, '#d62976');
+            igGrad.addColorStop(0.75, '#962fbf');
+            igGrad.addColorStop(1, '#4f5bd5');
+            hc.fillStyle = igGrad;
+            hc.beginPath();
+            hc.roundRect(bx, by, 68, 68, 14);
+            hc.fill();
+
+            hc.strokeStyle = '#ffffff';
+            hc.lineWidth = 3.5;
+            hc.beginPath();
+            hc.roundRect(bx + 16, by + 16, 36, 36, 11);
+            hc.stroke();
+
+            hc.beginPath();
+            hc.arc(bx + 34, by + 34, 9, 0, Math.PI * 2);
+            hc.stroke();
+
+            hc.fillStyle = '#ffffff';
+            hc.beginPath();
+            hc.arc(bx + 44, by + 24, 2.5, 0, Math.PI * 2);
+            hc.fill();
+          } else if (c.id === 'cv') {
+            hc.fillStyle = '#dc2626';
+            hc.beginPath();
+            hc.roundRect(bx, by, 68, 68, 14);
+            hc.fill();
+
+            hc.strokeStyle = '#ffffff';
+            hc.lineWidth = 3;
+            hc.beginPath();
+            hc.roundRect(bx + 17, by + 14, 34, 40, 5);
+            hc.stroke();
+
+            hc.font = 'bold 12px "Plus Jakarta Sans", sans-serif';
+            hc.fillStyle = '#ffffff';
+            hc.textAlign = 'center';
+            hc.fillText('PDF', bx + 34, by + 39);
+            hc.textAlign = 'left';
+          }
+
+          // Title & Handle
           hc.font = 'bold 18px "Plus Jakarta Sans", sans-serif';
-          hc.fillStyle = '#34d399';
-          hc.fillText(c.label, cx + 24, iy + 45);
-          hc.font = '18px monospace';
+          hc.fillStyle = c.color;
+          hc.fillText(c.name, cardX + 98, cardY + 40);
+
+          hc.font = '15px monospace';
           hc.fillStyle = '#f8fafc';
-          hc.fillText(c.val, cx + 220, iy + 45);
+          hc.fillText(c.handle, cardX + 98, cardY + 70);
+
+          // Clickable Action Button Pill on right
+          const btnW = 145;
+          const btnH = 38;
+          const btnX = cardX + cardW - btnW - 16;
+          const btnY = cardY + (cardH - btnH) / 2;
+
+          hc.fillStyle = 'rgba(255, 255, 255, 0.08)';
+          hc.strokeStyle = c.color;
+          hc.lineWidth = 1.2;
+          hc.beginPath();
+          hc.roundRect(btnX, btnY, btnW, btnH, 8);
+          hc.fill();
+          hc.stroke();
+
+          hc.font = 'bold 13px "Plus Jakarta Sans", sans-serif';
+          hc.fillStyle = '#ffffff';
+          hc.textAlign = 'center';
+          hc.fillText(c.action, btnX + btnW / 2, btnY + 24);
+          hc.textAlign = 'left';
         });
       } else if (this.desktopActiveWindow === 'settings') {
-        hc.font = 'bold 24px "Plus Jakarta Sans", sans-serif';
+        hc.font = 'bold 26px "Plus Jakarta Sans", sans-serif';
         hc.fillStyle = '#38bdf8';
         hc.fillText('Settings — Resources, Inspiration & Special Thanks', cx, cy + 28);
-        
+
         const infoBlocks = [
-          { title: '📚 Resources', desc: 'React, Vite, Tailwind CSS, TypeScript, Three.js WebGL & Google AI Studio.' },
-          { title: '💡 Inspiration', desc: 'Cyberpunk workstations, macOS desktop aesthetics, and immersive 3D simulation.' },
-          { title: '✨ Special Thanks', desc: 'Open source contributors, mentors, and the AI Studio developer community.' },
+          {
+            title: '📚 Resources',
+            color: '#38bdf8',
+            desc: 'React, Vite, Tailwind CSS, TypeScript, Three.js WebGL & Google AI Studio infrastructure.',
+          },
+          {
+            title: '💡 Inspiration',
+            color: '#fbbf24',
+            desc: 'Joan Ramos, Bruno Simon, etc.',
+          },
+          {
+            title: '✨ Special Thanks',
+            color: '#34d399',
+            desc: '"People who believe in me"',
+          },
         ];
         infoBlocks.forEach((ib, idx) => {
           const by = cy + 70 + idx * 135;
@@ -789,7 +1018,7 @@ export class RoomScene {
           hc.stroke();
 
           hc.font = 'bold 20px "Plus Jakarta Sans", sans-serif';
-          hc.fillStyle = '#fbbf24';
+          hc.fillStyle = ib.color;
           hc.fillText(ib.title, cx + 24, by + 38);
           hc.font = '16px "Plus Jakarta Sans", sans-serif';
           hc.fillStyle = '#cbd5e1';
@@ -1309,6 +1538,37 @@ export class RoomScene {
           soundEngine.playChirp('success');
           this.safeOpenLink('/assets/cv.pdf');
           return;
+        }
+      }
+
+      // Inside Contacts / Mail Window: Clickable Logo Cards
+      if (this.desktopActiveWindow === 'mail') {
+        const cx = wx + 36;
+        const cy = wy + 80;
+        const cw = ww - 72;
+        const cardW = (cw - 24) / 2;
+        const cardH = 104;
+
+        const contactUrls = [
+          'mailto:hanansaeed609@yahoo.com',
+          'https://github.com/hannansaeed',
+          'https://linkedin.com/in/hanan-saeed',
+          'https://discord.com/users/1079258412317163700',
+          'https://instagram.com/__not__batman',
+          '/assets/cv.pdf',
+        ];
+
+        for (let idx = 0; idx < contactUrls.length; idx++) {
+          const col = idx % 2;
+          const row = Math.floor(idx / 2);
+          const cardX = cx + col * (cardW + 24);
+          const cardY = cy + 85 + row * (cardH + 18);
+
+          if (x >= cardX && x <= cardX + cardW && y >= cardY && y <= cardY + cardH) {
+            soundEngine.playChirp('success');
+            this.safeOpenLink(contactUrls[idx]);
+            return;
+          }
         }
       }
 

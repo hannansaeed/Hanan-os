@@ -450,28 +450,28 @@ ${RESUME_DATA.awards.map((a) => `• ${a}`).join('\n')}
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <h2 className="text-2xl font-bold text-white font-display">Hanan</h2>
+                  <h2 className="text-2xl font-bold text-white font-display">Hanan Saeed</h2>
                   <div className="text-xs font-mono text-rose-400">
-                    CYBERSECURITY RESEARCHER &amp; SYSTEMS SOFTWARE DEVELOPER
+                    CYBER SECURITY RESEARCHER &amp; PYTHON DEVELOPER
                   </div>
                   <p className="text-sm text-slate-300 leading-relaxed max-w-2xl">
-                    I build low-level systems, kernel telemetry probes, and analyze complex software vulnerabilities. My background bridges hands-on offensive security (binary exploitation, heap allocators, Android IPC intent hijacking) with high-performance systems engineering (Rust, eBPF, WebGL 3D shaders, and post-quantum cryptographic primitives).
+                    Cyber security researcher and Python developer with a strong interest in offensive and defensive security, vulnerability assessment, and AI-powered automation. Student at Bahauddin Zakariya University (BZU) studying Information Technology, specializing in automated scanning tools, web application pentesting (OWASP Top 10), and real-time security systems.
                   </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                 <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
-                  <div className="text-xs font-mono text-rose-400 font-bold uppercase">DedSec &amp; Underground Ethos</div>
+                  <div className="text-xs font-mono text-rose-400 font-bold uppercase">Offensive Security &amp; Python Automation</div>
                   <p className="text-xs text-slate-300 leading-relaxed">
-                    Inspired by decentralized hacker collectivism, open-source transparency, and rigorous technical craftsmanship. Rather than treating security as abstract compliance checkboxes, I break binaries down to the assembly and syscall layers to understand exactly how code executes in memory.
+                    Experienced in building custom security tooling, working with APIs and databases, and applying practical penetration testing techniques. Passionate about ethical hacking, secure software development, and emerging AI-driven security systems.
                   </p>
                 </div>
 
                 <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
-                  <div className="text-xs font-mono text-rose-400 font-bold uppercase">Current Research Trajectory</div>
+                  <div className="text-xs font-mono text-rose-400 font-bold uppercase">Systems &amp; Interactive Graphics</div>
                   <p className="text-xs text-slate-300 leading-relaxed">
-                    Investigating kernel-level zero-trust auditing using eBPF on modern Linux 6.x kernels, hardware-accelerated lattice cryptography for post-quantum defense, and real-time interactive 3D spatial workstations in the browser.
+                    Building next-generation 3D spatial workstations in the browser using WebGL and Three.js, alongside Linux syslog monitoring daemons, Discord security bots, and hardened mobile applications.
                   </p>
                 </div>
               </div>
