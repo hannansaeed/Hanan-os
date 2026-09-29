@@ -158,7 +158,6 @@
 
 - **Author**: Hanan Saeed
 - **Role**: Cyber Security Researcher & Python Developer
-- **University**: Bahauddin Zakariya University (BZU)
 - **Portfolio & CV**: [hannansaeed.github.io/portfolio](https://hannansaeed.github.io/portfolio)
 - **PDF Resume**: [`/assets/cv.pdf`](public/assets/cv.pdf)
 - **GitHub**: [@hannansaeed](https://github.com/hannansaeed)
