@@ -135,7 +135,7 @@ export class RoomScene {
 
   // 2. Interactive Monitor Desktop OS State (NullOS)
   private desktopWallpaperImg: HTMLImageElement | null = null;
-  private desktopActiveWindow: 'about' | 'notes' | 'resume' | 'mail' | 'settings' | 'photos' | 'trash' | 'none' = 'none';
+  private desktopActiveWindow: 'about' | 'notes' | 'resume' | 'mail' | 'music' | 'settings' | 'photos' | 'trash' | 'none' = 'none';
   private desktopStartMenuOpen: boolean = false;
   private desktopActiveProjectIdx: number = 0;
   private desktopProjectCategory: 'All' | 'Cybersecurity' | 'Systems' | 'Mobile' = 'All';
@@ -514,13 +514,14 @@ export class RoomScene {
       { id: 'notes', name: 'Notes', icon: '📝', bg: '#eab308' },
       { id: 'resume', name: 'Resume', icon: '📄', bg: '#2563eb' },
       { id: 'mail', name: 'Mail', icon: '✉️', bg: '#059669' },
+      { id: 'music', name: 'Music', icon: '🎵', bg: '#8b5cf6' },
       { id: 'photos', name: 'Gallery', icon: '🖼️', bg: '#ec4899' },
       { id: 'settings', name: 'Settings', icon: '⚙️', bg: '#64748b' },
       { id: 'divider', isDivider: true },
       { id: 'trash', name: 'Trash', icon: '🗑️', bg: '#334155' },
     ];
 
-    const dockW = 680;
+    const dockW = 750;
     const dockH = 88;
     const dockX = (2048 - dockW) / 2;
     const dockY = 1046;
@@ -1024,6 +1025,286 @@ export class RoomScene {
           hc.fillStyle = '#cbd5e1';
           hc.fillText(ib.desc, cx + 24, by + 78);
         });
+      } else if (this.desktopActiveWindow === 'music') {
+        const musicState = soundEngine.getMusicState();
+        const isPlaying = musicState.isPlaying;
+        const curTrack = musicState.currentTrack;
+        const curIdx = musicState.currentTrackIndex;
+
+        // Left Panel: Vinyl Turntable
+        const vinylBoxX = cx;
+        const vinylBoxY = cy + 20;
+        const vinylBoxW = 440;
+        const vinylBoxH = 700;
+
+        hc.fillStyle = 'rgba(15, 23, 42, 0.75)';
+        hc.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        hc.lineWidth = 1.5;
+        hc.beginPath();
+        hc.roundRect(vinylBoxX, vinylBoxY, vinylBoxW, vinylBoxH, 16);
+        hc.fill();
+        hc.stroke();
+
+        // Turntable Platter
+        const vCenterX = vinylBoxX + vinylBoxW / 2;
+        const vCenterY = vinylBoxY + 230;
+        const vRadius = 150;
+
+        // Platter base
+        hc.fillStyle = '#111827';
+        hc.strokeStyle = '#374151';
+        hc.lineWidth = 6;
+        hc.beginPath();
+        hc.arc(vCenterX, vCenterY, vRadius + 12, 0, Math.PI * 2);
+        hc.fill();
+        hc.stroke();
+
+        // Vinyl Record Disk
+        hc.fillStyle = '#090d16';
+        hc.beginPath();
+        hc.arc(vCenterX, vCenterY, vRadius, 0, Math.PI * 2);
+        hc.fill();
+
+        const currentTime = this.clock.getElapsedTime();
+
+        // Vinyl Grooves (spinning with time if playing)
+        const spinAngle = (currentTime * (isPlaying ? 1.8 : 0.2)) % (Math.PI * 2);
+        hc.save();
+        hc.translate(vCenterX, vCenterY);
+        hc.rotate(spinAngle);
+
+        for (let r = 45; r < vRadius - 8; r += 16) {
+          hc.strokeStyle = 'rgba(255, 255, 255, 0.07)';
+          hc.lineWidth = 1.5;
+          hc.beginPath();
+          hc.arc(0, 0, r, 0, Math.PI * 2);
+          hc.stroke();
+        }
+
+        // Grooves highlights
+        hc.strokeStyle = 'rgba(147, 197, 253, 0.15)';
+        hc.lineWidth = 2;
+        hc.beginPath();
+        hc.arc(0, 0, 100, 0, Math.PI * 0.4);
+        hc.stroke();
+        hc.beginPath();
+        hc.arc(0, 0, 100, Math.PI, Math.PI * 1.4);
+        hc.stroke();
+
+        // Center Label
+        const labelGrad = hc.createLinearGradient(-38, -38, 38, 38);
+        labelGrad.addColorStop(0, '#8b5cf6');
+        labelGrad.addColorStop(1, '#ec4899');
+        hc.fillStyle = labelGrad;
+        hc.beginPath();
+        hc.arc(0, 0, 38, 0, Math.PI * 2);
+        hc.fill();
+
+        // Center Spindle Hole
+        hc.fillStyle = '#0f172a';
+        hc.beginPath();
+        hc.arc(0, 0, 8, 0, Math.PI * 2);
+        hc.fill();
+
+        hc.restore();
+
+        // Tonearm
+        hc.strokeStyle = isPlaying ? '#38bdf8' : '#64748b';
+        hc.lineWidth = 4;
+        hc.beginPath();
+        hc.moveTo(vinylBoxX + vinylBoxW - 40, vinylBoxY + 80);
+        if (isPlaying) {
+          hc.lineTo(vinylBoxX + vinylBoxW - 60, vinylBoxY + 160);
+          hc.lineTo(vCenterX + 35, vCenterY + 35);
+        } else {
+          hc.lineTo(vinylBoxX + vinylBoxW - 40, vinylBoxY + 280);
+        }
+        hc.stroke();
+
+        // Tonearm Base
+        hc.fillStyle = '#94a3b8';
+        hc.beginPath();
+        hc.arc(vinylBoxX + vinylBoxW - 40, vinylBoxY + 80, 14, 0, Math.PI * 2);
+        hc.fill();
+
+        // Vinyl Status Badge
+        hc.fillStyle = isPlaying ? 'rgba(34, 197, 94, 0.2)' : 'rgba(100, 116, 139, 0.2)';
+        hc.strokeStyle = isPlaying ? '#22c55e' : '#64748b';
+        hc.lineWidth = 1.2;
+        hc.beginPath();
+        hc.roundRect(vinylBoxX + 40, vinylBoxY + 450, vinylBoxW - 80, 42, 8);
+        hc.fill();
+        hc.stroke();
+
+        hc.font = 'bold 14px "Plus Jakarta Sans", sans-serif';
+        hc.fillStyle = isPlaying ? '#4ade80' : '#94a3b8';
+        hc.textAlign = 'center';
+        hc.fillText(isPlaying ? '● VINYL TURNTABLE ACTIVE' : '❚❚ TURNTABLE PAUSED', vCenterX, vinylBoxY + 476);
+        hc.textAlign = 'left';
+
+        // Right Panel: Now Playing & Playlist Controls
+        const rightX = cx + 468;
+        const rightW = cw - 468;
+
+        // Header
+        hc.font = 'bold 26px "Plus Jakarta Sans", sans-serif';
+        hc.fillStyle = '#a78bfa';
+        hc.fillText('🎧 Calm & Cozy Lo-Fi Music Lounge', rightX, cy + 28);
+
+        hc.font = '15px "Plus Jakarta Sans", sans-serif';
+        hc.fillStyle = '#94a3b8';
+        hc.fillText('Curated royalty-free chillhop beats & procedural Web Audio chords.', rightX, cy + 56);
+
+        // Now Playing Card
+        const npY = cy + 76;
+        const npH = 250;
+        hc.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        hc.strokeStyle = 'rgba(167, 139, 250, 0.3)';
+        hc.lineWidth = 1.5;
+        hc.beginPath();
+        hc.roundRect(rightX, npY, rightW, npH, 16);
+        hc.fill();
+        hc.stroke();
+
+        // Track badge
+        hc.fillStyle = 'rgba(139, 92, 246, 0.2)';
+        hc.strokeStyle = '#8b5cf6';
+        hc.beginPath();
+        hc.roundRect(rightX + 24, npY + 18, 140, 28, 6);
+        hc.fill();
+        hc.stroke();
+
+        hc.font = 'bold 12px "Plus Jakarta Sans", sans-serif';
+        hc.fillStyle = '#c4b5fd';
+        hc.fillText(isPlaying ? '● NOW PLAYING' : '❚❚ PAUSED', rightX + 36, npY + 37);
+
+        // Track Title & Details
+        hc.font = 'bold 24px "Plus Jakarta Sans", sans-serif';
+        hc.fillStyle = '#ffffff';
+        hc.fillText(curTrack.title, rightX + 24, npY + 80);
+
+        hc.font = '16px "Plus Jakarta Sans", sans-serif';
+        hc.fillStyle = '#94a3b8';
+        hc.fillText(`${curTrack.artist}  •  ${curTrack.genre}  [${curTrack.duration}]`, rightX + 24, npY + 110);
+
+        // Equalizer Spectrum Visualizer (22 bars)
+        for (let b = 0; b < 22; b++) {
+          const barH = isPlaying
+            ? Math.max(6, Math.abs(Math.sin(currentTime * 4 + b * 0.45)) * 38)
+            : 4;
+          const barX = rightX + 24 + b * 16;
+          const barY = npY + 180 - barH;
+
+          const barGrad = hc.createLinearGradient(0, barY, 0, barY + barH);
+          barGrad.addColorStop(0, '#38bdf8');
+          barGrad.addColorStop(1, '#8b5cf6');
+          hc.fillStyle = isPlaying ? barGrad : '#475569';
+          hc.beginPath();
+          hc.roundRect(barX, barY, 10, barH, 3);
+          hc.fill();
+        }
+
+        // Interactive Playback Controls
+        // 1. Previous Track
+        const btnPrevX = rightX + 400;
+        const btnPrevY = npY + 124;
+        hc.fillStyle = 'rgba(30, 41, 59, 0.8)';
+        hc.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        hc.lineWidth = 1;
+        hc.beginPath();
+        hc.roundRect(btnPrevX, btnPrevY, 110, 48, 10);
+        hc.fill();
+        hc.stroke();
+
+        hc.font = 'bold 15px "Plus Jakarta Sans", sans-serif';
+        hc.fillStyle = '#ffffff';
+        hc.textAlign = 'center';
+        hc.fillText('⏮ Prev', btnPrevX + 55, btnPrevY + 30);
+
+        // 2. Play / Pause Button (Large Highlight)
+        const btnPlayX = rightX + 525;
+        const btnPlayY = npY + 118;
+        hc.fillStyle = isPlaying ? 'rgba(239, 68, 68, 0.25)' : 'rgba(34, 197, 94, 0.25)';
+        hc.strokeStyle = isPlaying ? '#ef4444' : '#22c55e';
+        hc.lineWidth = 1.5;
+        hc.beginPath();
+        hc.roundRect(btnPlayX, btnPlayY, 140, 58, 12);
+        hc.fill();
+        hc.stroke();
+
+        hc.font = 'bold 18px "Plus Jakarta Sans", sans-serif';
+        hc.fillStyle = isPlaying ? '#f87171' : '#4ade80';
+        hc.fillText(isPlaying ? '❚❚ Pause' : '▶ Play', btnPlayX + 70, btnPlayY + 36);
+
+        // 3. Next Track
+        const btnNextX = rightX + 680;
+        const btnNextY = npY + 124;
+        hc.fillStyle = 'rgba(30, 41, 59, 0.8)';
+        hc.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        hc.lineWidth = 1;
+        hc.beginPath();
+        hc.roundRect(btnNextX, btnNextY, 110, 48, 10);
+        hc.fill();
+        hc.stroke();
+
+        hc.font = 'bold 15px "Plus Jakarta Sans", sans-serif';
+        hc.fillStyle = '#ffffff';
+        hc.fillText('⏭ Next', btnNextX + 55, btnNextY + 30);
+        hc.textAlign = 'left';
+
+        // Playlist Section
+        const plY = npY + npH + 16;
+        hc.font = 'bold 18px "Plus Jakarta Sans", sans-serif';
+        hc.fillStyle = '#e2e8f0';
+        hc.fillText('🎼 Select Calm & Cozy Soundscape', rightX, plY + 14);
+
+        const playlistTracks = [
+          { title: 'Warm Rain & Soft Piano', sub: 'Hanan Calm Lounge (CC0) • Soft Piano & Peaceful Rain', dur: '∞ Ambient' },
+          { title: 'Sleepy Rhodes & Warm Vinyl', sub: 'Cozy Study Sanctuary • Mellow Electric Piano Chords', dur: '∞ Ambient' },
+          { title: 'Midnight Ambient Clouds', sub: 'Deep Focus & Relaxation • Ethereal Floating Pads', dur: '∞ Ambient' },
+          { title: 'Zen Wind Chimes & Stream', sub: 'Peaceful Meditation Garden • Pentatonic Bells & Breeze', dur: '∞ Ambient' },
+        ];
+
+        playlistTracks.forEach((t, idx) => {
+          const itemY = plY + 32 + idx * 74;
+          const isCurrent = curIdx === idx;
+
+          hc.fillStyle = isCurrent ? 'rgba(139, 92, 246, 0.2)' : 'rgba(15, 23, 42, 0.65)';
+          hc.strokeStyle = isCurrent ? '#a78bfa' : 'rgba(255, 255, 255, 0.08)';
+          hc.lineWidth = isCurrent ? 1.5 : 1;
+          hc.beginPath();
+          hc.roundRect(rightX, itemY, rightW, 64, 10);
+          hc.fill();
+          hc.stroke();
+
+          // Icon / Track Number badge
+          hc.fillStyle = isCurrent ? '#8b5cf6' : '#334155';
+          hc.beginPath();
+          hc.roundRect(rightX + 16, itemY + 13, 38, 38, 8);
+          hc.fill();
+
+          hc.font = 'bold 15px "Plus Jakarta Sans", sans-serif';
+          hc.fillStyle = '#ffffff';
+          hc.textAlign = 'center';
+          hc.fillText(isCurrent && isPlaying ? '▶' : `${idx + 1}`, rightX + 35, itemY + 37);
+          hc.textAlign = 'left';
+
+          // Track Title & Subtitle
+          hc.font = 'bold 16px "Plus Jakarta Sans", sans-serif';
+          hc.fillStyle = isCurrent ? '#c4b5fd' : '#f8fafc';
+          hc.fillText(t.title, rightX + 68, itemY + 28);
+
+          hc.font = '13px "Plus Jakarta Sans", sans-serif';
+          hc.fillStyle = '#94a3b8';
+          hc.fillText(t.sub, rightX + 68, itemY + 50);
+
+          // Duration / Status Badge
+          hc.font = 'bold 13px monospace';
+          hc.fillStyle = isCurrent ? '#a78bfa' : '#64748b';
+          hc.textAlign = 'right';
+          hc.fillText(isCurrent && isPlaying ? 'PLAYING' : t.dur, rightX + rightW - 20, itemY + 38);
+          hc.textAlign = 'left';
+        });
       } else if (this.desktopActiveWindow === 'photos') {
         hc.font = 'bold 24px "Plus Jakarta Sans", sans-serif';
         hc.fillStyle = '#ec4899';
@@ -1461,13 +1742,13 @@ export class RoomScene {
     soundEngine.playKeyClick();
 
     // 0. Bottom Dock Click Handling (y: 1046..1134)
-    const dockW = 680;
+    const dockW = 750;
     const dockH = 88;
     const dockX = (2048 - dockW) / 2;
     const dockY = 1046;
     if (y >= dockY && y <= dockY + dockH && x >= dockX && x <= dockX + dockW) {
       let curX = dockX + 24;
-      const dockList = ['about', 'notes', 'resume', 'mail', 'photos', 'settings', 'trash'];
+      const dockList = ['about', 'notes', 'resume', 'mail', 'music', 'photos', 'settings', 'trash'];
       for (const id of dockList) {
         if (x >= curX && x <= curX + 60) {
           if (id === 'resume') {
@@ -1499,7 +1780,7 @@ export class RoomScene {
 
     // 3. Right Desktop Shortcut Icons (x: 1830..1990, y: 50..1000)
     if (x >= 1830 && x <= 1990) {
-      const ids = ['about', 'notes', 'resume', 'mail', 'settings', 'photos', 'trash'];
+      const ids = ['about', 'notes', 'resume', 'mail', 'music', 'settings', 'photos', 'trash'];
       ids.forEach((id, idx) => {
         const fy = 50 + idx * 135;
         if (y >= fy && y <= fy + 120) {
@@ -1572,6 +1853,55 @@ export class RoomScene {
         }
       }
 
+      // Inside Music Window: Playback & Playlist Controls
+      if (this.desktopActiveWindow === 'music') {
+        const cx = wx + 36;
+        const cy = wy + 80;
+        const cw = ww - 72;
+        const rightX = cx + 468;
+        const rightW = cw - 468;
+        const npY = cy + 76;
+        const npH = 250;
+
+        // 1. Prev Button
+        const btnPrevX = rightX + 400;
+        const btnPrevY = npY + 124;
+        if (x >= btnPrevX && x <= btnPrevX + 110 && y >= btnPrevY && y <= btnPrevY + 48) {
+          soundEngine.playKeyClick();
+          soundEngine.prevTrack();
+          return;
+        }
+
+        // 2. Play / Pause Button
+        const btnPlayX = rightX + 525;
+        const btnPlayY = npY + 118;
+        if (x >= btnPlayX && x <= btnPlayX + 140 && y >= btnPlayY && y <= btnPlayY + 58) {
+          soundEngine.playKeyClick();
+          soundEngine.toggleMusic();
+          return;
+        }
+
+        // 3. Next Button
+        const btnNextX = rightX + 680;
+        const btnNextY = npY + 124;
+        if (x >= btnNextX && x <= btnNextX + 110 && y >= btnNextY && y <= btnNextY + 48) {
+          soundEngine.playKeyClick();
+          soundEngine.nextTrack();
+          return;
+        }
+
+        // 4. Playlist Tracks (0 to 3)
+        const plY = npY + npH + 16;
+        for (let idx = 0; idx < 4; idx++) {
+          const itemY = plY + 32 + idx * 74;
+          if (x >= rightX && x <= rightX + rightW && y >= itemY && y <= itemY + 64) {
+            soundEngine.playKeyClick();
+            soundEngine.playMusic(idx);
+            return;
+          }
+        }
+      }
+
       // Inside Settings Window: Theme Selection
       if (this.desktopActiveWindow === 'settings') {
         const cx = wx + 24;
@@ -1592,7 +1922,7 @@ export class RoomScene {
     this.desktopMousePos = { x, y };
   }
 
-  public setDesktopActiveWindow(win: 'about' | 'notes' | 'resume' | 'mail' | 'settings' | 'photos' | 'trash' | 'none') {
+  public setDesktopActiveWindow(win: 'about' | 'notes' | 'resume' | 'mail' | 'music' | 'settings' | 'photos' | 'trash' | 'none') {
     this.desktopActiveWindow = win;
     soundEngine.playKeyClick();
   }

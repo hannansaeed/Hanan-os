@@ -51,7 +51,7 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onEnter, onQuickJump }) 
     if (progress < 100) return; // Prevent early entry
     try {
       soundEngine.playChirp('success');
-      soundEngine.startAmbient();
+      soundEngine.playMusic();
     } catch {
       // Audio safety
     }

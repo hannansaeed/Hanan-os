@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StationId } from '../../types';
 import { RaycastHitInfo } from '../../scene/RoomScene';
-import { soundEngine } from '../../audio/soundEngine';
+import { soundEngine, TrackInfo } from '../../audio/soundEngine';
 import {
   Volume2,
   VolumeX,
@@ -11,6 +11,10 @@ import {
   ChevronDown,
   ChevronUp,
   Info,
+  Music,
+  Play,
+  Pause,
+  SkipForward,
 } from 'lucide-react';
 
 interface NavigationHUDProps {
@@ -36,10 +40,29 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
   onOpenTerminal,
 }) => {
   const [isOptionsExpanded, setIsOptionsExpanded] = useState<boolean>(false);
+  const [musicState, setMusicState] = useState(soundEngine.getMusicState());
+
+  useEffect(() => {
+    return soundEngine.subscribe((state) => {
+      setMusicState(state);
+    });
+  }, []);
 
   const handleToggleOptions = () => {
     soundEngine.playKeyClick();
     setIsOptionsExpanded((prev) => !prev);
+  };
+
+  const handleToggleMusic = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    soundEngine.playKeyClick();
+    soundEngine.toggleMusic();
+  };
+
+  const handleNextTrack = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    soundEngine.playKeyClick();
+    soundEngine.nextTrack();
   };
 
   // Listen to Escape key globally to close options drawer if expanded
@@ -179,8 +202,40 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
                   </button>
                 </nav>
 
-                {/* Utility Tools */}
-                <div className="flex items-center gap-1.5">
+                {/* Utility Tools & Music */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {/* Cozy Music Player Button */}
+                  <div className="flex items-center gap-1 bg-slate-900 border border-slate-700/80 rounded-md p-0.5">
+                    <button
+                      onClick={handleToggleMusic}
+                      className={`flex items-center gap-1.5 px-2 py-1 text-xs font-mono rounded transition-colors ${
+                        musicState.isPlaying
+                          ? 'bg-purple-500/20 text-purple-300 font-semibold'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                      title={musicState.isPlaying ? 'Pause Music' : 'Play Calm & Cozy Lo-Fi Music'}
+                    >
+                      <Music className={`w-3 h-3 ${musicState.isPlaying ? 'text-purple-400 animate-pulse' : 'text-slate-400'}`} />
+                      {musicState.isPlaying ? (
+                        <Pause className="w-2.5 h-2.5 text-purple-300" />
+                      ) : (
+                        <Play className="w-2.5 h-2.5 text-slate-300" />
+                      )}
+                      <span className="max-w-[120px] sm:max-w-[160px] truncate text-[11px]">
+                        {musicState.isPlaying ? musicState.currentTrack.title : 'Cozy Music'}
+                      </span>
+                    </button>
+                    {musicState.isPlaying && (
+                      <button
+                        onClick={handleNextTrack}
+                        className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-purple-300 transition-colors"
+                        title="Next Track"
+                      >
+                        <SkipForward className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+
                   <button
                     onClick={() => {
                       soundEngine.playKeyClick();
@@ -245,16 +300,16 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
 
       {/* ========================================================
           CENTER SCREEN: Interaction Aim Reticle Dot
-          Always present during overview mode so user can aim;
+          Always present during overview walk mode so user can aim;
           glows rose when hovering over an interactive station!
       ======================================================== */}
-      {activeStation === 'overview' && (
+      {activeStation === 'overview' && isWalkMode && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div
             className={`rounded-full transition-all duration-150 ${
               hoverInfo
                 ? 'w-1.5 h-1.5 bg-rose-400 shadow-[0_0_8px_#f43f5e] ring-1 ring-rose-400/80 scale-110'
-                : 'w-1.5 h-1.5 bg-white/40 shadow-[0_0_4px_rgba(255,255,255,0.3)]'
+                : 'w-1.5 h-1.5 bg-white/35 shadow-[0_0_4px_rgba(255,255,255,0.25)]'
             }`}
           />
         </div>
