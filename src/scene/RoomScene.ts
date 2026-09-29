@@ -8,6 +8,8 @@ import { DustParticleShader } from './shaders/serverLedShader';
 import { CoffeeSteamShader } from './shaders/coffeeSteamShader';
 import { SkyWindowShader } from './shaders/skyWindowShader';
 import { soundEngine } from '../audio/soundEngine';
+import { db, handleFirestoreError, OperationType } from '../firebase';
+import { doc, onSnapshot, setDoc, deleteDoc } from 'firebase/firestore';
 import customWallpaper from '../assets/images/nullos_wallpaper_1790517912301.jpg';
 import customArt1 from '../assets/images/custom_art1.jpg';
 import customArt2 from '../assets/images/custom_art2.jpg';
@@ -96,6 +98,7 @@ export class RoomScene {
   private whiteboardCanvas!: HTMLCanvasElement;
   private whiteboardCtx!: CanvasRenderingContext2D;
   private whiteboardTexture!: THREE.CanvasTexture;
+  private whiteboardUnsubscribe: (() => void) | null = null;
   private boardMesh!: THREE.Mesh;
 
   // 3D Objects & Models
@@ -343,8 +346,8 @@ export class RoomScene {
     this.whiteboardCanvas.width = 1536;
     this.whiteboardCanvas.height = 960;
     this.whiteboardCtx = this.whiteboardCanvas.getContext('2d')!;
-    this.initWhiteboardCanvas();
     this.whiteboardTexture = new THREE.CanvasTexture(this.whiteboardCanvas);
+    this.initWhiteboardCanvas();
 
     // 4. Coffee Steam Material (Organic Wispy Steam Shader)
     this.coffeeSteamMaterial = new THREE.ShaderMaterial({
@@ -1254,18 +1257,71 @@ export class RoomScene {
       }
     }
 
-    const saved = localStorage.getItem('hananos_whiteboard_drawing');
-    if (saved) {
-      const img = new Image();
-      img.onload = () => {
-        this.whiteboardCtx.drawImage(img, 0, 0);
-        if (this.whiteboardTexture) {
-          this.whiteboardTexture.needsUpdate = true;
+    // Set up Real-Time Cloud Synchronization using Firestore!
+    try {
+      const docRef = doc(db, 'whiteboards', 'global');
+      this.whiteboardUnsubscribe = onSnapshot(docRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          if (data && data.dataUrl) {
+            const img = new Image();
+            img.onload = () => {
+              if (this.whiteboardCtx) {
+                // Clear and redraw dots before drawing cloud image to avoid stacking grid dots
+                this.whiteboardCtx.fillStyle = '#fcfcfd';
+                this.whiteboardCtx.fillRect(0, 0, 1536, 960);
+                this.whiteboardCtx.fillStyle = 'rgba(203, 213, 225, 0.45)';
+                for (let x = 40; x < 1536; x += 48) {
+                  for (let y = 40; y < 960; y += 48) {
+                    this.whiteboardCtx.beginPath();
+                    this.whiteboardCtx.arc(x, y, 1.5, 0, Math.PI * 2);
+                    this.whiteboardCtx.fill();
+                  }
+                }
+                this.whiteboardCtx.drawImage(img, 0, 0);
+                if (this.whiteboardTexture) {
+                  this.whiteboardTexture.needsUpdate = true;
+                }
+              }
+            };
+            img.src = data.dataUrl;
+          }
+        } else {
+          // If no cloud drawing exists yet, fall back to localStorage as local cache
+          const localSaved = localStorage.getItem('hananos_whiteboard_drawing');
+          if (localSaved) {
+            const img = new Image();
+            img.onload = () => {
+              if (this.whiteboardCtx) {
+                this.whiteboardCtx.drawImage(img, 0, 0);
+                if (this.whiteboardTexture) {
+                  this.whiteboardTexture.needsUpdate = true;
+                }
+              }
+            };
+            img.src = localSaved;
+          }
         }
-      };
-      img.src = saved;
-    } else {
-      this.drawDefaultWhiteboardContent();
+      }, (error) => {
+        // Enforce secure spec error standard
+        handleFirestoreError(error, OperationType.GET, 'whiteboards/global');
+      });
+    } catch (e) {
+      console.warn('Real-time cloud sync is unavailable. Falling back to offline-only mode.', e);
+      // Safe offline fallback
+      const localSaved = localStorage.getItem('hananos_whiteboard_drawing');
+      if (localSaved) {
+        const img = new Image();
+        img.onload = () => {
+          if (this.whiteboardCtx) {
+            this.whiteboardCtx.drawImage(img, 0, 0);
+            if (this.whiteboardTexture) {
+              this.whiteboardTexture.needsUpdate = true;
+            }
+          }
+        };
+        img.src = localSaved;
+      }
     }
   }
 
@@ -2600,7 +2656,7 @@ export class RoomScene {
     }
   }
 
-  public clearWhiteboard() {
+  public async clearWhiteboard() {
     if (!this.whiteboardCtx) return;
     this.whiteboardCtx.fillStyle = '#fcfcfd';
     this.whiteboardCtx.fillRect(0, 0, this.whiteboardCanvas.width, this.whiteboardCanvas.height);
@@ -2619,15 +2675,32 @@ export class RoomScene {
       this.whiteboardTexture.needsUpdate = true;
     }
     localStorage.removeItem('hananos_whiteboard_drawing');
+
+    // Cloud reset
+    try {
+      await deleteDoc(doc(db, 'whiteboards', 'global'));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, 'whiteboards/global');
+    }
   }
 
-  public saveWhiteboardToStorage() {
+  public async saveWhiteboardToStorage() {
     if (this.whiteboardCanvas) {
       try {
         const dataUrl = this.whiteboardCanvas.toDataURL('image/png');
         localStorage.setItem('hananos_whiteboard_drawing', dataUrl);
+
+        // Save to Firebase Firestore Cloud
+        await setDoc(doc(db, 'whiteboards', 'global'), {
+          dataUrl,
+          updatedAt: new Date().toISOString()
+        });
       } catch (err) {
-        console.warn('Failed to save whiteboard drawing to localStorage:', err);
+        console.warn('Failed to save whiteboard drawing to cloud storage:', err);
+        // If it's a Firestore error, format it safely as JSON to comply with standards
+        if (err && typeof err === 'object' && 'code' in err) {
+          handleFirestoreError(err, OperationType.WRITE, 'whiteboards/global');
+        }
       }
     }
   }
@@ -3270,6 +3343,11 @@ export class RoomScene {
     window.removeEventListener('mouseup', this.onMouseUp);
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
+
+    if (this.whiteboardUnsubscribe) {
+      this.whiteboardUnsubscribe();
+      this.whiteboardUnsubscribe = null;
+    }
 
     const dom = this.renderer?.domElement;
     if (dom) {

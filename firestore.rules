@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions for validation
+    function isValidId(id) {
+      return id is string && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidWhiteboard(data) {
+      return data.keys().hasAll(['dataUrl', 'updatedAt']) 
+        && data.keys().hasOnly(['dataUrl', 'updatedAt'])
+        && data.dataUrl is string 
+        && data.dataUrl.size() <= 2097152 // Limit image size to 2MB to prevent Wallet exhaustion
+        && data.dataUrl.startsWith('data:image/png;base64,');
+    }
+
+    // Rules for whiteboards collection
+    match /whiteboards/{boardId} {
+      allow get: if isValidId(boardId);
+      
+      // Let anyone draw and load the whiteboard synchronously
+      allow create, update: if isValidId(boardId) 
+        && isValidWhiteboard(request.resource.data);
+    }
+  }
+}

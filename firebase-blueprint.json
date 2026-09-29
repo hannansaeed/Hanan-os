@@ -1,0 +1,27 @@
+{
+  "entities": {
+    "Whiteboard": {
+      "title": "Whiteboard Drawing",
+      "description": "Represents the global shared whiteboard drawing state as a Base64 image data URL.",
+      "type": "object",
+      "properties": {
+        "dataUrl": {
+          "type": "string",
+          "description": "Base64 image data URL representation of the whiteboard canvas."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp indicating when the whiteboard was last updated."
+        }
+      },
+      "required": ["dataUrl", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/whiteboards/{boardId}": {
+      "schema": "Whiteboard",
+      "description": "Shared whiteboard storage partition."
+    }
+  }
+}
