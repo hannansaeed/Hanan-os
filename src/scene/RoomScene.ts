@@ -148,6 +148,7 @@ export class RoomScene {
   public onStationSelect?: (stationId: StationId) => void;
   public onHoverChange?: (hit: RaycastHitInfo | null) => void;
   public isPointerLockBlocked: boolean = false;
+  private isPointerLocked: boolean = false;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -912,7 +913,7 @@ export class RoomScene {
     }
   }
 
-  public executeTerminalCommand(raw: string) {
+  public async executeTerminalCommand(raw: string) {
     const trimmed = raw.trim();
     if (!trimmed) return;
 
@@ -935,21 +936,15 @@ export class RoomScene {
 
     if (this.terminalWaitingForPassword) {
       if (trimmed === '3241010300') {
-        this.pushTerminalLines({ text: 'Root access granted. Clearing whiteboard...', color: '#34d399' });
+        this.pushTerminalLines(
+          { text: 'Root access granted.', color: '#34d399', bold: true },
+          { text: 'Purging filesystem and wiping whiteboard memory in cloud & local cache...', color: '#38bdf8' }
+        );
         this.terminalWaitingForPassword = false;
-        // Logic to clear whiteboard
-        if (this.boardMesh) {
-          const boardCtx = this.whiteboardTexture.image.getContext('2d');
-          if (boardCtx) {
-            boardCtx.fillStyle = '#ffffff';
-            boardCtx.fillRect(0, 0, this.whiteboardTexture.image.width, this.whiteboardTexture.image.height);
-            this.whiteboardTexture.needsUpdate = true;
-            // Clear storage
-            localStorage.removeItem('hananos_whiteboard_drawing');
-          }
-        }
+        await this.clearWhiteboard();
+        this.pushTerminalLines({ text: 'System cache & whiteboard completely cleared.', color: '#10b981' });
       } else {
-        this.pushTerminalLines({ text: 'Incorrect password.', color: '#f43f5e' });
+        this.pushTerminalLines({ text: 'sudo: 1 incorrect password attempt.', color: '#f43f5e' });
         this.terminalWaitingForPassword = false;
       }
       this.vertTexture.needsUpdate = true;
@@ -1126,11 +1121,21 @@ export class RoomScene {
         break;
 
       case 'sudo':
-        if (args[0] === 'rm' && args[1] === '-rf' && args[2] === '/') {
+        const sudoRest = args.join(' ').trim().toLowerCase();
+        if (sudoRest.startsWith('rm') && (sudoRest.includes('-rf') || sudoRest.includes('-r') || sudoRest.includes('-f'))) {
           this.pushTerminalLines({ text: '[sudo] password for hanan:', color: '#ffffff' });
           this.terminalWaitingForPassword = true;
         } else {
-          this.pushTerminalLines({ text: `Command not found: ${trimmed}`, color: '#f43f5e' });
+          this.pushTerminalLines({ text: `Command not found or permission denied: ${trimmed}`, color: '#f43f5e' });
+        }
+        break;
+
+      case 'rm':
+        const rmRest = args.join(' ').trim().toLowerCase();
+        if (rmRest.includes('-rf') || rmRest.includes('-r') || rmRest.includes('-f') || rmRest.includes('whiteboard')) {
+          this.pushTerminalLines({ text: 'rm: cannot remove root system/whiteboard data: Permission denied (try: sudo rm -rf /)', color: '#f43f5e' });
+        } else {
+          this.pushTerminalLines({ text: 'rm: missing operand (try: sudo rm -rf /)', color: '#f43f5e' });
         }
         break;
 
@@ -1240,7 +1245,7 @@ export class RoomScene {
   /* ----------------------------------------------------
      Interactive Whiteboard Canvas Methods
   ---------------------------------------------------- */
-  private initWhiteboardCanvas() {
+  public resetWhiteboardToBlank() {
     if (!this.whiteboardCtx) return;
 
     // Fill enamel off-white surface
@@ -1257,54 +1262,53 @@ export class RoomScene {
       }
     }
 
+    if (this.whiteboardTexture) {
+      this.whiteboardTexture.needsUpdate = true;
+    }
+  }
+
+  private initWhiteboardCanvas() {
+    if (!this.whiteboardCtx) return;
+
+    this.resetWhiteboardToBlank();
+
     // Set up Real-Time Cloud Synchronization using Firestore!
     try {
       const docRef = doc(db, 'whiteboards', 'global');
       this.whiteboardUnsubscribe = onSnapshot(docRef, (snapshot) => {
         if (snapshot.exists()) {
           const data = snapshot.data();
-          if (data && data.dataUrl) {
+          if (data && data.dataUrl && typeof data.dataUrl === 'string' && data.dataUrl.trim().length > 0) {
             const img = new Image();
+            img.crossOrigin = 'anonymous';
             img.onload = () => {
               if (this.whiteboardCtx) {
                 // Clear and redraw dots before drawing cloud image to avoid stacking grid dots
-                this.whiteboardCtx.fillStyle = '#fcfcfd';
-                this.whiteboardCtx.fillRect(0, 0, 1536, 960);
-                this.whiteboardCtx.fillStyle = 'rgba(203, 213, 225, 0.45)';
-                for (let x = 40; x < 1536; x += 48) {
-                  for (let y = 40; y < 960; y += 48) {
-                    this.whiteboardCtx.beginPath();
-                    this.whiteboardCtx.arc(x, y, 1.5, 0, Math.PI * 2);
-                    this.whiteboardCtx.fill();
-                  }
-                }
-                this.whiteboardCtx.drawImage(img, 0, 0);
+                this.resetWhiteboardToBlank();
+                this.whiteboardCtx.drawImage(img, 0, 0, 1536, 960);
                 if (this.whiteboardTexture) {
                   this.whiteboardTexture.needsUpdate = true;
                 }
+                console.log('[Whiteboard] Cloud drawing synchronized successfully in real-time.');
               }
             };
             img.src = data.dataUrl;
+          } else {
+            // Empty dataUrl in cloud doc -> blank board
+            this.resetWhiteboardToBlank();
+            try {
+              localStorage.removeItem('hananos_whiteboard_drawing');
+            } catch {}
           }
         } else {
-          // If no cloud drawing exists yet, fall back to localStorage as local cache
-          const localSaved = localStorage.getItem('hananos_whiteboard_drawing');
-          if (localSaved) {
-            const img = new Image();
-            img.onload = () => {
-              if (this.whiteboardCtx) {
-                this.whiteboardCtx.drawImage(img, 0, 0);
-                if (this.whiteboardTexture) {
-                  this.whiteboardTexture.needsUpdate = true;
-                }
-              }
-            };
-            img.src = localSaved;
-          }
+          // If document was deleted or does not exist in cloud -> reset whiteboard to blank
+          this.resetWhiteboardToBlank();
+          try {
+            localStorage.removeItem('hananos_whiteboard_drawing');
+          } catch {}
         }
       }, (error) => {
-        // Enforce secure spec error standard
-        handleFirestoreError(error, OperationType.GET, 'whiteboards/global');
+        console.error('[Whiteboard] Firestore onSnapshot error:', error);
       });
     } catch (e) {
       console.warn('Real-time cloud sync is unavailable. Falling back to offline-only mode.', e);
@@ -1314,7 +1318,8 @@ export class RoomScene {
         const img = new Image();
         img.onload = () => {
           if (this.whiteboardCtx) {
-            this.whiteboardCtx.drawImage(img, 0, 0);
+            this.resetWhiteboardToBlank();
+            this.whiteboardCtx.drawImage(img, 0, 0, 1536, 960);
             if (this.whiteboardTexture) {
               this.whiteboardTexture.needsUpdate = true;
             }
@@ -2657,50 +2662,56 @@ export class RoomScene {
   }
 
   public async clearWhiteboard() {
-    if (!this.whiteboardCtx) return;
-    this.whiteboardCtx.fillStyle = '#fcfcfd';
-    this.whiteboardCtx.fillRect(0, 0, this.whiteboardCanvas.width, this.whiteboardCanvas.height);
+    this.resetWhiteboardToBlank();
 
-    // Draw background dot grid
-    this.whiteboardCtx.fillStyle = 'rgba(203, 213, 225, 0.45)';
-    for (let x = 40; x < 1536; x += 48) {
-      for (let y = 40; y < 960; y += 48) {
-        this.whiteboardCtx.beginPath();
-        this.whiteboardCtx.arc(x, y, 1.5, 0, Math.PI * 2);
-        this.whiteboardCtx.fill();
-      }
+    try {
+      localStorage.removeItem('hananos_whiteboard_drawing');
+    } catch {
+      // Storage fallback
     }
 
-    if (this.whiteboardTexture) {
-      this.whiteboardTexture.needsUpdate = true;
-    }
-    localStorage.removeItem('hananos_whiteboard_drawing');
-
-    // Cloud reset
+    // Cloud reset: delete the Firestore global whiteboard document
     try {
       await deleteDoc(doc(db, 'whiteboards', 'global'));
+      console.log('[Whiteboard] Deleted global cloud document.');
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, 'whiteboards/global');
+      try {
+        await setDoc(doc(db, 'whiteboards', 'global'), {
+          dataUrl: '',
+          updatedAt: new Date().toISOString()
+        });
+      } catch (err2) {
+        console.warn('Failed to clear cloud whiteboard:', error, err2);
+      }
     }
   }
 
   public async saveWhiteboardToStorage() {
     if (this.whiteboardCanvas) {
       try {
-        const dataUrl = this.whiteboardCanvas.toDataURL('image/png');
-        localStorage.setItem('hananos_whiteboard_drawing', dataUrl);
+        let dataUrl = this.whiteboardCanvas.toDataURL('image/webp', 0.85);
+        if (!dataUrl.startsWith('data:image/webp')) {
+          dataUrl = this.whiteboardCanvas.toDataURL('image/png');
+        }
+        // If string exceeds 800KB, use JPEG compression to guarantee staying under Firestore 1MB limit
+        if (dataUrl.length > 800000) {
+          dataUrl = this.whiteboardCanvas.toDataURL('image/jpeg', 0.8);
+        }
+
+        try {
+          localStorage.setItem('hananos_whiteboard_drawing', dataUrl);
+        } catch {
+          // LocalStorage quota fallback
+        }
 
         // Save to Firebase Firestore Cloud
         await setDoc(doc(db, 'whiteboards', 'global'), {
           dataUrl,
           updatedAt: new Date().toISOString()
         });
+        console.log('[Whiteboard] Saved to Firebase Cloud successfully (' + Math.round(dataUrl.length / 1024) + ' KB)');
       } catch (err) {
         console.warn('Failed to save whiteboard drawing to cloud storage:', err);
-        // If it's a Firestore error, format it safely as JSON to comply with standards
-        if (err && typeof err === 'object' && 'code' in err) {
-          handleFirestoreError(err, OperationType.WRITE, 'whiteboards/global');
-        }
       }
     }
   }
@@ -2773,6 +2784,17 @@ export class RoomScene {
     this.goToStation('overview');
   }
 
+  public startFromBoot() {
+    this.isInspecting = false;
+    this.isTransitioningBack = false;
+    this.isWalkMode = true;
+    this.activeStation = 'overview';
+    this.targetCameraPos.set(4.2, 3.2, 3.2);
+    this.targetCameraLook.set(-0.2, 2.0, -1.8);
+    this.targetFov = 56;
+    this.requestPointerLock();
+  }
+
   public setWalkMode(active: boolean) {
     this.isWalkMode = active;
     if (active) {
@@ -2785,8 +2807,9 @@ export class RoomScene {
 
   public requestPointerLock = () => {
     if (this.isPointerLockBlocked) return;
-    if (this.isWalkMode && document.pointerLockElement !== this.renderer.domElement) {
+    if (document.pointerLockElement !== this.renderer.domElement) {
       try {
+        this.renderer.domElement.focus();
         const res = this.renderer.domElement.requestPointerLock() as unknown;
         if (res && typeof (res as Promise<void>).catch === 'function') {
           (res as Promise<void>).catch(() => {
@@ -2828,10 +2851,18 @@ export class RoomScene {
     window.addEventListener('mousemove', this.onMouseMove);
     window.addEventListener('mouseup', this.onMouseUp);
 
+    document.addEventListener('pointerlockchange', this.onPointerLockChange);
+    document.addEventListener('mozpointerlockchange', this.onPointerLockChange);
+    document.addEventListener('webkitpointerlockchange', this.onPointerLockChange);
+
     dom.addEventListener('click', this.onClick);
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
   }
+
+  private onPointerLockChange = () => {
+    this.isPointerLocked = document.pointerLockElement === this.renderer.domElement;
+  };
 
   private onWindowResize = () => {
     if (!this.container) return;
@@ -2848,13 +2879,23 @@ export class RoomScene {
     this.prevMouseX = e.clientX;
     this.prevMouseY = e.clientY;
 
-    if (this.isWalkMode) {
+    if (this.isWalkMode && !this.isPointerLocked) {
       this.requestPointerLock();
     }
   };
 
   private onMouseMove = (e: MouseEvent) => {
     if (this.isWalkMode) {
+      const isCurrentlyLocked =
+        this.isPointerLocked || document.pointerLockElement === this.renderer.domElement;
+
+      // When the cursor is free on the screen (e.g. after pressing Esc), do not move the 3D environment!
+      if (!isCurrentlyLocked) {
+        this.prevMouseX = e.clientX;
+        this.prevMouseY = e.clientY;
+        return;
+      }
+
       // Direct mouse movement tracking like in FPS video games
       let deltaX = e.movementX;
       let deltaY = e.movementY;
@@ -3343,6 +3384,10 @@ export class RoomScene {
     window.removeEventListener('mouseup', this.onMouseUp);
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
+
+    document.removeEventListener('pointerlockchange', this.onPointerLockChange);
+    document.removeEventListener('mozpointerlockchange', this.onPointerLockChange);
+    document.removeEventListener('webkitpointerlockchange', this.onPointerLockChange);
 
     if (this.whiteboardUnsubscribe) {
       this.whiteboardUnsubscribe();

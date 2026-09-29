@@ -741,6 +741,8 @@ export const InteractiveLaptopTerminalModal: React.FC<InteractiveLaptopTerminalM
       e.preventDefault();
       setHistory([]);
     } else if (e.key === 'Escape') {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
       onClose();
     }
   };

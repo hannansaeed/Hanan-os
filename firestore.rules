@@ -16,17 +16,16 @@ service cloud.firestore {
       return data.keys().hasAll(['dataUrl', 'updatedAt']) 
         && data.keys().hasOnly(['dataUrl', 'updatedAt'])
         && data.dataUrl is string 
-        && data.dataUrl.size() <= 2097152 // Limit image size to 2MB to prevent Wallet exhaustion
-        && data.dataUrl.startsWith('data:image/png;base64,');
+        && data.dataUrl.size() <= 1048000
+        && data.updatedAt is string;
     }
 
     // Rules for whiteboards collection
     match /whiteboards/{boardId} {
-      allow get: if isValidId(boardId);
-      
-      // Let anyone draw and load the whiteboard synchronously
+      allow get, list: if isValidId(boardId);
       allow create, update: if isValidId(boardId) 
         && isValidWhiteboard(request.resource.data);
+      allow delete: if isValidId(boardId);
     }
   }
 }

@@ -131,6 +131,10 @@ export const RESUME_DATA = {
   languages: [
     { name: 'English', proficiency: 'Proficient / Professional' },
     { name: 'Urdu', proficiency: 'Native / Bilingual' }
+  ],
+  awards: [
+    'Certified Ethical Hacker Training & Practical Security Research',
+    'Open Source Security Research & Tooling Contributions'
   ]
 };
 
@@ -141,7 +145,7 @@ export const PROJECTS: ProjectItem[] = [
     subtitle: 'Automated network mapping, fingerprinting & CVE matching',
     category: 'Cybersecurity',
     year: '2024 – 2025',
-    status: 'Completed',
+    status: 'Security Verified',
     featured: true,
     description:
       'An automated reconnaissance tool written in Python that scans hosts and open ports, fingerprints running services, and dynamically cross-references results against public CVE databases to flag known vulnerabilities.',
@@ -168,7 +172,7 @@ export const PROJECTS: ProjectItem[] = [
     subtitle: 'Modular exploit tester for SQLi, XSS, and CSRF',
     category: 'Cybersecurity',
     year: '2024 – 2025',
-    status: 'Completed',
+    status: 'Security Verified',
     featured: true,
     description:
       'A modular security testing toolkit written in Python to audit web applications for common vulnerabilities like SQL injection, cross-site scripting (XSS), and CSRF, strictly aligned with the OWASP Top 10 framework.',
@@ -195,7 +199,7 @@ export const PROJECTS: ProjectItem[] = [
     subtitle: 'System logs monitor and Discord incident dispatch agent',
     category: 'Systems & Low-level',
     year: '2024',
-    status: 'Completed',
+    status: 'Production',
     featured: true,
     description:
       'A Discord automation bot that monitors local server logs and system events for suspicious activity, triggering instant alerts with embedded diagnostics inside Discord channels.',
@@ -222,7 +226,7 @@ export const PROJECTS: ProjectItem[] = [
     subtitle: 'Hardened Android app with encrypted storage and database',
     category: 'Android & Mobile',
     year: '2024',
-    status: 'Completed',
+    status: 'Production',
     featured: false,
     description:
       'A real-time Firebase-powered Android application built from the ground up with a security-first approach, implementing authenticated sessions, encrypted storage, and sanitized database writing rules.',

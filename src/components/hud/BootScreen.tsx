@@ -58,6 +58,18 @@ export const BootScreen: React.FC<BootScreenProps> = ({ onEnter, onQuickJump }) 
     onEnter();
   };
 
+  // Keyboard shortcut (Space / Enter) when loaded
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.key === 'Enter' || e.key === ' ') && progress === 100) {
+        e.preventDefault();
+        handleStart();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [progress, onEnter]);
+
   const isLoaded = progress === 100;
 
   return (

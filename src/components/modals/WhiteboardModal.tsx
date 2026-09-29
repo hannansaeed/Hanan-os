@@ -95,6 +95,7 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({ sceneRef, onCl
       window.removeEventListener('pointerdown', handlePointerDown);
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
+      sceneRef.current?.saveWhiteboardToStorage();
     };
   }, [isDrawing, lastPos, getRaycastPos, drawStroke, sceneRef]);
 
@@ -102,12 +103,15 @@ export const WhiteboardModal: React.FC<WhiteboardModalProps> = ({ sceneRef, onCl
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' || e.key === 'e' || e.key === 'E') {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        sceneRef.current?.saveWhiteboardToStorage();
         onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [onClose, sceneRef]);
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col justify-end p-6 pointer-events-none select-none">

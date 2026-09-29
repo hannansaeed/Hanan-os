@@ -152,7 +152,7 @@ export default function App() {
         <BootScreen
           onEnter={() => {
             setShowEntranceBanner(false);
-            sceneRef.current?.goToStation('overview');
+            sceneRef.current?.startFromBoot();
           }}
           onQuickJump={handleSelectStation}
         />

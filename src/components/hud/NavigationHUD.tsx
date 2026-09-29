@@ -245,16 +245,16 @@ export const NavigationHUD: React.FC<NavigationHUDProps> = ({
 
       {/* ========================================================
           CENTER SCREEN: Interaction Aim Reticle Dot
-          Always present during overview walk mode so user can aim;
+          Always present during overview mode so user can aim;
           glows rose when hovering over an interactive station!
       ======================================================== */}
-      {activeStation === 'overview' && isWalkMode && (
+      {activeStation === 'overview' && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div
             className={`rounded-full transition-all duration-150 ${
               hoverInfo
                 ? 'w-1.5 h-1.5 bg-rose-400 shadow-[0_0_8px_#f43f5e] ring-1 ring-rose-400/80 scale-110'
-                : 'w-1.5 h-1.5 bg-white/35 shadow-[0_0_4px_rgba(255,255,255,0.25)]'
+                : 'w-1.5 h-1.5 bg-white/40 shadow-[0_0_4px_rgba(255,255,255,0.3)]'
             }`}
           />
         </div>
